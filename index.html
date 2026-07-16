@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PickleMe Mobile Console</title>
+    <?!= include('Styles'); ?>
+  </head>
+  <body>
+    <!-- Splash Buffering Screen Overlay -->
+    <!-- <div id="app-splash-preloader">
+      <div class="splash-background-blur"></div>
+      <div class="splash-content-box">
+        <div class="splash-spinner-wrapper">
+          <div class="splash-spinner"></div>
+        </div>
+        <h2>Loading PickleMe...</h2>
+        <p>Assembling tournament frames & syncing player database</p>
+      </div>
+    </div> -->
+
+    <!-- APPLICATION FIXED HEADER -->
+    <header class="app-bar">
+      <img src="https://i.postimg.cc/Gp0Mp9vr/App-Logo-Transparent.png" alt="App-Logo-Transparent" loading="lazy" style="width: 60px; height: 60px; object-fit: contain; border-radius: 4px; padding-right: 10px;">
+      <h1 id="app-header">PickleMe v03</h1>
+    </header>
+
+    <!-- MAIN VIEWPORT DISPLAY FRAME -->
+    <main class="app-container">
+
+      <!-- SCREEN 1: Dashboard Home Grid (One-Column Layout) -->
+      <section id="screen-dashboard" class="app-screen active">
+        <div class="welcome-banner">
+          <h2>The Control Panel</h2>
+          <p>Your dashboard</p>
+        </div>
+        
+        <div class="card-grid">
+          <!-- Card 1: My Events -->
+          <div class="app-card" id="card-events" onclick="navigateToScreen('events')">
+            <div class="card-icon-wrapper">
+              <img src="https://i.postimg.cc/9MqhT6sQ/Events.png" alt="Events Icon" loading="lazy" class="card-icon-images">
+            </div>
+            <div class="card-content">
+              <h3>My Events</h3>
+              <p>Active tournament states and schedules</p>
+            </div>
+            <span class="card-arrow">→</span>
+          </div>
+          
+          <!-- Card 2: Manage Players -->
+          <div class="app-card" id="card-players" onclick="navigateToScreen('players')">
+            <div class="card-icon-wrapper">
+              <img src="https://i.postimg.cc/ydSH9M26/Players.png" alt="Events Icon" loading="lazy" class="card-icon-images">
+            </div>
+            <div class="card-content">
+              <h3>Update Players</h3>
+              <p>Roster setup, seed numbers, and divisions</p>
+            </div>
+            <span class="card-arrow">→</span>
+          </div>
+          
+          <!-- Card 3: Game Selector -->
+          <div class="app-card" id="card-games" onclick="navigateToScreen('games')">
+            <div class="card-icon-wrapper">
+              <img src="https://i.postimg.cc/3RDTpszh/Games.png" alt="Events Icon" loading="lazy" class="card-icon-images">
+            </div>
+            <div class="card-content">
+              <h3>Game Selector</h3>
+              <p>Formats, rule sets, and bracket styles</p>
+            </div>
+            <span class="card-arrow">→</span>
+          </div>
+          
+          <!-- Card 4: Create Draw -->
+          <div class="app-card" id="card-draw" onclick="navigateToScreen('draw')">
+            <div class="card-icon-wrapper">
+              <img src="https://i.postimg.cc/50FVvhDb/Draw.png" alt="Events Icon" loading="lazy" class="card-icon-images">
+            </div>
+            <div class="card-content">
+              <h3>Generate Draw</h3>
+              <p>Run instant combinatorial court scheduling</p>
+            </div>
+            <span class="card-arrow">→</span>
+          </div>
+
+          <!-- Card 5: DUPR Update -->
+          <div class="app-card" id="card-dupr" onclick="navigateToScreen('dupr')">
+            <div class="card-icon-wrapper">
+              <img src="https://i.postimg.cc/Kzg2L6wd/DUPR.png" alt="Events Icon" loading="lazy" class="card-icon-images">
+            </div>
+            <div class="card-content">
+              <h3>DUPR Sync</h3>
+              <p>Export player match results and log ratings</p>
+            </div>
+            <span class="card-arrow">→</span>
+          </div>
+
+          <!-- Card 6: Clean Up -->
+          <div class="app-card danger-card" id="card-cleanup" onclick="navigateToScreen('cleanup')">
+            <div class="card-icon-wrapper">
+              <img src="https://i.postimg.cc/8CYG7pKq/Cleanup.png" alt="Events Icon" loading="lazy" class="card-icon-images">
+            </div>
+            <div class="card-content">
+              <h3>Clean Up</h3>
+              <p>Purge local cache and reset system tables</p>
+            </div>
+            <span class="card-arrow">→</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 2: INJECTED MY EVENTS DASHBOARD COMPONENT PANEL -->
+      <section id="screen-events" class="app-screen">
+        <div class="welcome-banner">
+          <h2>My Events</h2>
+          <p>Authorized tournament states and active matches</p>
+        </div>
+
+        <!-- Dynamic Container where Event Cards load -->
+        <div id="active-events-list" class="card-grid">
+          <!-- Loading spinner placeholder will mount here -->
+          
+        </div>
+
+
+      </section>
+      <!-- SCREEN 3: INJECTED EVENT DETAIL VIEW PANEL -->
+      <section id="screen-event-detail" class="app-screen" style="display: none;">
+        
+        <div class="view-section-header" style="padding: 12px 12px 0 12px; margin-bottom: 10px;">
+          <h2>Event Details</h2>
+          <p>View or modify configuration parameters</p>
+        </div>
+
+        <!-- Dynamic Detail View Container -->
+        <div id="event-detail-content" class="detail-view-container">
+          <!-- Form will be dynamically injected here -->
+        </div>
+
+      </section>
+            
+      <section id="screen-players" class="app-screen">
+        <div class="placeholder-view">
+          <h3>Update Players Roster</h3>
+          <p>Database synchronization interface will render here.</p>
+        </div>
+      </section>
+      
+      <!-- SCREEN 4: Game Selector Format Configuration -->
+      <section id="screen-games" class="app-screen">
+  
+        <div class="top-tab-bar">
+          <div class="tab-item active" id="tab-rr" onclick="switchGameTab('rr')">Round Robin</div>
+          <div class="tab-item" id="tab-split" onclick="switchGameTab('split')">Split Group</div>
+          <div class="tab-item" id="tab-single" onclick="switchGameTab('single')">Single Round</div>
+        </div>
+
+        <div class="tab-viewport">
+          
+          <div id="view-rr" class="tab-view active">
+            <div class="card-grid">
+              <div class="app-card" onclick="selectFormat('rotating-partners')">
+                <div class="card-icon-wrapper"><span class="card-icon">🔄</span></div>
+                <div class="card-content">
+                  <h3>Rotating Partners</h3>
+                  <p>Cycle partners and opponents each round</p>
+                </div>
+                <span class="card-arrow">→</span>
+              </div>
+              <div class="app-card" onclick="selectFormat('doubles-pro')">
+                <div class="card-icon-wrapper"><span class="card-icon">🥇</span></div>
+                <div class="card-content">
+                  <h3>Doubles Pro</h3>
+                  <p>Get allocated a partner, in a tournament style event</p>
+                </div>
+                <span class="card-arrow">→</span>
+              </div>
+              <div class="app-card" onclick="selectFormat('keep-it-fair')">
+                <div class="card-icon-wrapper"><span class="card-icon">⚖️</span></div>
+                <div class="card-content">
+                  <h3>Keep It Fair</h3>
+                  <p>Parity algorithms generating balanced court match ups</p>
+                </div>
+                <span class="card-arrow">→</span>
+              </div>
+              <div class="app-card" onclick="selectFormat('the-two-of-us')">
+                <div class="card-icon-wrapper"><span class="card-icon">👥</span></div>
+                <div class="card-content">
+                  <h3>The Two Of Us</h3>
+                  <p>Practice with your partner against all opponent match ups</p>
+                </div>
+                <span class="card-arrow">→</span>
+              </div>
+            </div>
+          </div>
+
+          <div id="view-split" class="tab-view">
+            <div class="card-grid">
+              <div class="app-card" onclick="selectFormat('divisions')">
+                <div class="card-icon-wrapper"><span class="card-icon">📁</span></div>
+                <div class="card-content">
+                  <h3>Divisions</h3>
+                  <p>Isolate rosters by direct skill rank tiers</p>
+                </div>
+                <span class="card-arrow">→</span>
+              </div>
+              <div class="app-card" onclick="selectFormat('teams')">
+                <div class="card-icon-wrapper"><span class="card-icon">🛡️</span></div>
+                <div class="card-content">
+                  <h3>Teams</h3>
+                  <p>Team against team multi-court aggregate scoring</p>
+                </div>
+                <span class="card-arrow">→</span>
+              </div>
+              <div class="app-card" onclick="selectFormat('ladder-scramble')">
+                <div class="card-icon-wrapper"><span class="card-icon">🪜</span></div>
+                <div class="card-content">
+                  <h3>Ladder Scramble</h3>
+                  <p>Promotion / relegation game in division tiers</p>
+                </div>
+                <span class="card-arrow">→</span>
+              </div>
+              <div class="app-card" onclick="selectFormat('pools')">
+                <div class="card-icon-wrapper"><span class="card-icon">🎱</span></div>
+                <div class="card-content">
+                  <h3>Pools</h3>
+                  <p>Bracket match ups, with multiple partners and opponents</p>
+                </div>
+                <span class="card-arrow">→</span>
+              </div>
+              <div class="app-card" onclick="selectFormat('mid-tier-divisions')">
+                <div class="card-icon-wrapper"><span class="card-icon">🏅</span></div>
+                <div class="card-content">
+                  <h3>Mid Tier Divisions</h3>
+                  <p>Target intermediate brackets for localized play</p>
+                </div>
+                <span class="card-arrow">→</span>
+              </div>
+              <div class="app-card" onclick="selectFormat('pool-fusion')">
+                <div class="card-icon-wrapper"><span class="card-icon">🧪</span></div>
+                <div class="card-content">
+                  <h3>Pool Fusion</h3>
+                  <p>Start in your pool bracket, before competing against other teams</p>
+                </div>
+                <span class="card-arrow">→</span>
+              </div>
+            </div>
+          </div>
+
+          <div id="view-single" class="tab-view">
+            <div class="card-grid">
+              <div class="app-card" onclick="selectFormat('kings-queens')">
+                <div class="card-icon-wrapper"><span class="card-icon">👑</span></div>
+                <div class="card-content">
+                  <h3>Kings &amp; Queens</h3>
+                  <p>Court promotion and relegation is dependant on your last round results</p>
+                </div>
+                <span class="card-arrow">→</span>
+              </div>
+              <div class="app-card" onclick="selectFormat('survivor')">
+                <div class="card-icon-wrapper"><span class="card-icon">🔥</span></div>
+                <div class="card-content">
+                  <h3>Survivor</h3>
+                  <p>Keep winning on the designated top court to maintain your partnership</p>
+                </div>
+                <span class="card-arrow">→</span>
+              </div>
+              <div class="app-card" onclick="selectFormat('out-of-lives')">
+                <div class="card-icon-wrapper"><span class="card-icon">💔</span></div>
+                <div class="card-content">
+                  <h3>Out Of Lives</h3>
+                  <p>Each time you lose, you lose a life</p>
+                </div>
+                <span class="card-arrow">→</span>
+              </div>
+              <div class="app-card" onclick="selectFormat('my-house')">
+                <div class="card-icon-wrapper"><span class="card-icon">🏠</span></div>
+                <div class="card-content">
+                  <h3>My House</h3>
+                  <p>Wins on your designated court is all that matters. Lose and you move</p>
+                </div>
+                <span class="card-arrow">→</span>
+              </div>
+              <div class="app-card" onclick="selectFormat('snakes-ladders')">
+                <div class="card-icon-wrapper"><span class="card-icon">🐍</span></div>
+                <div class="card-content">
+                  <h3>Snakes &amp; Ladders</h3>
+                  <p>Court allocation is based on last round results. Losing means you go to the bottom</p>
+                </div>
+                <span class="card-arrow">→</span>
+              </div>
+              <div class="app-card" onclick="selectFormat('bridge-the-gap')">
+                <div class="card-icon-wrapper"><span class="card-icon">🌉</span></div>
+                <div class="card-content">
+                  <h3>Bridge The Gap</h3>
+                  <p>Each round results determine the next round match ups</p>
+                </div>
+                <span class="card-arrow">→</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <section id="screen-draw" class="app-screen">
+        <div class="placeholder-view">
+          <h3>Combinatorial Draw Engine</h3>
+          <p>Active generator tools for courts and scheduling live matrix.</p>
+        </div>
+      </section>
+      
+      <section id="screen-dupr" class="app-screen">
+        <div class="placeholder-view">
+          <h3>DUPR Sync Utilities</h3>
+          <p>CSV compiler algorithms and API hooks for logging player scores.</p>
+        </div>
+      </section>
+      
+      <section id="screen-cleanup" class="app-screen">
+        <div class="placeholder-view">
+          <h3>System Cache Cleanup</h3>
+          <p>Administrative commands to drop state variables and wipe dynamic configurations.</p>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- FIXED MOBILE BOTTOM NAVIGATION BAR -->
+    <nav class="bottom-nav">
+      <div class="nav-item active" id="btn-dashboard" onclick="navigateToScreen('dashboard')">
+        <span class="nav-icon">🎛️</span>
+        <span class="nav-text">Home</span>
+      </div>
+      <div class="nav-item" id="btn-players" onclick="navigateToScreen('players')">
+        <span class="nav-icon">👥</span>
+        <span class="nav-text">Players</span>
+      </div>
+      <div class="nav-item" id="btn-draw" onclick="navigateToScreen('draw')">
+        <span class="nav-icon">☱</span>
+        <span class="nav-text">Draw</span>
+      </div>
+      <div class="nav-item" id="btn-analytics" onclick="navigateToScreen('analytics')">
+        <span class="nav-icon">📊</span>
+        <span class="nav-text">Analytics</span>
+      </div>
+    </nav>
+
+    <!-- DYNAMIC FORMAT DETAIL OVERLAY PANEL -->
+    <div id="format-detail-overlay" class="detail-overlay">
+      <div class="overlay-handle-bar" onclick="closeFormatDetail()"></div>
+      <div class="overlay-header">
+        <h2 id="detail-title">Format Detail</h2>
+        <button class="close-overlay-btn" onclick="closeFormatDetail()">✕</button>
+      </div>
+      <div id="detail-body-content" class="overlay-body">
+        <!-- Injected dynamically via JavaScript -->
+      </div>
+    </div>
+
+    <?!= include('JavaScript'); ?>
+  </body>
+</html>
