@@ -1,4 +1,6 @@
 <script>
+  const apiURL = "https://script.google.com/macros/s/AKfycbwSX0wGgt_Ged-ZuDfPVJtbarVXwYF4GjEidk22gL4i0j3paJ3C0gxHkh0yryxJ5yM/exec";
+
   const daysOfWeek = [{
     "Monday": "https://i.postimg.cc/cJzgM84t/Monday.png",
     "Tuesday": "https://i.postimg.cc/g07Xq6kW/Tuesday.png",
