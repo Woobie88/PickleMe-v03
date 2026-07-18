@@ -904,7 +904,7 @@ function saveAndActivateEventAction() {
   navigateToScreen('players');
 }
 
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwSX0wGgt_Ged-ZuDfPVJtbarVXwYF4GjEidk22gL4i0j3paJ3C0gxHkh0yryxJ5yM/exec"; // <-- your deployment URL
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzwWWH_GMZBOSu_Mw_7JPd5pibdxBWbf9Tgvp0-j_J4cIS5h7fgxQeHQCMJVgUzvBUG/exec"; // <-- your deployment URL
 
 function preFetchUserUniverseData() {
   const userEmail = "brett.collins028@gmail.com"; // <-- Ensure this email matches your data row!
