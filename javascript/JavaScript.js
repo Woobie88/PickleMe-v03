@@ -629,51 +629,13 @@ function closeFormatDetail() {
 }
 
 // GLOBAL BROWSER CACHE
-window.cachedUserUniverse = { events: [], matches: [], activeEventId: null };
-
-/**
- * Global router launcher. Runs a single server call on launch or hard refreshes.
- */
-window.loadDashboardData = function() {
-  try {
-    const container = document.getElementById('active-events-list');
-    if (!container) return;
-    
-    // If we ALREADY have cached data, bypass the server completely for an instant render!
-    if (window.cachedUserUniverse.events.length > 0) {
-      console.log("Rendering screen instantly using global memory cache.");
-      renderUserEventCards(window.cachedUserUniverse);
-      return;
-    }
-    
-    container.innerHTML = `
-      <div class="loading-placeholder" style="text-align: center; padding: 40px 20px; color: #888;">
-        <div class="spinner" style="width: 30px; height: 30px; border: 3px solid rgba(0,0,0,0.1); border-radius: 50%; border-top-color: var(--accent, #007bff); animation: spin 0.8s linear infinite; margin: 0 auto 12px auto;"></div>
-        <p>Loading your event database profile...</p>
-      </div>
-    `;
-
-    const userEmail = "brett.collins028@gmail.com"; // <-- Ensure this email matches your data row!
-
-    google.script.run
-      .withSuccessHandler(function(payload) {
-        console.log("Server data cached successfully!", payload);
-        console.log("The user email send is", userEmail);
-
-        // Store everything in the global browser variable
-        window.cachedUserUniverse = payload;
-        
-        // Render out the UI components instantly
-        renderUserEventCards(payload);
-      })
-      .withFailureHandler(function(err) {
-        alert("Server Sync Error: " + (err.message || err));
-      })
-      .getUserEventsPayload(userEmail);
-      
-  } catch (jsError) {
-    alert("Local Script Error: " + jsError.toString());
-  }
+window.cachedUserUniverse = {
+  events: [],
+  activeEventId: null,
+  dupr: [],
+  players: [],
+  draw: [],
+  byes: []
 };
 
 /**
