@@ -1,5 +1,3 @@
-const apiURL = "https://script.google.com/macros/s/AKfycbwSX0wGgt_Ged-ZuDfPVJtbarVXwYF4GjEidk22gL4i0j3paJ3C0gxHkh0yryxJ5yM/exec";
-
 const daysOfWeek = [{
   "Monday": "https://i.postimg.cc/cJzgM84t/Monday.png",
   "Tuesday": "https://i.postimg.cc/g07Xq6kW/Tuesday.png",
@@ -963,9 +961,11 @@ function saveAndActivateEventAction() {
   navigateToScreen('players');
 }
 
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwSX0wGgt_Ged-ZuDfPVJtbarVXwYF4GjEidk22gL4i0j3paJ3C0gxHkh0yryxJ5yM/exec"; // <-- your deployment URL
+
 function preFetchUserUniverseData() {
   const userEmail = "brett.collins028@gmail.com"; // <-- Ensure this email matches your data row!
-  const url = `${apiURL}?email=${encodeURIComponent(userEmail)}`;
+  const url = `${APPS_SCRIPT_URL}?email=${encodeURIComponent(userEmail)}`;
 
   return fetch(url)
     .then(response => {
