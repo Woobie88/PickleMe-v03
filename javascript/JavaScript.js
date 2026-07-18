@@ -963,53 +963,38 @@ function saveAndActivateEventAction() {
   navigateToScreen('players');
 }
 
-
-
 function preFetchUserUniverseData() {
   const userEmail = "brett.collins028@gmail.com"; // <-- Ensure this email matches your data row!
+  const url = `${apiURL}?email=${encodeURIComponent(userEmail)}`;
 
-  return new Promise((resolve, reject) => {
-    try {
-      if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run
-          .withSuccessHandler(function (payload) {
-            console.log("Initial database pre-fetch successful!", payload);
-
-            // Store the payload in global browser memory immediately
-            window.cachedUserUniverse = payload;
-
-            // Pre-build and render out the UI components silently in the hidden DOM container
-            renderUserEventCards(payload);
-
-            resolve(payload);
-          })
-          .withFailureHandler(function (err) {
-            console.error("Critical initialization failure: " + (err.message || err));
-            reject(err);
-          })
-          .getUserEventsPayload(userEmail);
-      } else {
-        // google.script.run isn't available — resolve/reject so the caller doesn't hang forever
-        reject(new Error("google.script.run is not available in this environment."));
+  return fetch(url)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`Apps Script returned status ${response.status}`);
       }
-    } catch (jsError) {
-      console.error("Local startup framework error: " + jsError.toString());
-      reject(jsError);
-    }
-  });
+      return response.json();
+    })
+    .then(payload => {
+      console.log("Initial database pre-fetch successful!", payload);
+      window.cachedUserUniverse = payload;
+      renderUserEventCards(payload);
+      return payload;
+    })
+    .catch(err => {
+      console.error("Critical initialization failure: " + (err.message || err));
+      throw err;
+    });
 }
 
 // Global initialization event listener running on app startup
 window.addEventListener("DOMContentLoaded", async (event) => {
   console.log("App loaded. Pre-fetching database universes...");
-  
+
   try {
-    // Wait for the data to finish loading completely
     await preFetchUserUniverseData();
   } catch (error) {
     console.error("Failed to load universe data:", error);
   } finally {
-    // Hide the splash screen loader after fetching (success or fail)
     const loader = document.getElementById("app-splash-preloader");
     if (loader) {
       loader.style.display = "none";
