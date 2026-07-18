@@ -825,12 +825,12 @@ function setActiveEventTrack(eventId) {
 
     <div class="detail-form-group">
       <label for="edit-event-courts">Number of Courts</label>
-      <input type="number" id="edit-event-courts" class="detail-input" value="${targetEvent.NumberofCourts || 1}">
+      <input type="number" id="edit-event-courts" class="detail-input" min="1" value="${targetEvent.NumberofCourts || 1}">
     </div>
 
     <div class="detail-form-group">
       <label for="edit-event-dupr">DUPR Limit</label>
-      <input type="number" step="0.01" id="edit-event-dupr" class="detail-input" value="${duprVal}">
+      <input type="number" step="0.05" min="0" max="8" id="edit-event-dupr" class="detail-input" value="${duprVal}">
     </div>
 
     <div class="form-action-bar">
