@@ -1,0 +1,12 @@
+{
+  "name": "PickleMe v03",
+  "short_name": "PickleMe",
+  "icons": [
+    { "src": "https://i.postimg.cc/yYsbhw3b/App-Logo.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "https://i.postimg.cc/yYsbhw3b/App-Logo.pngg", "sizes": "512x512", "type": "image/png" }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000"
+}
