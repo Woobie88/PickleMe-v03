@@ -730,47 +730,42 @@ function renderUserEventCards(payload) {
   events.forEach(event => {
     const currentId = event.EventID || event.eventId;
     const isActive = (String(currentId) === String(activeId));
-    
+
     const rawDate = event.EventDate || event.eventDate || '';
     let displayDate = 'Ongoing';
     if (rawDate) {
       displayDate = rawDate.split('T')[0];
     }
 
-    // 1. Fetch the image file URL asset or fallback emoji token
-    // const iconAsset = getDayIconUrlFromPayload(rawDate);
-    
-    // 2. Decide whether to treat the asset as a Drive URL image or a text emoji symbol
-    // let iconMarkup = `<span class="card-icon">${iconAsset}</span>`;
-    // if (iconAsset.startsWith('http')) {
-    //   iconMarkup = `<img src="${iconAsset}" alt="Day Icon" class="card-icon-images">`;
-    // }
+    // Get the day-based icon URL
+    const iconAsset = getDayIconUrl(rawDate);
+    const iconMarkup = `<img src="${iconAsset}" alt="Day Icon" class="card-icon-images">`;
 
-    // const cardClass = isActive ? 'app-card active-event' : 'app-card';
-    // const activeBadge = isActive ? `<span class="active-pill-badge">ACTIVE</span>` : '';
+    const cardClass = isActive ? 'app-card active-event' : 'app-card';
+    const activeBadge = isActive ? `<span class="active-pill-badge">ACTIVE</span>` : '';
 
-    // const cardMarkup = `
-    //   <div class="${cardClass}" id="event-card-${currentId}" onclick="setActiveEventTrack('${currentId}')">
-    //     <div class="card-icon-wrapper">
-    //       ${iconMarkup}
-    //     </div>
-    //     <div class="card-content">
-    //       <h3>${event.EventName || 'Unnamed Event'} ${activeBadge}</h3>
-    //       <p>📍 ${event.EventLocation || 'Main Facility'}</p>
-    //       <p class="card-meta-line">
-    //         ${displayDate} &nbsp;||&nbsp; ${event.NumberofCourts || 1} Courts
-    //       </p>
-    //     </div>
-    //     <span class="card-arrow">→</span>
-    //   </div>
-    // `;
+    const cardMarkup = `
+      <div class="${cardClass}" id="event-card-${currentId}" onclick="setActiveEventTrack('${currentId}')">
+        <div class="card-icon-wrapper">
+          ${iconMarkup}
+        </div>
+        <div class="card-content">
+          <h3>${event.EventName || 'Unnamed Event'} ${activeBadge}</h3>
+          <p>📍 ${event.EventLocation || 'Main Facility'}</p>
+          <p class="card-meta-line">
+            ${displayDate} &nbsp;||&nbsp; ${event.NumberofCourts || 1} Courts
+          </p>
+        </div>
+        <span class="card-arrow">→</span>
+      </div>
+    `;
 
-    // if (isActive) {
-    //   currentEventHtml += cardMarkup;
-    // } else {
-    //   otherEventsHtml += cardMarkup;
-    //   otherCount++;
-    // }
+    if (isActive) {
+      currentEventHtml += cardMarkup;
+    } else {
+      otherEventsHtml += cardMarkup;
+      otherCount++;
+    }
   });
 
   // 5. Build dynamic segmented display grids
@@ -794,41 +789,23 @@ function renderUserEventCards(payload) {
   console.log("Successfully rendered event grid sorted chronologically (ascending).");
 }
 
-function getDayIconUrlFromPayload(dateString) {
-  // A clean, solid emoji fallback just in case an asset or date is missing
+function getDayIconUrl(dateString) {
   const fallbackEmoji = "🎾";
-  
-  if (!dateString || !window.cachedUserUniverse || !window.cachedUserUniverse.imagery) {
-    return fallbackEmoji;
-  }
+
+  if (!dateString) return fallbackEmoji;
 
   try {
-    // 1. Calculate the day name from the date string safely
     const pureDateStr = dateString.split('T')[0];
     const parts = pureDateStr.split('-');
     const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
-    
-    // const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const targetDayName = daysOfWeek[dateObj.getDay()]; // e.g., "Monday"
-    console.log('The target day is ' + targetDayName);
-    
-    // 2. Scan your pre-fetched imagery array instantly in memory
-    const matchingImage = window.cachedUserUniverse.imagery.find(img => {
-      // Direct property name checks matching your sheet columns/objects
-      const isDaysFolder = String(img.folderName || img.FolderName).trim().toLowerCase() === "days";
-      const isMatchingDay = String(img.fileName || img.FileName).toLowerCase().startsWith(targetDayName.toLowerCase());
-      
-      return isDaysFolder && isMatchingDay;
-    });
 
-    // 3. Return the image file URL if found, otherwise drop back to our standard emoji
-    if (matchingImage && (matchingImage.fileURL || matchingImage.fileUrl)) {
-      return matchingImage.fileURL || matchingImage.fileUrl;
-    }
-    
-    return fallbackEmoji;
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const targetDayName = dayNames[dateObj.getDay()]; // e.g. "Monday"
+
+    const iconUrl = daysOfWeek[0][targetDayName];
+    return iconUrl || fallbackEmoji;
   } catch (err) {
-    console.error("Error evaluating day icon from payload:", err);
+    console.error("Error evaluating day icon:", err);
     return fallbackEmoji;
   }
 }
