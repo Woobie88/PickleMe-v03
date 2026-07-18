@@ -870,7 +870,6 @@ function saveAndActivateEventAction() {
     // 4. Update the actual data attributes inside the array row so modifications are visible
     const eventIndex = window.cachedUserUniverse.events.findIndex(e => String(e.EventID || e.eventId) === String(eventId));
     if (eventIndex !== -1) {
-      // Merge changes into our state tracking memory structure
       window.cachedUserUniverse.events[eventIndex] = {
         ...window.cachedUserUniverse.events[eventIndex],
         ...updatedData
@@ -881,20 +880,25 @@ function saveAndActivateEventAction() {
     renderUserEventCards(window.cachedUserUniverse);
   }
 
-  // 6. Asynchronously save changes and the active assignment states down to your server rows
+  // 6. Asynchronously save changes and the active assignment state down to your server rows
   const userEmail = "brett.collins028@gmail.com";
-  console.log('The updated data is',updatedData); 
-  if (typeof google !== 'undefined' && google.script && google.script.run) {
-    google.script.run
-      .withSuccessHandler(function(response) {
-        console.log("Database records and active status updated successfully:", response);
-      })
-      .withFailureHandler(function(err) {
-        console.error("Background Server Sync Failed:", err);
-      })
-      .updateActiveTournamentState(userEmail, eventId, updatedData); 
-      // ^ Ensure this server method exists or maps cleanly to your backend structure!
-  }
+
+  fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' }, // avoids CORS preflight — Apps Script reads raw body either way
+    body: JSON.stringify({ action: 'Event Update', userEmail, eventId, updatedData })
+  })
+    .then(response => response.json())
+    .then(result => {
+      if (result.success) {
+        console.log("Database records and active status updated successfully:", result.response);
+      } else {
+        console.error("Background Server Sync Failed:", result.error);
+      }
+    })
+    .catch(err => {
+      console.error("Background Server Sync Failed:", err);
+    });
 
   // 7. Route the UI view context instantly over to your next workflow panel step
   navigateToScreen('players');
