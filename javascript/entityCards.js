@@ -35,7 +35,7 @@ function renderEntityCards(options) {
   }
 
   const placeholder = entityName
-    ? document.getElementById(`place-holder-${entityName}`)
+    ? document.getElementById(`placeholder-view-${entityName}`)
     : null;
 
   // 1. Filter down to the active event, plus any extra caller-supplied condition
