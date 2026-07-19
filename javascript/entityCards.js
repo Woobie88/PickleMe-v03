@@ -178,7 +178,10 @@ function renderDrawCards(payload) {
 
   if (placeholder) placeholder.style.display = 'none';
 
-  // 4. Sort by Round asc, then Court asc
+  // 4. Group into round sections and build cards
+  let html = '';
+  let currentRound = null;
+
   matches.forEach(m => {
     if (m.Round !== currentRound) {
       currentRound = m.Round;
@@ -190,7 +193,7 @@ function renderDrawCards(payload) {
     const team1 = `${playerMap[m.Team1Player1]} & ${playerMap[m.Team1Player2]}`;
     const team2 = `${playerMap[m.Team2Player1]} & ${playerMap[m.Team2Player2]}`;
 
-    const isComplete = m.Team1WinLoss && m.Team2WinLoss; // both populated = match finished
+    const isComplete = m.Team1WinLoss && m.Team2WinLoss;
 
     let metaLine;
     if (isComplete) {
