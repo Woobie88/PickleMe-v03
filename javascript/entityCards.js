@@ -92,16 +92,13 @@ function renderPlayerCards(payload) {
     emptyMessage: 'No Players Found',
     extraFilter: (player) => String(player.PlayerVersion) === String(currentVersion),
     getIcon: (player) => '🎾',
-    getContentHtml: (player) => `
-      https://woobie88.github.io/PickleMe-v03/
-      <p class="card-meta-line">DUPR: ${player.DUPR || 'N/A'}</p>
-    `getContentHtml: (player) => {
-        console.log("Name:", player.Name, "| FirstName:", player.FirstName);
-        return `
-          <h3>${player.Name || 'Unnamed Player'} ${player.FirstName ? '(' + player.FirstName + ')' : ''}</h3>
-          <p class="card-meta-line">DUPR: ${player.DUPR || 'N/A'}</p>
-        `;
-      },
+    getContentHtml: (player) => {
+      console.log("Name:", player.Name, "| FirstName:", player.FirstName);
+      return `
+        <h3>${player.Name || 'Unnamed Player'} ${player.FirstName ? '(' + player.FirstName + ')' : ''}</h3>
+        <p class="card-meta-line">DUPR: ${player.DUPR || 'N/A'}</p>
+      `;
+    },
     getOnClick: (player) => `viewPlayerDetail('${player.PlayerID}')`
   });
 }
