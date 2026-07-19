@@ -51,8 +51,8 @@ function renderEntityCards(options) {
 
   // 3. Build cards
   let cardsHtml = '';
-  filtered.forEach(record => {
-    const iconAsset = getIcon(record);
+  filtered.forEach((record, index) => {
+    const iconAsset = getIcon(record, index); // NEW: pass index alongside record
     const iconMarkup = iconAsset.startsWith('http')
       ? `<img src="${iconAsset}" alt="Icon" class="card-icon-images">`
       : `<span class="card-icon">${iconAsset}</span>`;
@@ -78,8 +78,6 @@ function renderEntityCards(options) {
 
 function renderPlayerCards(payload) {
   console.log('Calling renderPlayerCards');
-
-  // Find the active event record to get its CurrentPlayerVersion
   const activeEvent = (payload.events || []).find(
     e => String(e.EventID || e.eventId) === String(payload.activeEventId)
   );
@@ -91,9 +89,13 @@ function renderPlayerCards(payload) {
     activeEventId: payload.activeEventId,
     emptyMessage: 'No Players Found',
     extraFilter: (player) => String(player.PlayerVersion) === String(currentVersion),
-    getIcon: (player) => '🎾',
+    sortFn: (a, b) => (parseFloat(b.DUPR) || 0) - (parseFloat(a.DUPR) || 0),
+    getIcon: (player, index) => {
+      const seedNumber = index + 1; // convert 0-based index to 1-based seed
+      const seedUrl = playerSeeds[0]['seed-' + seedNumber];
+      return seedUrl || '🎾'; // fallback emoji if beyond seed-20 or missing
+    },
     getContentHtml: (player) => {
-      console.log("Name:", player.Name, "| FirstName:", player.FirstName);
       return `
         <h3>${player.Name || 'Unnamed Player'} ${player.FirstName ? '(' + player.FirstName + ')' : ''}</h3>
         <p class="card-meta-line">${player.DUPRId || 'N/A'} ${player.DUPR ? ' || DUPR ' + player.DUPR : '0'}</p>
