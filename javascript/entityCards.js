@@ -129,15 +129,37 @@ function renderPlayerCards(payload) {
 }
 
 function renderDrawCards(payload) {
+  console.log('Calling renderPlayerCards');
+  const activeEvent = (payload.events || []).find(
+    e => String(e.EventID || e.eventId) === String(payload.activeEventId)
+  );
+  const currentVersion = activeEvent ? activeEvent.CurrentDrawVersion : null;
+
   renderEntityCards({
     containerId: 'active-draw-list',
+    entityName: 'draw',
     records: payload.draw,
     activeEventId: payload.activeEventId,
-    emptyMessage: 'No Draw Published Yet',
-    getIcon: (drawEntry) => courts[0]['court-' + drawEntry.Court] || '🏟️',
-    getContentHtml: (drawEntry) => `
-      <h3>Court ${drawEntry.Court || '—'}</h3>
-      <p class="card-meta-line">Round ${drawEntry.Round || '—'}</p>
-    `
+    emptyMessage: 'No Draw Found',
+    extraFilter: (game) => String(game.DrawVersion) === String(currentVersion),
+    sortFn: (a, b) => {
+      const roundDiff = (parseFloat(a.Round) || 0) - (parseFloat(b.Round) || 0);
+      if (roundDiff !== 0) return roundDiff;
+    
+      // Tiebreaker: fall back to existing Seed value, ascending
+      return (parseFloat(a.Court) || 0) - (parseFloat(b.Court) || 0);
+    },
+    getIcon: (game, index) => {
+      const courtNumber = game.Court;
+      const seedUrl = playerSeeds[0]['court-' + courtNumber];
+      return seedUrl || '🎾';
+    },
+    getContentHtml: (game) => {
+      return `
+        <h3>${player.Name || 'Unnamed Player'} ${player.FirstName ? '(' + player.FirstName + ')' : ''}</h3>
+        <p class="card-meta-line">${player.DUPRId || 'N/A'} ${player.DUPR ? ' || DUPR ' + player.DUPR : '0'}</p>
+      `;
+    },
+    getOnClick: (game) => `viewPlayerDetail('${game.PlayerID}')`
   });
 }
