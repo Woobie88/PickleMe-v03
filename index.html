@@ -164,9 +164,10 @@
 
       <!-- SCREEN 4: Draw For Active Event -->
       <section id="screen-draw" class="app-screen">
-        <div class="welcome-banner">
-          <h2>Event Matches</h2>
-          <p>Matches for your event</p>
+        <div class="top-tab-bar">
+          <div class="tab-item active" id="tab-rr" onclick="switchGameTab('rr')">Current Round</div>
+          <div class="tab-item" id="tab-split" onclick="switchGameTab('split')">All Matches</div>
+          <div class="tab-item" id="tab-single" onclick="switchGameTab('single')">Byes</div>
         </div>
         <div id="placeholder-view-draw" class="placeholder-view">
           <h3>Draw Generator</h3>
@@ -174,12 +175,6 @@
         </div>
 
         <!-- Dynamic Container where Player Cards load -->
-        <div class="top-tab-bar">
-          <div class="tab-item active" id="tab-rr" onclick="switchGameTab('rr')">Round Robin</div>
-          <div class="tab-item" id="tab-split" onclick="switchGameTab('split')">Split Group</div>
-          <div class="tab-item" id="tab-single" onclick="switchGameTab('single')">Single Round</div>
-        </div>
-        
         <div id="active-draw-list" class="card-grid">
           <!-- Loading spinner placeholder will mount here --> 
         </div>
