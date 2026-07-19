@@ -75,6 +75,7 @@ function renderEntityCards(options) {
 }
 
 function renderPlayerCards(payload) {
+  console.log('Calling renderPlayerCards');
   renderEntityCards({
     containerId: 'active-players-list',
     records: payload.players,
