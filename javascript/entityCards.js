@@ -39,10 +39,11 @@ function renderEntityCards(options) {
     : null;
 
   // 1. Filter down to the active event, plus any extra caller-supplied condition
-  let filtered = (records || []).filter(record => {
-    const recordEventId = record[eventIdField] || record.eventId;
-    const matchesEvent = String(recordEventId) === String(activeEventId);
-    return matchesEvent && extraFilter(record);
+  filtered.forEach((record, index) => {
+    const iconAsset = getIcon(record, index);
+    const contentHtml = getContentHtml(record);
+    const onClickAttr = getOnClick ? `onclick="${getOnClick(record)}"` : '';
+    cardsHtml += buildCardMarkup({ iconAsset, contentHtml, onClickAttr });
   });
 
   // 1b. Apply optional sort
@@ -129,37 +130,118 @@ function renderPlayerCards(payload) {
 }
 
 function renderDrawCards(payload) {
-  console.log('Calling renderPlayerCards');
-  const activeEvent = (payload.events || []).find(
-    e => String(e.EventID || e.eventId) === String(payload.activeEventId)
-  );
-  const currentVersion = activeEvent ? activeEvent.CurrentDrawVersion : null;
+  console.log('Calling renderDrawCards');
 
-  renderEntityCards({
-    containerId: 'active-draw-list',
-    entityName: 'draw',
-    records: payload.draw,
-    activeEventId: payload.activeEventId,
-    emptyMessage: 'No Draw Found',
-    extraFilter: (game) => String(game.DrawVersion) === String(currentVersion),
-    sortFn: (a, b) => {
-      const roundDiff = (parseFloat(a.Round) || 0) - (parseFloat(b.Round) || 0);
-      if (roundDiff !== 0) return roundDiff;
-    
-      // Tiebreaker: fall back to existing Seed value, ascending
-      return (parseFloat(a.Court) || 0) - (parseFloat(b.Court) || 0);
-    },
-    getIcon: (game, index) => {
-      const courtNumber = game.Court;
-      const seedUrl = courts[0]['court-' + courtNumber];
-      return seedUrl || '🎾';
-    },
-    getContentHtml: (game) => {
-      return `
-        <h3>${player.Name || 'Unnamed Player'} ${player.FirstName ? '(' + player.FirstName + ')' : ''}</h3>
-        <p class="card-meta-line">${player.DUPRId || 'N/A'} ${player.DUPR ? ' || DUPR ' + player.DUPR : '0'}</p>
-      `;
-    },
-    getOnClick: (game) => `viewPlayerDetail('${game.PlayerID}')`
+  const container = document.getElementById('active-draw-list');
+  const placeholder = document.getElementById('placeholder-view-draw');
+  if (!container) {
+    console.error("DOM Element '#active-draw-list' not found!");
+    return;
+  }
+
+  const activeEventId = payload.activeEventId;
+  const activeEvent = (payload.events || []).find(
+    e => String(e.EventID || e.eventId) === String(activeEventId)
+  );
+  // Assumes an Events field named CurrentDrawVersion, mirroring CurrentPlayerVersion.
+  // Rename here if your sheet uses a different column name.
+  const currentDrawVersion = activeEvent ? activeEvent.CurrentDrawVersion : null;
+
+  // 1. Filter to active event + current draw version
+  const matches = (payload.draw || []).filter(m =>
+    String(m.EventID) === String(activeEventId) &&
+    String(m.DrawVersion) === String(currentDrawVersion)
+  );
+
+  if (matches.length === 0) {
+    if (placeholder) placeholder.style.display = '';
+    container.innerHTML = '';
+    return;
+  }
+
+  // 2. Build a PlayerID -> Name lookup (filtered to current player version, same as Players screen)
+  const currentPlayerVersion = activeEvent ? activeEvent.CurrentPlayerVersion : null;
+  const playerMap = {};
+  (payload.players || []).forEach(p => {
+    if (String(p.PlayerVersion) === String(currentPlayerVersion)) {
+      playerMap[p.PlayerID] = p.Name;
+    }
   });
+
+  // 3. Validate every player ID referenced in the draw resolves to a known player
+  let allPlayersMatched = true;
+  matches.forEach(m => {
+    [m.Team1Player1, m.Team1Player2, m.Team2Player1, m.Team2Player2].forEach(pid => {
+      if (!playerMap[pid]) {
+        console.error("Unmatched PlayerID in draw:", pid, "on match", m.MatchID);
+        allPlayersMatched = false;
+      }
+    });
+  });
+
+  if (!allPlayersMatched) {
+    console.error("Draw not rendered — one or more PlayerIDs did not match the Players list.");
+    if (placeholder) placeholder.style.display = '';
+    container.innerHTML = `
+      <div class="no-data-placeholder">
+        <h3>Draw data error — player mismatch detected</h3>
+      </div>
+    `;
+    return;
+  }
+
+  if (placeholder) placeholder.style.display = 'none';
+
+  // 4. Sort by Round asc, then Court asc
+  matches.sort((a, b) => {
+    const roundDiff = (parseInt(a.Round) || 0) - (parseInt(b.Round) || 0);
+    if (roundDiff !== 0) return roundDiff;
+    return (parseInt(a.Court) || 0) - (parseInt(b.Court) || 0);
+  });
+
+  // 5. Group into round sections and build cards
+  let html = '';
+  let currentRound = null;
+
+  matches.forEach(m => {
+    if (m.Round !== currentRound) {
+      currentRound = m.Round;
+      html += `<div class="event-section-title">Round ${currentRound}</div>`;
+    }
+
+    const iconAsset = courts[0]['court-' + m.Court] || '🏟️';
+
+    const team1 = `${playerMap[m.Team1Player1]} & ${playerMap[m.Team1Player2]}`;
+    const team2 = `${playerMap[m.Team2Player1]} & ${playerMap[m.Team2Player2]}`;
+
+    const duprDelta = Math.abs((parseFloat(m.Team1AvgDUPR) || 0) - (parseFloat(m.Team2AvgDUPR) || 0)).toFixed(2);
+
+    const contentHtml = `
+      <h3>${team1} vs. ${team2}</h3>
+      <p class="card-meta-line">DUPR Delta ${duprDelta} || Exp Score ${m.ExpectedTeam1Score} - ${m.ExpectedTeam2Score}</p>
+    `;
+
+    html += buildCardMarkup({ iconAsset, contentHtml });
+  });
+
+  container.innerHTML = html;
+  console.log(`Successfully rendered ${matches.length} draw card(s) across rounds.`);
+}
+
+function buildCardMarkup({ iconAsset, contentHtml, onClickAttr = '' }) {
+  const iconMarkup = iconAsset.startsWith('http')
+    ? `<img src="${iconAsset}" alt="Icon" class="card-icon-images">`
+    : `<span class="card-icon">${iconAsset}</span>`;
+
+  return `
+    <div class="app-card" ${onClickAttr}>
+      <div class="card-icon-wrapper">
+        ${iconMarkup}
+      </div>
+      <div class="card-content">
+        ${contentHtml}
+      </div>
+      <span class="card-arrow">→</span>
+    </div>
+  `;
 }
