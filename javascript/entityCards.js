@@ -203,7 +203,7 @@ function renderDrawCards(payload) {
     const duprDelta = Math.abs((parseFloat(m.Team1AvgDUPR) || 0) - (parseFloat(m.Team2AvgDUPR) || 0)).toFixed(2);
 
     const contentHtml = `
-      <h3>${team1} vs. ${team2}</h3>
+      <h4>${team1} vs. ${team2}</h4>
       <p class="card-meta-line">DUPR Delta ${duprDelta} || Exp Score ${m.ExpectedTeam1Score} - ${m.ExpectedTeam2Score}</p>
     `;
 
