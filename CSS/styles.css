@@ -209,6 +209,13 @@ body {
   color: var(--text-main);
 }
 
+.card-content h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 3px;
+  color: var(--text-main);
+}
+
 .card-content p {
   font-size: 0.85rem;
   color: var(--text-muted);
