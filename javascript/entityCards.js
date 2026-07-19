@@ -204,7 +204,7 @@ function renderDrawCards(payload) {
 
     const contentHtml = `
       <h4>${team1} vs. ${team2}</h4>
-      <p class="card-meta-line">DUPR Delta ${duprDelta} || Exp Res. ${m.ExpectedTeam1Score} - ${m.ExpectedTeam2Score}</p>
+      <p class="card-meta-line">DUPR Diff ${duprDelta} || Exp Res. ${m.ExpectedTeam1Score} - ${m.ExpectedTeam2Score}</p>
     `;
 
     html += buildCardMarkup({ iconAsset, contentHtml });
