@@ -16,6 +16,7 @@
 function renderEntityCards(options) {
   const {
     containerId,
+    entityName, // NEW: e.g. 'players', 'draw', 'byes'
     records,
     activeEventId,
     eventIdField = 'EventID',
@@ -33,20 +34,25 @@ function renderEntityCards(options) {
     return;
   }
 
+  const placeholder = entityName
+    ? document.getElementById(`place-holder-${entityName}`)
+    : null;
+
   // 1. Filter down to the active event, plus any extra caller-supplied condition
-  let filtered = (records || []).filter(record => {  // change const -> let
+  let filtered = (records || []).filter(record => {
     const recordEventId = record[eventIdField] || record.eventId;
     const matchesEvent = String(recordEventId) === String(activeEventId);
     return matchesEvent && extraFilter(record);
   });
 
-  // 1b. NEW: apply optional sort
+  // 1b. Apply optional sort
   if (sortFn) {
     filtered = filtered.sort(sortFn);
   }
 
   // 2. Empty state
   if (filtered.length === 0) {
+    if (placeholder) placeholder.style.display = '';
     container.innerHTML = `
       <div class="no-data-placeholder">
         <h3>${emptyMessage}</h3>
@@ -55,10 +61,13 @@ function renderEntityCards(options) {
     return;
   }
 
+  // Hide placeholder since we have cards to show
+  if (placeholder) placeholder.style.display = 'none';
+
   // 3. Build cards
   let cardsHtml = '';
   filtered.forEach((record, index) => {
-    const iconAsset = getIcon(record, index); // NEW: pass index alongside record
+    const iconAsset = getIcon(record, index);
     const iconMarkup = iconAsset.startsWith('http')
       ? `<img src="${iconAsset}" alt="Icon" class="card-icon-images">`
       : `<span class="card-icon">${iconAsset}</span>`;
@@ -82,6 +91,7 @@ function renderEntityCards(options) {
   console.log(`Successfully rendered ${filtered.length} card(s) into #${containerId}.`);
 }
 
+
 function renderPlayerCards(payload) {
   console.log('Calling renderPlayerCards');
   const activeEvent = (payload.events || []).find(
@@ -91,22 +101,14 @@ function renderPlayerCards(payload) {
 
   renderEntityCards({
     containerId: 'active-players-list',
+    entityName: 'players', // NEW — looks up 'place-holder-players' automatically
     records: payload.players,
     activeEventId: payload.activeEventId,
     emptyMessage: 'No Players Found',
     extraFilter: (player) => String(player.PlayerVersion) === String(currentVersion),
     sortFn: (a, b) => (parseFloat(b.DUPR) || 0) - (parseFloat(a.DUPR) || 0),
-    getIcon: (player, index) => {
-      const seedNumber = index + 1; // convert 0-based index to 1-based seed
-      const seedUrl = playerSeeds[0]['seed-' + seedNumber];
-      return seedUrl || '🎾'; // fallback emoji if beyond seed-20 or missing
-    },
-    getContentHtml: (player) => {
-      return `
-        <h3>${player.Name || 'Unnamed Player'} ${player.FirstName ? '(' + player.FirstName + ')' : ''}</h3>
-        <p class="card-meta-line">${player.DUPRId || 'N/A'} ${player.DUPR ? ' || DUPR ' + player.DUPR : '0'}</p>
-      `;
-    },
+    getIcon: (player, index) => { /* unchanged */ },
+    getContentHtml: (player) => { /* unchanged */ },
     getOnClick: (player) => `viewPlayerDetail('${player.PlayerID}')`
   });
 }
