@@ -82,6 +82,29 @@ function navigateToScreen(screenId) {
   } else {
     console.error("Could not find view panel framework container:", 'screen-' + screenId);
   }
+
+  // 3. Lazy-render the right cards for whichever screen was just opened
+  const payload = window.cachedUserUniverse;
+
+  switch (screenId) {
+    case 'players':
+      renderPlayerCards(payload);
+      break;
+    case 'draw':
+      renderDrawCards(payload);
+      break;
+    case 'byes':
+      renderByeCards(payload);
+      break;
+    case 'ladder':
+      renderLadderCards(payload);
+      break;
+    case 'analytics':
+      renderAnalyticsCards(payload);
+      break;
+    // 'events' is handled separately by renderUserEventCards on initial load —
+    // no case needed here unless you want it re-rendered on every nav click too
+  }
 }
 
 /**
