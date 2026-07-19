@@ -101,14 +101,23 @@ function renderPlayerCards(payload) {
 
   renderEntityCards({
     containerId: 'active-players-list',
-    entityName: 'players', // NEW — looks up 'place-holder-players' automatically
+    entityName: 'players',
     records: payload.players,
     activeEventId: payload.activeEventId,
     emptyMessage: 'No Players Found',
     extraFilter: (player) => String(player.PlayerVersion) === String(currentVersion),
     sortFn: (a, b) => (parseFloat(b.DUPR) || 0) - (parseFloat(a.DUPR) || 0),
-    getIcon: (player, index) => { /* unchanged */ },
-    getContentHtml: (player) => { /* unchanged */ },
+    getIcon: (player, index) => {
+      const seedNumber = index + 1;
+      const seedUrl = playerSeeds[0]['seed-' + seedNumber];
+      return seedUrl || '🎾';
+    },
+    getContentHtml: (player) => {
+      return `
+        <h3>${player.Name || 'Unnamed Player'} ${player.FirstName ? '(' + player.FirstName + ')' : ''}</h3>
+        <p class="card-meta-line">${player.DUPRId || 'N/A'} ${player.DUPR ? ' || DUPR ' + player.DUPR : '0'}</p>
+      `;
+    },
     getOnClick: (player) => `viewPlayerDetail('${player.PlayerID}')`
   });
 }
