@@ -93,7 +93,7 @@ function renderPlayerCards(payload) {
     extraFilter: (player) => String(player.PlayerVersion) === String(currentVersion),
     getIcon: (player) => '🎾',
     getContentHtml: (player) => `
-      <h3>${player.Name || 'Unnamed Player'}</h3>
+      <h3>${player.Name || 'Unnamed Player'} ${player.FirstName ? '(' + player.FirstName + ')' : ''}</h3>
       <p class="card-meta-line">DUPR: ${player.DUPR || 'N/A'}</p>
     `,
     getOnClick: (player) => `viewPlayerDetail('${player.PlayerID}')`
