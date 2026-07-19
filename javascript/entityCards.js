@@ -150,7 +150,7 @@ function renderDrawCards(payload) {
   const playerMap = {};
   (payload.players || []).forEach(p => {
     if (String(p.PlayerVersion) === String(currentPlayerVersion)) {
-      playerMap[p.PlayerID] = p.Name;
+      playerMap[p.PlayerID] = p.FirstName;
     }
   });
 
