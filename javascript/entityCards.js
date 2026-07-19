@@ -23,7 +23,8 @@ function renderEntityCards(options) {
     getIcon,
     getContentHtml,
     getOnClick,
-    extraFilter = () => true // NEW: optional additional filter, defaults to "pass everything"
+    extraFilter = () => true,
+    sortFn = null
   } = options;
 
   const container = document.getElementById(containerId);
@@ -33,11 +34,16 @@ function renderEntityCards(options) {
   }
 
   // 1. Filter down to the active event, plus any extra caller-supplied condition
-  const filtered = (records || []).filter(record => {
+  let filtered = (records || []).filter(record => {  // change const -> let
     const recordEventId = record[eventIdField] || record.eventId;
     const matchesEvent = String(recordEventId) === String(activeEventId);
     return matchesEvent && extraFilter(record);
   });
+
+  // 1b. NEW: apply optional sort
+  if (sortFn) {
+    filtered = filtered.sort(sortFn);
+  }
 
   // 2. Empty state
   if (filtered.length === 0) {
