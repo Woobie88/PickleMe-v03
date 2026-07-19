@@ -1,22 +1,25 @@
-/**
- * GENERIC CARD LIST RENDERER
- * Renders any array of records into the same visual card structure.
- * Each caller supplies how to filter, icon, and build content for its data type.
- *
- * @param {Object} options
- * @param {string} options.containerId - DOM id to render into
- * @param {Array} options.records - full array of records (e.g. payload.players)
- * @param {string} options.activeEventId - the currently active EventID
- * @param {string} [options.eventIdField='EventID'] - field name holding the EventID on each record
- * @param {string} options.emptyMessage - message shown when there's nothing to display
- * @param {Function} options.getIcon - (record) => icon URL or emoji string
- * @param {Function} options.getContentHtml - (record) => inner HTML for .card-content
- * @param {Function} [options.getOnClick] - (record) => onclick attribute string (optional)
- */
+function buildCardMarkup({ iconAsset, contentHtml, onClickAttr = '' }) {
+  const iconMarkup = iconAsset.startsWith('http')
+    ? `<img src="${iconAsset}" alt="Icon" class="card-icon-images">`
+    : `<span class="card-icon">${iconAsset}</span>`;
+
+  return `
+    <div class="app-card" ${onClickAttr}>
+      <div class="card-icon-wrapper">
+        ${iconMarkup}
+      </div>
+      <div class="card-content">
+        ${contentHtml}
+      </div>
+      <span class="card-arrow">→</span>
+    </div>
+  `;
+}
+
 function renderEntityCards(options) {
   const {
     containerId,
-    entityName, // NEW: e.g. 'players', 'draw', 'byes'
+    entityName, // e.g. 'players', 'draw', 'byes'
     records,
     activeEventId,
     eventIdField = 'EventID',
@@ -39,11 +42,10 @@ function renderEntityCards(options) {
     : null;
 
   // 1. Filter down to the active event, plus any extra caller-supplied condition
-  filtered.forEach((record, index) => {
-    const iconAsset = getIcon(record, index);
-    const contentHtml = getContentHtml(record);
-    const onClickAttr = getOnClick ? `onclick="${getOnClick(record)}"` : '';
-    cardsHtml += buildCardMarkup({ iconAsset, contentHtml, onClickAttr });
+  let filtered = (records || []).filter(record => {
+    const recordEventId = record[eventIdField] || record.eventId;
+    const matchesEvent = String(recordEventId) === String(activeEventId);
+    return matchesEvent && extraFilter(record);
   });
 
   // 1b. Apply optional sort
@@ -69,29 +71,14 @@ function renderEntityCards(options) {
   let cardsHtml = '';
   filtered.forEach((record, index) => {
     const iconAsset = getIcon(record, index);
-    const iconMarkup = iconAsset.startsWith('http')
-      ? `<img src="${iconAsset}" alt="Icon" class="card-icon-images">`
-      : `<span class="card-icon">${iconAsset}</span>`;
-
+    const contentHtml = getContentHtml(record);
     const onClickAttr = getOnClick ? `onclick="${getOnClick(record)}"` : '';
-
-    cardsHtml += `
-      <div class="app-card" ${onClickAttr}>
-        <div class="card-icon-wrapper">
-          ${iconMarkup}
-        </div>
-        <div class="card-content">
-          ${getContentHtml(record)}
-        </div>
-        <span class="card-arrow">→</span>
-      </div>
-    `;
+    cardsHtml += buildCardMarkup({ iconAsset, contentHtml, onClickAttr });
   });
 
   container.innerHTML = cardsHtml;
   console.log(`Successfully rendered ${filtered.length} card(s) into #${containerId}.`);
 }
-
 
 function renderPlayerCards(payload) {
   console.log('Calling renderPlayerCards');
@@ -110,8 +97,8 @@ function renderPlayerCards(payload) {
     sortFn: (a, b) => {
       const duprDiff = (parseFloat(b.DUPR) || 0) - (parseFloat(a.DUPR) || 0);
       if (duprDiff !== 0) return duprDiff;
-    
-      // Tiebreaker: fall back to existing Seed value, ascending
+
+      // Tiebreaker: fall back to RandomNumber, ascending
       return (parseFloat(a.RandomNumber) || 0) - (parseFloat(b.RandomNumber) || 0);
     },
     getIcon: (player, index) => {
@@ -144,7 +131,6 @@ function renderDrawCards(payload) {
     e => String(e.EventID || e.eventId) === String(activeEventId)
   );
   // Assumes an Events field named CurrentDrawVersion, mirroring CurrentPlayerVersion.
-  // Rename here if your sheet uses a different column name.
   const currentDrawVersion = activeEvent ? activeEvent.CurrentDrawVersion : null;
 
   // 1. Filter to active event + current draw version
@@ -159,7 +145,7 @@ function renderDrawCards(payload) {
     return;
   }
 
-  // 2. Build a PlayerID -> Name lookup (filtered to current player version, same as Players screen)
+  // 2. Build a PlayerID -> Name lookup (filtered to current player version)
   const currentPlayerVersion = activeEvent ? activeEvent.CurrentPlayerVersion : null;
   const playerMap = {};
   (payload.players || []).forEach(p => {
@@ -226,22 +212,4 @@ function renderDrawCards(payload) {
 
   container.innerHTML = html;
   console.log(`Successfully rendered ${matches.length} draw card(s) across rounds.`);
-}
-
-function buildCardMarkup({ iconAsset, contentHtml, onClickAttr = '' }) {
-  const iconMarkup = iconAsset.startsWith('http')
-    ? `<img src="${iconAsset}" alt="Icon" class="card-icon-images">`
-    : `<span class="card-icon">${iconAsset}</span>`;
-
-  return `
-    <div class="app-card" ${onClickAttr}>
-      <div class="card-icon-wrapper">
-        ${iconMarkup}
-      </div>
-      <div class="card-content">
-        ${contentHtml}
-      </div>
-      <span class="card-arrow">→</span>
-    </div>
-  `;
 }
