@@ -106,7 +106,13 @@ function renderPlayerCards(payload) {
     activeEventId: payload.activeEventId,
     emptyMessage: 'No Players Found',
     extraFilter: (player) => String(player.PlayerVersion) === String(currentVersion),
-    sortFn: (a, b) => (parseFloat(b.DUPR) || 0) - (parseFloat(a.DUPR) || 0),
+    sortFn: (a, b) => {
+      const duprDiff = (parseFloat(b.DUPR) || 0) - (parseFloat(a.DUPR) || 0);
+      if (duprDiff !== 0) return duprDiff;
+    
+      // Tiebreaker: fall back to existing Seed value, ascending
+      return (parseFloat(a.RandomNumber) || 0) - (parseFloat(b.RandomNumber) || 0);
+    },
     getIcon: (player, index) => {
       const seedNumber = index + 1;
       const seedUrl = playerSeeds[0]['seed-' + seedNumber];
