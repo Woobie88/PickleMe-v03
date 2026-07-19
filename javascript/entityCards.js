@@ -22,7 +22,8 @@ function renderEntityCards(options) {
     emptyMessage = 'No records found',
     getIcon,
     getContentHtml,
-    getOnClick
+    getOnClick,
+    extraFilter = () => true // NEW: optional additional filter, defaults to "pass everything"
   } = options;
 
   const container = document.getElementById(containerId);
@@ -31,10 +32,11 @@ function renderEntityCards(options) {
     return;
   }
 
-  // 1. Filter down to the active event only
+  // 1. Filter down to the active event, plus any extra caller-supplied condition
   const filtered = (records || []).filter(record => {
     const recordEventId = record[eventIdField] || record.eventId;
-    return String(recordEventId) === String(activeEventId);
+    const matchesEvent = String(recordEventId) === String(activeEventId);
+    return matchesEvent && extraFilter(record);
   });
 
   // 2. Empty state
@@ -76,12 +78,20 @@ function renderEntityCards(options) {
 
 function renderPlayerCards(payload) {
   console.log('Calling renderPlayerCards');
+
+  // Find the active event record to get its CurrentPlayerVersion
+  const activeEvent = (payload.events || []).find(
+    e => String(e.EventID || e.eventId) === String(payload.activeEventId)
+  );
+  const currentVersion = activeEvent ? activeEvent.CurrentPlayerVersion : null;
+
   renderEntityCards({
     containerId: 'active-players-list',
     records: payload.players,
     activeEventId: payload.activeEventId,
     emptyMessage: 'No Players Found',
-    getIcon: (player) => '🎾', // swap for a seed/skill icon lookup later
+    extraFilter: (player) => String(player.PlayerVersion) === String(currentVersion),
+    getIcon: (player) => '🎾',
     getContentHtml: (player) => `
       <h3>${player.Name || 'Unnamed Player'}</h3>
       <p class="card-meta-line">DUPR: ${player.DUPR || 'N/A'}</p>
