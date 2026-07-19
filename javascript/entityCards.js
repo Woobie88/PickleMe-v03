@@ -96,7 +96,7 @@ function renderPlayerCards(payload) {
       console.log("Name:", player.Name, "| FirstName:", player.FirstName);
       return `
         <h3>${player.Name || 'Unnamed Player'} ${player.FirstName ? '(' + player.FirstName + ')' : ''}</h3>
-        <p class="card-meta-line">${player.DUPRId || 'N/A'} ${player.DUPR ? '||' + player.DUPR : '0'}</p>
+        <p class="card-meta-line">${player.DUPRId || 'N/A'} ${player.DUPR ? ' || DUPR ' + player.DUPR : '0'}</p>
       `;
     },
     getOnClick: (player) => `viewPlayerDetail('${player.PlayerID}')`
