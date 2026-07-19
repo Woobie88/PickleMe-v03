@@ -151,7 +151,7 @@ function renderDrawCards(payload) {
     },
     getIcon: (game, index) => {
       const courtNumber = game.Court;
-      const seedUrl = playerSeeds[0]['court-' + courtNumber];
+      const seedUrl = courts[0]['court-' + courtNumber];
       return seedUrl || '🎾';
     },
     getContentHtml: (game) => {
