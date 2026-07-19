@@ -179,16 +179,6 @@ function renderDrawCards(payload) {
   if (placeholder) placeholder.style.display = 'none';
 
   // 4. Sort by Round asc, then Court asc
-  matches.sort((a, b) => {
-    const roundDiff = (parseInt(a.Round) || 0) - (parseInt(b.Round) || 0);
-    if (roundDiff !== 0) return roundDiff;
-    return (parseInt(a.Court) || 0) - (parseInt(b.Court) || 0);
-  });
-
-  // 5. Group into round sections and build cards
-  let html = '';
-  let currentRound = null;
-
   matches.forEach(m => {
     if (m.Round !== currentRound) {
       currentRound = m.Round;
@@ -200,11 +190,19 @@ function renderDrawCards(payload) {
     const team1 = `${playerMap[m.Team1Player1]} & ${playerMap[m.Team1Player2]}`;
     const team2 = `${playerMap[m.Team2Player1]} & ${playerMap[m.Team2Player2]}`;
 
-    const duprDelta = Math.abs((parseFloat(m.Team1AvgDUPR) || 0) - (parseFloat(m.Team2AvgDUPR) || 0)).toFixed(2);
+    const isComplete = m.Team1WinLoss && m.Team2WinLoss; // both populated = match finished
+
+    let metaLine;
+    if (isComplete) {
+      metaLine = `Score ${m.Team1Score} - ${m.Team2Score} || Exp Res. ${m.ExpectedTeam1Score} - ${m.ExpectedTeam2Score}`;
+    } else {
+      const duprDelta = Math.abs((parseFloat(m.Team1AvgDUPR) || 0) - (parseFloat(m.Team2AvgDUPR) || 0)).toFixed(2);
+      metaLine = `DUPR Diff ${duprDelta} || Exp Res. ${m.ExpectedTeam1Score} - ${m.ExpectedTeam2Score}`;
+    }
 
     const contentHtml = `
-      <h4>${team1} vs. ${team2}</h4>
-      <p class="card-meta-line">DUPR Diff ${duprDelta} || Exp Res. ${m.ExpectedTeam1Score} - ${m.ExpectedTeam2Score}</p>
+      <h3>${team1} vs. ${team2}</h3>
+      <p class="card-meta-line">${metaLine}</p>
     `;
 
     html += buildCardMarkup({ iconAsset, contentHtml });
