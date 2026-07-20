@@ -204,7 +204,7 @@ function renderDrawCards(payload) {
     }
 
     const contentHtml = `
-      <h4>${team1} vs. ${team2}</h4>
+      <h3>${team1} vs. ${team2}</h3>
       <p class="card-meta-line">${metaLine}</p>
     `;
 
