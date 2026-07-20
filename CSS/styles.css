@@ -235,6 +235,14 @@ body {
   border-radius: 4px;
 }
 
+/*Smaller images on card screen  */
+.card-icon-images-small {
+  width: 3rem; 
+  height: 3rem; 
+  object-fit: contain; 
+  border-radius: 4px;
+}
+
 .danger-card .card-icon-wrapper {
   background-color: rgba(239, 68, 68, 0.1);
 }
