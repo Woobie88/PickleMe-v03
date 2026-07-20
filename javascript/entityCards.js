@@ -1,6 +1,6 @@
 function buildCardMarkup({ iconAsset, contentHtml, onClickAttr = '' }) {
   const iconMarkup = iconAsset.startsWith('http')
-    ? `<img src="${iconAsset}" alt="Icon" class="card-icon-images" loading="lazy">`
+    ? `<img src="${iconAsset}" alt="Icon" class="card-icon-images-small" loading="lazy">`
     : `<span class="card-icon">${iconAsset}</span>`;
 
   return `
