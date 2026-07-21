@@ -258,7 +258,7 @@ function renderMatchScoreView() {
   const playerMap = buildPlayerMap(window.cachedUserUniverse);
 
   document.getElementById('match-round-court-heading').innerText =
-    `Round ${match.Round} — Court ${match.Court}`;
+    `Round ${match.Round} || Court ${match.Court}`;
 
   document.getElementById('team1-players').innerText =
     `${playerMap[match.Team1Player1] || '?'} & ${playerMap[match.Team1Player2] || '?'}`;
