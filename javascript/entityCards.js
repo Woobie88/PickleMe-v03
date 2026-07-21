@@ -300,9 +300,11 @@ function goToPreviousMatch() {
 }
 
 function initMatchSwipeHandlers() {
+  alert("initMatchSwipeHandlers called"); // ADD THIS FIRST LINE
+
   const container = document.getElementById('screen-match-detail');
   if (!container) {
-    document.title = "NO CONTAINER FOUND"; // temporary debug signal
+    document.title = "NO CONTAINER FOUND";
     return;
   }
 
@@ -314,7 +316,7 @@ function initMatchSwipeHandlers() {
   });
 
   container.addEventListener('touchend', (e) => {
-    alert("Touch end fired"); // TEMPORARY - visible without dev tools
+    alert("Touch end fired");
 
     const deltaX = e.changedTouches[0].screenX - startX;
     const deltaY = e.changedTouches[0].screenY - startY;
