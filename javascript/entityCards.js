@@ -286,9 +286,12 @@ function updateMatchScore(team, delta) {
 
 // --- Swipe between courts in the same round ---
 function goToNextMatch() {
+  alert(`Index: ${window.currentMatchIndex}, Total: ${window.currentRoundMatches ? window.currentRoundMatches.length : 'undefined'}`); // ADD THIS
   if (window.currentMatchIndex < window.currentRoundMatches.length - 1) {
     window.currentMatchIndex++;
     renderMatchScoreView();
+  } else {
+    alert("Already at last match in round"); // ADD THIS
   }
 }
 
@@ -315,18 +318,24 @@ function initMatchSwipeHandlers() {
   });
 
   container.addEventListener('touchend', (e) => {
-    alert("Touch END fired");
-    const deltaX = e.changedTouches[0].screenX - startX;
-    const deltaY = e.changedTouches[0].screenY - startY;
+  const deltaX = e.changedTouches[0].screenX - startX;
+  const deltaY = e.changedTouches[0].screenY - startY;
 
-    if (Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY)) return;
+  alert(`deltaX: ${deltaX}, deltaY: ${deltaY}`); // ADD THIS
 
-    if (deltaX < 0) {
-      goToNextMatch();
-    } else {
-      goToPreviousMatch();
-    }
-  });
+  if (Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY)) {
+    alert("Swipe did not clear threshold"); // ADD THIS
+    return;
+  }
+
+  if (deltaX < 0) {
+    alert("Calling goToNextMatch"); // ADD THIS
+    goToNextMatch();
+  } else {
+    alert("Calling goToPreviousMatch"); // ADD THIS
+    goToPreviousMatch();
+  }
+});
 
   container.addEventListener('touchcancel', (e) => {
     alert("Touch CANCELLED"); // ADD THIS
