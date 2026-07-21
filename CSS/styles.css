@@ -347,6 +347,12 @@ body {
 .nav-icon { font-size: 1.3rem; margin-bottom: 2px; }
 .nav-text { font-size: 0.75rem; font-weight: 500; }
 
+.nav-icon-svg svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+
 /* BOTTOM SLIDE-UP OVERLAY STYLE SHEET */
 .detail-overlay {
   position: fixed;
