@@ -311,24 +311,20 @@ function initMatchSwipeHandlers() {
   });
 
   container.addEventListener('touchend', (e) => {
+    console.log("Touch end fired"); // ADD THIS LINE
+
     const deltaX = e.changedTouches[0].screenX - startX;
     const deltaY = e.changedTouches[0].screenY - startY;
 
-    // Ignore mostly-vertical gestures (normal scrolling)
     if (Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY)) return;
 
     if (deltaX < 0) {
-      goToNextMatch(); // swipe left -> next court
+      goToNextMatch();
     } else {
-      goToPreviousMatch(); // swipe right -> previous court
+      goToPreviousMatch();
     }
   });
 }
-
-// Register the swipe listener once, on app startup
-window.addEventListener("DOMContentLoaded", () => {
-  initMatchSwipeHandlers();
-});
 
 let scoreSaveTimer = null;
 function scheduleScoreSave(match) {
@@ -353,3 +349,8 @@ function saveMatchScore(match) {
     })
     .catch(err => console.error("Score save request failed:", err));
 }
+
+// Register the swipe listener once, on app startup
+window.addEventListener("DOMContentLoaded", () => {
+  initMatchSwipeHandlers();
+});
