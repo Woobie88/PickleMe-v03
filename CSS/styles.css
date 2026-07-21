@@ -682,3 +682,40 @@ body {
   cursor: pointer;
   text-align: center;
 } 
+
+/* ===== MATCH SCORE ENTRY SCREEN — CENTER ALIGNMENT ===== */
+
+#screen-match-detail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+#screen-match-detail h2 {
+  text-align: center;
+  width: 100%;
+}
+
+#screen-match-detail .team-score-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+#screen-match-detail .team-players-line {
+  text-align: center;
+}
+
+#screen-match-detail .score-control {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+}
+
+#screen-match-detail .team-divider {
+  width: 80%;
+  margin: 20px auto;
+}
