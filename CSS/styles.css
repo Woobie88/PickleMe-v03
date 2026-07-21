@@ -683,18 +683,22 @@ body {
   text-align: center;
 } 
 
-/* ===== MATCH SCORE ENTRY SCREEN — CENTER ALIGNMENT ===== */
+/* ===== MATCH SCORE ENTRY SCREEN — SPACING ===== */
 
 #screen-match-detail {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
+  padding-top: 40px;
+  gap: 24px;
 }
 
 #screen-match-detail h2 {
   text-align: center;
   width: 100%;
+  font-size: 1.4rem;
+  margin-bottom: 10px;
 }
 
 #screen-match-detail .team-score-block {
@@ -702,20 +706,42 @@ body {
   flex-direction: column;
   align-items: center;
   width: 100%;
+  gap: 16px;
 }
 
 #screen-match-detail .team-players-line {
   text-align: center;
+  font-size: 1.1rem;
+  font-weight: 600;
 }
 
 #screen-match-detail .score-control {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 16px;
+  gap: 24px;
+}
+
+#screen-match-detail .score-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  font-size: 1.8rem;
+  border: none;
+  background-color: var(--card-bg);
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+#screen-match-detail .score-value {
+  font-size: 2.2rem;
+  font-weight: 700;
+  min-width: 50px;
 }
 
 #screen-match-detail .team-divider {
   width: 80%;
-  margin: 20px auto;
+  margin: 10px auto;
+  border: none;
+  border-top: 1px solid var(--nav-border);
 }
