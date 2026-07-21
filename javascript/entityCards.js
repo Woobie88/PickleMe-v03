@@ -300,8 +300,6 @@ function goToPreviousMatch() {
 }
 
 function initMatchSwipeHandlers() {
-  alert("initMatchSwipeHandlers called"); // ADD THIS FIRST LINE
-
   const container = document.getElementById('screen-match-detail');
   if (!container) {
     document.title = "NO CONTAINER FOUND";
@@ -311,13 +309,13 @@ function initMatchSwipeHandlers() {
   let startX = 0, startY = 0;
 
   container.addEventListener('touchstart', (e) => {
+    alert("Touch START fired"); // ADD THIS
     startX = e.changedTouches[0].screenX;
     startY = e.changedTouches[0].screenY;
   });
 
   container.addEventListener('touchend', (e) => {
-    alert("Touch end fired");
-
+    alert("Touch END fired");
     const deltaX = e.changedTouches[0].screenX - startX;
     const deltaY = e.changedTouches[0].screenY - startY;
 
@@ -328,6 +326,10 @@ function initMatchSwipeHandlers() {
     } else {
       goToPreviousMatch();
     }
+  });
+
+  container.addEventListener('touchcancel', (e) => {
+    alert("Touch CANCELLED"); // ADD THIS
   });
 }
 
