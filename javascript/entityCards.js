@@ -260,6 +260,9 @@ function renderMatchScoreView() {
   document.getElementById('match-round-court-heading').innerText =
     `Round ${match.Round} || Court ${match.Court}`;
 
+  document.getElementById('team1-label').innerText = `Team ${match.Team1}`;
+  document.getElementById('team2-label').innerText = `Team ${match.Team2}`;
+
   document.getElementById('team1-players').innerText =
     `${playerMap[match.Team1Player1] || '?'} & ${playerMap[match.Team1Player2] || '?'}`;
   document.getElementById('team2-players').innerText =
