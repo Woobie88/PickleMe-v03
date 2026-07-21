@@ -301,7 +301,10 @@ function goToPreviousMatch() {
 
 function initMatchSwipeHandlers() {
   const container = document.getElementById('screen-match-detail');
-  if (!container) return;
+  if (!container) {
+    document.title = "NO CONTAINER FOUND"; // temporary debug signal
+    return;
+  }
 
   let startX = 0, startY = 0;
 
@@ -311,7 +314,7 @@ function initMatchSwipeHandlers() {
   });
 
   container.addEventListener('touchend', (e) => {
-    console.log("Touch end fired"); // ADD THIS LINE
+    alert("Touch end fired"); // TEMPORARY - visible without dev tools
 
     const deltaX = e.changedTouches[0].screenX - startX;
     const deltaY = e.changedTouches[0].screenY - startY;
