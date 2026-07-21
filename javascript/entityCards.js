@@ -202,7 +202,8 @@ function renderDrawCards(payload) {
       <p class="card-meta-line">${metaLine}</p>
     `;
 
-    html += buildCardMarkup({ iconAsset, contentHtml });
+    const onClickAttr = `onclick="openMatchScoreView('${m.MatchID}')"`;
+    html += buildCardMarkup({ iconAsset, contentHtml, onClickAttr });
   });
 
   container.innerHTML = html;
@@ -222,4 +223,133 @@ function buildPlayerMap(payload) {
     }
   });
   return playerMap;
+}
+
+function openMatchScoreView(matchId) {
+  const payload = window.cachedUserUniverse;
+  const match = (payload.draw || []).find(m => m.MatchID === matchId);
+  if (!match) {
+    console.error("Match not found:", matchId);
+    return;
+  }
+
+  // Build the full sorted list of this round's matches, for swipe navigation
+  const roundMatches = (payload.draw || [])
+    .filter(m =>
+      String(m.EventID) === String(match.EventID) &&
+      String(m.DrawVersion) === String(match.DrawVersion) &&
+      String(m.Round) === String(match.Round)
+    )
+    .sort((a, b) => (parseInt(a.Court) || 0) - (parseInt(b.Court) || 0));
+
+  window.currentRoundMatches = roundMatches;
+  window.currentMatchIndex = roundMatches.findIndex(m => m.MatchID === matchId);
+
+  renderMatchScoreView();
+  navigateToScreen('match-detail');
+}
+
+function renderMatchScoreView() {
+  const matches = window.currentRoundMatches;
+  const idx = window.currentMatchIndex;
+  const match = matches ? matches[idx] : null;
+  if (!match) return;
+
+  const playerMap = buildPlayerMap(window.cachedUserUniverse);
+
+  document.getElementById('match-round-court-heading').innerText =
+    `Round ${match.Round} — Court ${match.Court}`;
+
+  document.getElementById('team1-players').innerText =
+    `${playerMap[match.Team1Player1] || '?'} & ${playerMap[match.Team1Player2] || '?'}`;
+  document.getElementById('team2-players').innerText =
+    `${playerMap[match.Team2Player1] || '?'} & ${playerMap[match.Team2Player2] || '?'}`;
+
+  document.getElementById('team1-score-value').innerText = match.Team1Score || 0;
+  document.getElementById('team2-score-value').innerText = match.Team2Score || 0;
+}
+
+function updateMatchScore(team, delta) {
+  const matches = window.currentRoundMatches;
+  const idx = window.currentMatchIndex;
+  const match = matches ? matches[idx] : null;
+  if (!match) return;
+
+  const field = team === 1 ? 'Team1Score' : 'Team2Score';
+  const updated = Math.max(0, (parseInt(match[field]) || 0) + delta);
+  match[field] = updated;
+
+  document.getElementById(`team${team}-score-value`).innerText = updated;
+
+  scheduleScoreSave(match);
+}
+
+// --- Swipe between courts in the same round ---
+function goToNextMatch() {
+  if (window.currentMatchIndex < window.currentRoundMatches.length - 1) {
+    window.currentMatchIndex++;
+    renderMatchScoreView();
+  }
+}
+
+function goToPreviousMatch() {
+  if (window.currentMatchIndex > 0) {
+    window.currentMatchIndex--;
+    renderMatchScoreView();
+  }
+}
+
+function initMatchSwipeHandlers() {
+  const container = document.getElementById('screen-match-detail');
+  if (!container) return;
+
+  let startX = 0, startY = 0;
+
+  container.addEventListener('touchstart', (e) => {
+    startX = e.changedTouches[0].screenX;
+    startY = e.changedTouches[0].screenY;
+  });
+
+  container.addEventListener('touchend', (e) => {
+    const deltaX = e.changedTouches[0].screenX - startX;
+    const deltaY = e.changedTouches[0].screenY - startY;
+
+    // Ignore mostly-vertical gestures (normal scrolling)
+    if (Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY)) return;
+
+    if (deltaX < 0) {
+      goToNextMatch(); // swipe left -> next court
+    } else {
+      goToPreviousMatch(); // swipe right -> previous court
+    }
+  });
+}
+
+// Register the swipe listener once, on app startup
+window.addEventListener("DOMContentLoaded", () => {
+  initMatchSwipeHandlers();
+});
+
+let scoreSaveTimer = null;
+function scheduleScoreSave(match) {
+  clearTimeout(scoreSaveTimer);
+  scoreSaveTimer = setTimeout(() => saveMatchScore(match), 1000);
+}
+
+function saveMatchScore(match) {
+  fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({
+      action: 'matchScoreUpdate',
+      matchId: match.MatchID,
+      Team1Score: match.Team1Score,
+      Team2Score: match.Team2Score
+    })
+  })
+    .then(res => res.json())
+    .then(result => {
+      if (!result.success) console.error("Score save failed:", result.error);
+    })
+    .catch(err => console.error("Score save request failed:", err));
 }
