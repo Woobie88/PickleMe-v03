@@ -178,6 +178,31 @@
           <!-- Loading spinner placeholder will mount here --> 
         </div>
       </section>
+
+      <!-- Detail screen for entering the score / results -->
+      <div id="screen-match-detail" class="app-screen">
+        <h2 id="match-round-court-heading"></h2>
+      
+        <div class="team-score-block">
+          <p id="team1-players" class="team-players-line"></p>
+          <div class="score-control">
+            <button class="score-btn" onclick="updateMatchScore(1, -1)">−</button>
+            <span id="team1-score-value" class="score-value">0</span>
+            <button class="score-btn" onclick="updateMatchScore(1, 1)">+</button>
+          </div>
+        </div>
+      
+        <hr class="team-divider">
+      
+        <div class="team-score-block">
+          <p id="team2-players" class="team-players-line"></p>
+          <div class="score-control">
+            <button class="score-btn" onclick="updateMatchScore(2, -1)">−</button>
+            <span id="team2-score-value" class="score-value">0</span>
+            <button class="score-btn" onclick="updateMatchScore(2, 1)">+</button>
+          </div>
+        </div>
+      </div>
       
       <!-- SCREEN 5: Game Selector Format Configuration -->
       <section id="screen-games" class="app-screen">
