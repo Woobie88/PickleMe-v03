@@ -146,13 +146,7 @@ function renderDrawCards(payload) {
   }
 
   // 2. Build a PlayerID -> Name lookup (filtered to current player version)
-  const currentPlayerVersion = activeEvent ? activeEvent.CurrentPlayerVersion : null;
-  const playerMap = {};
-  (payload.players || []).forEach(p => {
-    if (String(p.PlayerVersion) === String(currentPlayerVersion)) {
-      playerMap[p.PlayerID] = p.FirstName;
-    }
-  });
+  const playerMap = buildPlayerMap(payload);
 
   // 3. Validate every player ID referenced in the draw resolves to a known player
   let allPlayersMatched = true;
@@ -213,4 +207,19 @@ function renderDrawCards(payload) {
 
   container.innerHTML = html;
   console.log(`Successfully rendered ${matches.length} draw card(s) across rounds.`);
+}
+
+function buildPlayerMap(payload) {
+  const activeEvent = (payload.events || []).find(
+    e => String(e.EventID || e.eventId) === String(payload.activeEventId)
+  );
+  const currentPlayerVersion = activeEvent ? activeEvent.CurrentPlayerVersion : null;
+
+  const playerMap = {};
+  (payload.players || []).forEach(p => {
+    if (String(p.PlayerVersion) === String(currentPlayerVersion)) {
+      playerMap[p.PlayerID] = p.FirstName;
+    }
+  });
+  return playerMap;
 }
