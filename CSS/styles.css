@@ -210,8 +210,8 @@ body {
 }
 
 .card-content h4 {
-  font-size: 0.90rem;
-  font-weight: 400;
+  font-size: 0.95rem;
+  font-weight: 600;
   margin-bottom: 3px;
   color: var(--text-main);
 }
