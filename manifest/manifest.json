@@ -5,7 +5,7 @@
     { "src": "https://i.postimg.cc/yYsbhw3b/App-Logo.png", "sizes": "192x192", "type": "image/png" },
     { "src": "https://i.postimg.cc/yYsbhw3b/App-Logo.png", "sizes": "512x512", "type": "image/png" }
   ],
-  "start_url": "./",
+  "start_url": "https://woobie88.github.io/PickleMe-v03/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#000000"
