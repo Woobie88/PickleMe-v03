@@ -93,9 +93,6 @@ function navigateToScreen(screenId) {
     case 'draw':
       renderDrawCards(payload);
       break;
-    case 'byes':
-      renderByeCards(payload);
-      break;
     case 'ladder':
       renderLadderCards(payload);
       break;
@@ -657,8 +654,7 @@ window.cachedUserUniverse = {
   activeEventId: null,
   dupr: [],
   players: [],
-  draw: [],
-  byes: []
+  draw: []
 };
 
 /**
