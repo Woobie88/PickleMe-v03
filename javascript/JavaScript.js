@@ -42,6 +42,29 @@ const playerSeeds = [{
   "seed-20": "https://i.postimg.cc/fT3wmgSx/20.png"
 }]
 
+const ladderRankings = [{
+  "rank-1": "https://i.postimg.cc/FHPQWfBQ/1.png",
+  "rank-2": "https://i.postimg.cc/K89yqKHS/2.png",
+  "rank-3": "https://i.postimg.cc/Qd6r4Byd/3.png",
+  "rank-4": "https://i.postimg.cc/sgnR6BNQ/4.png",
+  "rank-5": "https://i.postimg.cc/wjWdftGx/5.png",
+  "rank-6": "https://i.postimg.cc/pL0tG96P/6.png",
+  "rank-7": "https://i.postimg.cc/zGd1tLc5/7.png",
+  "rank-8": "https://i.postimg.cc/Mps8PcFS/8.png",
+  "rank-9": "https://i.postimg.cc/Qd6r4ByV/9.png",
+  "rank-10": "https://i.postimg.cc/GmM17B5t/10.png",
+  "rank-11": "https://i.postimg.cc/XY20HZDt/11.png",
+  "rank-12": "https://i.postimg.cc/FHPQWfn2/12.png",
+  "rank-13": "https://i.postimg.cc/W4hcQ2B2/13.png",
+  "rank-14": "https://i.postimg.cc/P56k3LRv/14.png",
+  "rank-15": "https://i.postimg.cc/qvmdbtZP/15.png",
+  "rank-16": "https://i.postimg.cc/Vk7cGSHp/16.png",
+  "rank-17": "https://i.postimg.cc/ZqCz1TGb/17.png",
+  "rank-18": "https://i.postimg.cc/6QyxD9k3/18.png",
+  "rank-19": "https://i.postimg.cc/JhGC91f7/19.png",
+  "rank-20": "https://i.postimg.cc/HLV1fpqs/20.png"
+}]
+
 
 /**
  * DOM ROUTING ENGINE
