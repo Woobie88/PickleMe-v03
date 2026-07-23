@@ -646,6 +646,12 @@ body {
   box-sizing: border-box;
 }
 
+/* Fix date length on phone screen */
+input[type="date"].detail-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .detail-input:focus {
   outline: none;
   border-color: #00E676;
