@@ -357,11 +357,13 @@ function toggleFabMenu() {
   const xIcon = document.getElementById('fab-x-icon');
   const label = document.getElementById('fab-main-label');
 
+  console.log("label element found:", label); // ADD THIS temporarily
+
   const isOpen = menu.classList.toggle('open');
 
   plusIcon.style.display = isOpen ? 'none' : 'block';
   xIcon.style.display = isOpen ? 'block' : 'none';
-  label.style.display = isOpen ? 'none' : 'block'; // hide "SELECT" label when open, per your spec
+  label.style.display = isOpen ? 'none' : 'block';
 }
 
 function handleFabAction(action) {
