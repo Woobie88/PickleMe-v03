@@ -765,3 +765,46 @@ body {
   color: #9CA3AF; /* matches .event-section-title.other color */
   margin-bottom: 4px;
 }
+
+/* Floating buttons on screen */
+.fab-container {
+  position: fixed;
+  right: 20px;
+  bottom: calc(64px + env(safe-area-inset-bottom) + 20px); /* sits just above the bottom nav */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  z-index: 500;
+}
+
+.fab-circle {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  color: #ffffff; /* the + icon uses currentColor, so this sets it white */
+  transition: transform 0.1s ease;
+}
+
+.fab-circle svg {
+  width: 26px;
+  height: 26px;
+}
+
+.fab-container:active .fab-circle {
+  transform: scale(0.92);
+}
+
+.fab-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--text-main);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6); /* keeps it legible over card content behind it */
+}
