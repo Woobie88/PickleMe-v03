@@ -768,15 +768,11 @@ body {
 
 /* Floating buttons on screen */
 .fab-container {
-  position: fixed;
-  right: 20px;
-  bottom: calc(64px + env(safe-area-inset-bottom) + 20px); /* sits just above the bottom nav */
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  z-index: 500;
 }
 
 .fab-circle {
