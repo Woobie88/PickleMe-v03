@@ -351,6 +351,36 @@ function saveMatchScore(match) {
     .catch(err => console.error("Score save request failed:", err));
 }
 
+function toggleFabMenu() {
+  const menu = document.getElementById('draw-fab-menu');
+  const plusIcon = document.getElementById('fab-plus-icon');
+  const xIcon = document.getElementById('fab-x-icon');
+  const label = document.getElementById('fab-main-label');
+
+  const isOpen = menu.classList.toggle('open');
+
+  plusIcon.style.display = isOpen ? 'none' : 'block';
+  xIcon.style.display = isOpen ? 'block' : 'none';
+  label.style.display = isOpen ? 'none' : 'block'; // hide "SELECT" label when open, per your spec
+}
+
+function handleFabAction(action) {
+  toggleFabMenu(); // close the menu after a selection
+
+  switch (action) {
+    case 'redivision':
+      console.log('Redivision tapped');
+      // wire up your actual logic here
+      break;
+    case 'add-match':
+      console.log('Add Match tapped');
+      break;
+    case 'redraw':
+      console.log('Redraw tapped');
+      break;
+  }
+}
+
 // Register the swipe listener once, on app startup
 window.addEventListener("DOMContentLoaded", () => {
   initMatchSwipeHandlers();
