@@ -696,7 +696,7 @@ body {
 
 /* ===== MATCH SCORE ENTRY SCREEN — SPACING ===== */
 
-#screen-match-detail {
+#screen-match-detail > div {
   display: flex;
   flex-direction: column;
   align-items: center;
