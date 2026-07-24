@@ -808,3 +808,79 @@ body {
   color: var(--text-main);
   text-shadow: 0 1px 3px rgba(0,0,0,0.6); /* keeps it legible over card content behind it */
 }
+
+.fab-wrapper {
+  position: fixed;
+  right: 20px;
+  bottom: calc(64px + env(safe-area-inset-bottom) + 20px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 500;
+}
+
+.fab-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.fab-menu.open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.fab-menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.fab-mini-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background-color: var(--card-bg);
+  border: 1px solid var(--nav-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.fab-mini-circle svg {
+  width: 20px;
+  height: 20px;
+}
+
+.fab-menu-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-main);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+  white-space: nowrap;
+}
+
+/* Main FAB (reuses your existing .fab-container/.fab-circle/.fab-label rules) */
+.fab-circle {
+  position: relative;
+}
+
+.fab-circle svg {
+  width: 26px;
+  height: 26px;
+}
+
+#fab-x-icon {
+  position: absolute;
+}
