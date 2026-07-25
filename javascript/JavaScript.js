@@ -106,6 +106,28 @@ function navigateToScreen(screenId) {
     console.error("Could not find view panel framework container:", 'screen-' + screenId);
   }
 
+  // --- NEW: highlight the correct bottom nav item ---
+  const navMap = {
+    dashboard: 'nav-dashboard',
+    events: 'nav-dashboard',        // sub-screens fall back to their parent tab
+    'event-detail': 'nav-dashboard',
+    games: 'nav-dashboard',
+    dupr: 'nav-dashboard',
+    cleanup: 'nav-dashboard',
+    players: 'nav-players',
+    'add-players': 'nav-players',
+    draw: 'nav-draw',
+    'match-detail': 'nav-draw',
+    analytics: 'nav-analytics'
+  };
+
+  document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+  const activeNavId = navMap[screenId];
+  if (activeNavId) {
+    const activeNavEl = document.getElementById(activeNavId);
+    if (activeNavEl) activeNavEl.classList.add('active');
+  }
+
   // 3. Lazy-render the right cards for whichever screen was just opened
   const payload = window.cachedUserUniverse;
 
