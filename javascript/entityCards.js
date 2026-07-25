@@ -184,8 +184,8 @@ function renderDrawCards(payload) {
 
     const iconAsset = courts[0]['court-' + m.Court] || '🏟️';
 
-    const team1 = `${playerMap[m.Team1Player1]} & ${playerMap[m.Team1Player2]}`;
-    const team2 = `${playerMap[m.Team2Player1]} & ${playerMap[m.Team2Player2]}`;
+    const team1 = `${playerMap[m.Team1Player1]?.name || '?'} & ${playerMap[m.Team1Player2]?.name || '?'}`;
+    const team2 = `${playerMap[m.Team2Player1]?.name || '?'} & ${playerMap[m.Team2Player2]?.name || '?'}`;
 
     const isComplete = m.Team1WinLoss && m.Team2WinLoss;
 
@@ -219,7 +219,10 @@ function buildPlayerMap(payload) {
   const playerMap = {};
   (payload.players || []).forEach(p => {
     if (String(p.PlayerVersion) === String(currentPlayerVersion)) {
-      playerMap[p.PlayerID] = p.FirstName;
+      playerMap[p.PlayerID] = {
+        name: p.FirstName,
+        dupr: p.DUPR
+      };
     }
   });
   return playerMap;
@@ -264,9 +267,9 @@ function renderMatchScoreView() {
   document.getElementById('team2-label').innerText = `Team ${match.Team2}`;
 
   document.getElementById('team1-players').innerText =
-    `${playerMap[match.Team1Player1] || '?'} & ${playerMap[match.Team1Player2] || '?'}`;
+  `${playerMap[match.Team1Player1]?.name || '?'} & ${playerMap[match.Team1Player2]?.name || '?'}`;
   document.getElementById('team2-players').innerText =
-    `${playerMap[match.Team2Player1] || '?'} & ${playerMap[match.Team2Player2] || '?'}`;
+  `${playerMap[match.Team2Player1]?.name || '?'} & ${playerMap[match.Team2Player2]?.name || '?'}`;
 
   document.getElementById('team1-score-value').innerText = match.Team1Score || 0;
   document.getElementById('team2-score-value').innerText = match.Team2Score || 0;
