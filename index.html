@@ -518,6 +518,22 @@
         <!-- Injected dynamically via JavaScript -->
       </div>
     </div>
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+      import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    
+      const firebaseConfig = {
+        apiKey: "AIzaSyAVmJJ-uHf366tdd4T0BcceKkEEP16WIbE",
+        authDomain: "pickleme-ef7ff.firebaseapp.com",
+        projectId: "pickleme-ef7ff",
+        storageBucket: "pickleme-ef7ff.firebasestorage.app",
+        messagingSenderId: "573972572836",
+        appId: "1:573972572836:web:6fc42c9856f0c762c99431"
+      };
+    
+      const app = initializeApp(firebaseConfig);
+      window.db = getFirestore(app);
+    </script>
     <script src="javascript/entityCards.js"></script>
     <script src="javascript/JavaScript.js"></script>
   </body>
