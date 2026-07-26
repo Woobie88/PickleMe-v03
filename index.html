@@ -520,7 +520,7 @@
     </div>
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-      import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+      import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
     
       const firebaseConfig = {
         apiKey: "AIzaSyAVmJJ-uHf366tdd4T0BcceKkEEP16WIbE",
@@ -533,6 +533,31 @@
     
       const app = initializeApp(firebaseConfig);
       window.db = getFirestore(app);
+    
+      window.fetchEventsFromFirestore = async function(userEmail) {
+        const db = window.db;
+    
+        const accessQuery = query(collection(db, "userAccess"), where("UserEmail", "==", userEmail));
+        const accessSnapshot = await getDocs(accessQuery);
+        const permittedEventIds = accessSnapshot.docs.map(doc => doc.data().EventID);
+    
+        if (permittedEventIds.length === 0) {
+          return { events: [], activeEventId: null };
+        }
+    
+        const eventsQuery = query(collection(db, "events"), where("EventID", "in", permittedEventIds));
+        const eventsSnapshot = await getDocs(eventsQuery);
+        const events = eventsSnapshot.docs.map(doc => doc.data());
+    
+        const activeQuery = query(collection(db, "activeEvent"), where("UserEmail", "==", userEmail));
+        const activeSnapshot = await getDocs(activeQuery);
+        let activeEventId = null;
+        if (!activeSnapshot.empty) {
+          activeEventId = activeSnapshot.docs[0].data().EventID;
+        }
+    
+        return { events, activeEventId };
+      };
     </script>
     <script src="javascript/entityCards.js"></script>
     <script src="javascript/JavaScript.js"></script>
