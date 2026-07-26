@@ -971,24 +971,18 @@ function saveAndActivateEventAction() {
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzwWWH_GMZBOSu_Mw_7JPd5pibdxBWbf9Tgvp0-j_J4cIS5h7fgxQeHQCMJVgUzvBUG/exec"; // <-- your deployment URL
 
 function preFetchUserUniverseData() {
-  const userEmail = "brett.collins028@gmail.com"; // <-- Ensure this email matches your data row!
-  const url = `${APPS_SCRIPT_URL}?email=${encodeURIComponent(userEmail)}`;
+  const userEmail = "brett.collins028@gmail.com";
 
-  return fetch(url)
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`Apps Script returned status ${response.status}`);
-      }
-      return response.json();
-    })
+  return window.fetchEventsFromFirestore(userEmail)
     .then(payload => {
-      console.log("Initial database pre-fetch successful!", payload);
-      window.cachedUserUniverse = payload;
-      renderUserEventCards(payload);
+      console.log("Firestore events fetch successful!", payload);
+      window.cachedUserUniverse.events = payload.events;
+      window.cachedUserUniverse.activeEventId = payload.activeEventId;
+      renderUserEventCards(window.cachedUserUniverse);
       return payload;
     })
     .catch(err => {
-      console.error("Critical initialization failure: " + (err.message || err));
+      console.error("Firestore fetch failed: " + (err.message || err));
       throw err;
     });
 }
