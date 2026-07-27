@@ -771,7 +771,7 @@ function renderUserEventCards(payload) {
     const activeBadge = isActive ? `<span class="active-pill-badge">ACTIVE</span>` : '';
 
     const cardMarkup = `
-      <div class="${cardClass}" id="event-card-${currentId}" onclick="setActiveEventTrack('${currentId}')">
+      <div class="${cardClass}" id="event-card-${currentId}" data-event-id="${currentId}" onclick="setActiveEventTrack('${currentId}')">
         <div class="card-icon-wrapper">
           ${iconMarkup}
         </div>
