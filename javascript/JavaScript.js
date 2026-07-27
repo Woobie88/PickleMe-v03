@@ -950,8 +950,8 @@ function setActiveEventTrack(eventId) {
     </div>
 
     <div class="form-action-bar">
-      <button class="btn-secondary" onclick="navigateToScreen('events')">Back</button>
-      <button class="btn-primary" onclick="saveAndActivateEventAction()">Next</button>
+      <button class="btn-secondary" onclick="navigateToScreen('events')">Cancel</button>
+      <button class="btn-primary" onclick="saveAndActivateEventAction()">Update</button>
     </div>
   `;
 
