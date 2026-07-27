@@ -119,7 +119,8 @@ function navigateToScreen(screenId) {
     draw: 'nav-draw',
     'match-detail': 'nav-draw',
     ladder: 'nav-ladder',
-    analytics: 'nav-analytics'
+    analytics: 'nav-analytics',
+    profile: 'nav-profile'
   };
 
   document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
@@ -144,6 +145,9 @@ function navigateToScreen(screenId) {
       break;
     case 'analytics':
       renderAnalyticsCards(payload);
+      break;
+    case 'profile':
+      renderProfileCards(payload);
       break;
     // 'events' is handled separately by renderUserEventCards on initial load —
     // no case needed here unless you want it re-rendered on every nav click too
