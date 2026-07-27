@@ -35,11 +35,7 @@ window.fetchEventsFromFirestore = async function(userEmail) {
     activeEventId = activeSnapshot.docs[0].data().EventID;
   }
 
-  const playersQuery = query(collection(db, "players"), where("EventID", "in", permittedEventIds));
-  const playersSnapshot = await getDocs(playersQuery);
-  const players = playersSnapshot.docs.map(doc => doc.data());
-
-  return { events, activeEventId, players };
+  return { events, activeEventId };
 };
 
 window.setActiveEventInFirestore = async function(eventId, userEmail) {
