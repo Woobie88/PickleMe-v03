@@ -80,25 +80,33 @@ function renderEntityCards(options) {
   console.log(`Successfully rendered ${filtered.length} card(s) into #${containerId}.`);
 }
 
-function renderPlayerCards(payload) {
+async function renderPlayerCards(payload) {
   console.log('Calling renderPlayerCards');
+
   const activeEvent = (payload.events || []).find(
     e => String(e.EventID || e.eventId) === String(payload.activeEventId)
   );
-  const currentVersion = activeEvent ? activeEvent.CurrentPlayerVersion : null;
+
+  if (!activeEvent) {
+    console.error("No active event found — cannot load players.");
+    return;
+  }
+
+  const currentVersion = activeEvent.CurrentPlayerVersion;
+
+  const players = await window.fetchPlayersFromFirestore(payload.activeEventId, currentVersion);
+  window.cachedUserUniverse.players = players; // keep local cache in sync
 
   renderEntityCards({
     containerId: 'active-players-list',
     entityName: 'players',
-    records: payload.players,
+    records: players,
     activeEventId: payload.activeEventId,
     emptyMessage: 'No Players Found',
-    extraFilter: (player) => String(player.PlayerVersion) === String(currentVersion),
+    extraFilter: () => true, // filtering by event/version already done in the Firestore query
     sortFn: (a, b) => {
       const duprDiff = (parseFloat(b.DUPR) || 0) - (parseFloat(a.DUPR) || 0);
       if (duprDiff !== 0) return duprDiff;
-
-      // Tiebreaker: fall back to RandomNumber, ascending
       return (parseFloat(a.RandomNumber) || 0) - (parseFloat(b.RandomNumber) || 0);
     },
     getIcon: (player, index) => {
@@ -106,13 +114,20 @@ function renderPlayerCards(payload) {
       const seedUrl = playerSeeds[0]['seed-' + seedNumber];
       return seedUrl || '🎾';
     },
-    getContentHtml: (player) => {
-      return `
-        <h3>${player.Name || 'Unnamed Player'} ${player.FirstName ? '(' + player.FirstName + ')' : ''}</h3>
-        <p class="card-meta-line">${player.DUPRId || 'N/A'} ${player.DUPR ? ' || DUPR ' + player.DUPR : '0'}</p>
-      `;
-    },
+    getCardId: (player) => player.PlayerID,
+    getContentHtml: (player) => `
+      <h3>${player.Name || 'Unnamed Player'}</h3>
+      <p class="card-meta-line">${player.DUPRId || 'N/A'} ${player.DUPR ? ' || DUPR ' + player.DUPR : '0'}</p>
+    `,
     getOnClick: (player) => `viewPlayerDetail('${player.PlayerID}')`
+  });
+
+  enableDragReorder('active-players-list', (newOrderIds) => {
+    newOrderIds.forEach((pid, idx) => {
+      const player = players.find(p => p.PlayerID === pid);
+      if (player) player.Seed = idx + 1;
+    });
+    saveNewSeedOrder(newOrderIds, payload.activeEventId);
   });
 }
 
