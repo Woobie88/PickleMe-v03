@@ -131,7 +131,7 @@ async function renderPlayerCards(payload) {
   });
 }
 
-function renderDrawCards(payload) {
+async function renderDrawCards(payload) {
   console.log('Calling renderDrawCards');
 
   const container = document.getElementById('active-draw-list');
@@ -145,14 +145,23 @@ function renderDrawCards(payload) {
   const activeEvent = (payload.events || []).find(
     e => String(e.EventID || e.eventId) === String(activeEventId)
   );
-  // Assumes an Events field named CurrentDrawVersion, mirroring CurrentPlayerVersion.
-  const currentDrawVersion = activeEvent ? activeEvent.CurrentDrawVersion : null;
 
-  // 1. Filter to active event + current draw version
-  const matches = (payload.draw || []).filter(m =>
-    String(m.EventID) === String(activeEventId) &&
-    String(m.DrawVersion) === String(currentDrawVersion)
-  );
+  if (!activeEvent) {
+    console.error("No active event found — cannot load draw.");
+    return;
+  }
+
+  const currentDrawVersion = activeEvent.CurrentDrawVersion;
+  const currentPlayerVersion = activeEvent.CurrentPlayerVersion;
+
+  // 1. Fetch this round's matches + the current player roster, both from Firestore
+  const matches = await window.fetchDrawFromFirestore(activeEventId, currentDrawVersion);
+  window.cachedUserUniverse.draw = matches; // keep local cache in sync
+
+  const players = window.cachedUserUniverse.players && window.cachedUserUniverse.players.length > 0
+    ? window.cachedUserUniverse.players
+    : await window.fetchPlayersFromFirestore(activeEventId, currentPlayerVersion);
+  window.cachedUserUniverse.players = players;
 
   if (matches.length === 0) {
     if (placeholder) placeholder.style.display = '';
@@ -160,8 +169,11 @@ function renderDrawCards(payload) {
     return;
   }
 
-  // 2. Build a PlayerID -> Name lookup (filtered to current player version)
-  const playerMap = buildPlayerMap(payload);
+  // 2. Build a PlayerID -> Name lookup
+  const playerMap = {};
+  players.forEach(p => {
+    playerMap[p.PlayerID] = p.Name;
+  });
 
   // 3. Validate every player ID referenced in the draw resolves to a known player
   let allPlayersMatched = true;
@@ -187,7 +199,14 @@ function renderDrawCards(payload) {
 
   if (placeholder) placeholder.style.display = 'none';
 
-  // 4. Group into round sections and build cards
+  // 4. Sort by Round asc, then Court asc
+  matches.sort((a, b) => {
+    const roundDiff = (parseInt(a.Round) || 0) - (parseInt(b.Round) || 0);
+    if (roundDiff !== 0) return roundDiff;
+    return (parseInt(a.Court) || 0) - (parseInt(b.Court) || 0);
+  });
+
+  // 5. Group into round sections and build cards
   let html = '';
   let currentRound = null;
 
@@ -199,8 +218,8 @@ function renderDrawCards(payload) {
 
     const iconAsset = courts[0]['court-' + m.Court] || '🏟️';
 
-    const team1 = `${playerMap[m.Team1Player1]?.name || '?'} & ${playerMap[m.Team1Player2]?.name || '?'}`;
-    const team2 = `${playerMap[m.Team2Player1]?.name || '?'} & ${playerMap[m.Team2Player2]?.name || '?'}`;
+    const team1 = `${playerMap[m.Team1Player1]} & ${playerMap[m.Team1Player2]}`;
+    const team2 = `${playerMap[m.Team2Player1]} & ${playerMap[m.Team2Player2]}`;
 
     const isComplete = m.Team1WinLoss && m.Team2WinLoss;
 
@@ -213,7 +232,7 @@ function renderDrawCards(payload) {
     }
 
     const contentHtml = `
-      <h4>${team1} vs. ${team2}</h4>
+      <h3>${team1} vs. ${team2}</h3>
       <p class="card-meta-line">${metaLine}</p>
     `;
 
@@ -352,21 +371,13 @@ function scheduleScoreSave(match) {
 }
 
 function saveMatchScore(match) {
-  fetch(APPS_SCRIPT_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({
-      action: 'matchScoreUpdate',
-      matchId: match.MatchID,
-      Team1Score: match.Team1Score,
-      Team2Score: match.Team2Score
+  window.updateMatchScoreInFirestore(match.MatchID, match.Team1Score, match.Team2Score)
+    .then(() => {
+      console.log("Score saved successfully to Firestore.");
     })
-  })
-    .then(res => res.json())
-    .then(result => {
-      if (!result.success) console.error("Score save failed:", result.error);
-    })
-    .catch(err => console.error("Score save request failed:", err));
+    .catch(err => {
+      console.error("Score save failed:", err);
+    });
 }
 
 function toggleFabMenu() {
