@@ -885,7 +885,7 @@ function enableDragToActivate(containerId, userEmail) {
         }
       } else if (!isDragging) {
         const eventId = card.dataset.eventId;
-        setActiveEventTrack(eventId);
+        updateActiveEvent(eventId);
       }
 
       isDragging = false;
@@ -896,7 +896,7 @@ function enableDragToActivate(containerId, userEmail) {
 /**
  * ACTION ROUTINE: Instantly targets a tournament, filters its data locally, and syncs the sheet in background
  */
-function setActiveEventTrack(eventId) {
+function updateActiveEvent(eventId) {
   console.log("Loading event detail state for ID:", eventId);
 
   if (!window.cachedUserUniverse || !window.cachedUserUniverse.events) {
@@ -951,14 +951,14 @@ function setActiveEventTrack(eventId) {
 
     <div class="form-action-bar">
       <button class="btn-secondary" onclick="navigateToScreen('events')">Cancel</button>
-      <button class="btn-primary" onclick="saveAndActivateEventAction()">Update</button>
+      <button class="btn-primary" onclick="updateActiveEventDetails()">Update</button>
     </div>
   `;
 
   navigateToScreen('event-detail');
 }
 
-function saveAndActivateEventAction() {
+async function updateActiveEventDetails() {
   const eventId = document.getElementById('edit-event-id').value;
   if (!eventId) {
     console.error("Missing event context ID context framework.");
@@ -976,9 +976,8 @@ function saveAndActivateEventAction() {
 
   console.log("Saving form data adjustments:", updatedData);
 
+  // Update local cache so the UI reflects the change instantly
   if (window.cachedUserUniverse) {
-    window.cachedUserUniverse.activeEventId = eventId;
-
     const eventIndex = window.cachedUserUniverse.events.findIndex(e => String(e.EventID || e.eventId) === String(eventId));
     if (eventIndex !== -1) {
       window.cachedUserUniverse.events[eventIndex] = {
@@ -986,30 +985,19 @@ function saveAndActivateEventAction() {
         ...updatedData
       };
     }
-
     renderUserEventCards(window.cachedUserUniverse);
   }
 
-  const userEmail = "brett.collins028@gmail.com";
+  // Persist to Firestore
+  try {
+    await window.updateEventInFirestore(eventId, updatedData);
+    console.log("Event updated successfully in Firestore.");
+  } catch (err) {
+    console.error("Failed to update event in Firestore:", err);
+  }
 
-  fetch(APPS_SCRIPT_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ action: 'Event Update', userEmail, eventId, updatedData })
-  })
-    .then(response => response.json())
-    .then(result => {
-      if (result.success) {
-        console.log("Database records and active status updated successfully:", result.response);
-      } else {
-        console.error("Background Server Sync Failed:", result.error);
-      }
-    })
-    .catch(err => {
-      console.error("Background Server Sync Failed:", err);
-    });
-
-  navigateToScreen('players');
+  // Same destination as Cancel
+  navigateToScreen('events');
 }
 
 function preFetchUserUniverseData() {
