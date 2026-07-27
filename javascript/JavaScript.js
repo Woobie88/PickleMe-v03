@@ -118,6 +118,7 @@ function navigateToScreen(screenId) {
     'add-players': 'nav-players',
     draw: 'nav-draw',
     'match-detail': 'nav-draw',
+    ladder: 'nav-ladder',
     analytics: 'nav-analytics'
   };
 
