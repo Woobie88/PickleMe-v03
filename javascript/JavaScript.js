@@ -96,8 +96,6 @@ window.cachedUserUniverse = {
   userAccess: []
 };
 
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzwWWH_GMZBOSu_Mw_7JPd5pibdxBWbf9Tgvp0-j_J4cIS5h7fgxQeHQCMJVgUzvBUG/exec";
-
 /**
  * Builds the event elements out of client-side cache
  */
