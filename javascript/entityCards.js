@@ -191,7 +191,7 @@ async function renderDrawCards(payload) {
     if (placeholder) placeholder.style.display = '';
     container.innerHTML = `
       <div class="no-data-placeholder">
-        <h3>Draw data error — player mismatch detected</h3>
+        <h4>Draw data error — player mismatch detected</h4>
       </div>
     `;
     return;
@@ -232,7 +232,7 @@ async function renderDrawCards(payload) {
     }
 
     const contentHtml = `
-      <h3>${team1} vs. ${team2}</h3>
+      <h4>${team1} vs. ${team2}</h4>
       <p class="card-meta-line">${metaLine}</p>
     `;
 
