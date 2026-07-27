@@ -572,6 +572,12 @@
           await addDoc(collection(db, "activeEvent"), { UserEmail: userEmail, EventID: eventId });
         }
       };
+
+      window.updateEventInFirestore = async function(eventId, updatedData) {
+        const db = window.db;
+        const eventDocRef = doc(db, "events", String(eventId));
+        await updateDoc(eventDocRef, updatedData);
+      };
     </script>
     <script src="javascript/entityCards.js"></script>
     <script src="javascript/JavaScript.js"></script>
