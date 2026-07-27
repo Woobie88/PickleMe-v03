@@ -57,3 +57,15 @@ window.updateEventInFirestore = async function(eventId, updatedData) {
   const eventDocRef = doc(db, "events", String(eventId));
   await updateDoc(eventDocRef, updatedData);
 };
+
+window.fetchPlayersFromFirestore = async function(eventId, playerVersion) {
+  const db = window.db;
+
+  const playersQuery = query(
+    collection(db, "players"),
+    where("EventID", "==", eventId),
+    where("PlayerVersion", "==", playerVersion)
+  );
+  const snapshot = await getDocs(playersQuery);
+  return snapshot.docs.map(doc => doc.data());
+};
