@@ -520,7 +520,7 @@
     </div>
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-      import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+      import { getFirestore, collection, query, where, getDocs, doc, updateDoc, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
     
       const firebaseConfig = {
         apiKey: "AIzaSyAVmJJ-uHf366tdd4T0BcceKkEEP16WIbE",
@@ -557,6 +557,20 @@
         }
     
         return { events, activeEventId };
+      };
+    
+      window.setActiveEventInFirestore = async function(eventId, userEmail) {
+        const db = window.db;
+        const q = query(collection(db, "activeEvent"), where("UserEmail", "==", userEmail));
+        const snapshot = await getDocs(q);
+    
+        if (!snapshot.empty) {
+          // User already has an active-event record — update it (enforces only one active at a time)
+          await updateDoc(snapshot.docs[0].ref, { EventID: eventId });
+        } else {
+          // First time this user has an active event — create the record
+          await addDoc(collection(db, "activeEvent"), { UserEmail: userEmail, EventID: eventId });
+        }
       };
     </script>
     <script src="javascript/entityCards.js"></script>
