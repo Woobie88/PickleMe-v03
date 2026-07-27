@@ -1060,30 +1060,55 @@ document.addEventListener('click', (e) => {
   }
 }, true);
 
-card.addEventListener('touchend', async () => {
-  const deltaY = currentY - startY;
-  card.style.transform = '';
-  card.style.opacity = '';
+function enableDragToActivate(containerId, userEmail) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
 
-  if (isDragging && deltaY < -60) {
-    const eventId = card.dataset.eventId;
+  container.querySelectorAll('.app-card[data-event-id]').forEach(card => {
+    let startY = 0, currentY = 0, isDragging = false;
 
-    // Do nothing if this event is already active
-    if (String(eventId) === String(window.cachedUserUniverse.activeEventId)) {
+    card.addEventListener('touchstart', (e) => {
+      startY = e.touches[0].clientY;
       isDragging = false;
-      return;
-    }
+    }, { passive: true });
 
-    window.suppressNextCardClick = true;
+    card.addEventListener('touchmove', (e) => {
+      currentY = e.touches[0].clientY;
+      const deltaY = currentY - startY;
 
-    try {
-      await window.setActiveEventInFirestore(eventId, "brett.collins028@gmail.com");
-      window.cachedUserUniverse.activeEventId = eventId;
-      renderUserEventCards(window.cachedUserUniverse);
-    } catch (err) {
-      console.error("Failed to set active event:", err);
-    }
-  }
+      if (deltaY < -10) {
+        isDragging = true;
+        const dragDistance = Math.min(Math.abs(deltaY), 80);
+        card.style.transform = `translateY(${-dragDistance}px)`;
+        card.style.opacity = 1 - (dragDistance / 160);
+      }
+    }, { passive: true });
 
-  isDragging = false;
-});
+    card.addEventListener('touchend', async () => {
+      const deltaY = currentY - startY;
+      card.style.transform = '';
+      card.style.opacity = '';
+
+      if (isDragging && deltaY < -60) {
+        const eventId = card.dataset.eventId;
+
+        if (String(eventId) === String(window.cachedUserUniverse.activeEventId)) {
+          isDragging = false;
+          return;
+        }
+
+        window.suppressNextCardClick = true;
+
+        try {
+          await window.setActiveEventInFirestore(eventId, "brett.collins028@gmail.com");
+          window.cachedUserUniverse.activeEventId = eventId;
+          renderUserEventCards(window.cachedUserUniverse);
+        } catch (err) {
+          console.error("Failed to set active event:", err);
+        }
+      }
+
+      isDragging = false;
+    });
+  });
+}
