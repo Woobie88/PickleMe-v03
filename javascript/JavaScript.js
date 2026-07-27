@@ -398,6 +398,7 @@ function preFetchUserUniverseData() {
       console.log("Firestore events fetch successful!", payload);
       window.cachedUserUniverse.events = payload.events;
       window.cachedUserUniverse.activeEventId = payload.activeEventId;
+      window.cachedUserUniverse.players = payload.players;
       renderUserEventCards(window.cachedUserUniverse);
       return payload;
     })
