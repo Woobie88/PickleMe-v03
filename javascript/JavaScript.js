@@ -702,19 +702,20 @@ window.cachedUserUniverse = {
   draw: []
 };
 
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzwWWH_GMZBOSu_Mw_7JPd5pibdxBWbf9Tgvp0-j_J4cIS5h7fgxQeHQCMJVgUzvBUG/exec";
+
 /**
  * Builds the event elements out of client-side cache
  */
 function renderUserEventCards(payload) {
   console.log("renderUserEventCards received payload:", payload);
-  
+
   const container = document.getElementById('active-events-list');
   if (!container) {
     console.error("DOM Element '#active-events-list' not found!");
     return;
   }
 
-  // 1. Unpack fields safely
   let events = [];
   let activeId = null;
 
@@ -726,7 +727,6 @@ function renderUserEventCards(payload) {
     activeId = window.cachedUserUniverse ? window.cachedUserUniverse.activeEventId : null;
   }
 
-  // 2. Clear out container if no items exist
   if (events.length === 0) {
     container.innerHTML = `
       <div class="no-data-placeholder">
@@ -736,19 +736,14 @@ function renderUserEventCards(payload) {
     return;
   }
 
-  // 3. CHRONOLOGICAL SORT: Organize all events by date ascending first
   events.sort((a, b) => {
     const dateA = a.EventDate || a.eventDate || '';
     const dateB = b.EventDate || b.eventDate || '';
-    
-    // Fallback logic if dates are missing or blank string text matches
     if (!dateA) return 1;
     if (!dateB) return -1;
-    
     return new Date(dateA) - new Date(dateB);
   });
 
-  // 4. Separate events into two distinct HTML structures
   let currentEventHtml = '';
   let otherEventsHtml = '';
   let otherCount = 0;
@@ -763,15 +758,15 @@ function renderUserEventCards(payload) {
       displayDate = rawDate.split('T')[0];
     }
 
-    // Get the day-based icon URL
     const iconAsset = getDayIconUrl(rawDate);
     const iconMarkup = `<img src="${iconAsset}" alt="Day Icon" class="card-icon-images">`;
 
     const cardClass = isActive ? 'app-card active-event' : 'app-card';
     const activeBadge = isActive ? `<span class="active-pill-badge">ACTIVE</span>` : '';
 
+    // NOTE: no onclick here anymore — tap/drag are both handled by enableDragToActivate's touchend
     const cardMarkup = `
-      <div class="${cardClass}" id="event-card-${currentId}" data-event-id="${currentId}" onclick="setActiveEventTrack('${currentId}')">
+      <div class="${cardClass}" id="event-card-${currentId}" data-event-id="${currentId}">
         <div class="card-icon-wrapper">
           ${iconMarkup}
         </div>
@@ -794,7 +789,6 @@ function renderUserEventCards(payload) {
     }
   });
 
-  // 5. Build dynamic segmented display grids
   let finalHtml = '';
 
   if (currentEventHtml) {
@@ -812,7 +806,7 @@ function renderUserEventCards(payload) {
   }
 
   container.innerHTML = finalHtml;
-  enableDragToActivate('active-events-list', "brett.collins028@gmail.com"); // swap for your real userEmail source
+  enableDragToActivate('active-events-list', "brett.collins028@gmail.com");
   console.log("Successfully rendered event grid sorted chronologically (ascending).");
 }
 
@@ -827,7 +821,7 @@ function getDayIconUrl(dateString) {
     const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
 
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const targetDayName = dayNames[dateObj.getDay()]; // e.g. "Monday"
+    const targetDayName = dayNames[dateObj.getDay()];
 
     const iconUrl = daysOfWeek[0][targetDayName];
     return iconUrl || fallbackEmoji;
@@ -837,6 +831,10 @@ function getDayIconUrl(dateString) {
   }
 }
 
+/**
+ * Single source of truth for tap-vs-drag handling on event cards.
+ * Tap opens the detail view; dragging up sets the event active.
+ */
 function enableDragToActivate(containerId, userEmail) {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -853,7 +851,7 @@ function enableDragToActivate(containerId, userEmail) {
       currentY = e.touches[0].clientY;
       const deltaY = currentY - startY;
 
-      if (deltaY < -10) { // any meaningful upward movement starts the drag visual
+      if (deltaY < -25) {
         isDragging = true;
         const dragDistance = Math.min(Math.abs(deltaY), 80);
         card.style.transform = `translateY(${-dragDistance}px)`;
@@ -867,9 +865,14 @@ function enableDragToActivate(containerId, userEmail) {
       card.style.opacity = '';
 
       if (isDragging && deltaY < -60) {
-        // Dragged up far enough — set as active event
-        window.suppressNextCardClick = true; // prevents the tap handler from also firing
         const eventId = card.dataset.eventId;
+
+        if (String(eventId) === String(window.cachedUserUniverse.activeEventId)) {
+          isDragging = false;
+          return;
+        }
+
+        window.suppressNextCardClick = true;
 
         try {
           await window.setActiveEventInFirestore(eventId, userEmail);
@@ -878,6 +881,9 @@ function enableDragToActivate(containerId, userEmail) {
         } catch (err) {
           console.error("Failed to set active event:", err);
         }
+      } else if (!isDragging) {
+        const eventId = card.dataset.eventId;
+        setActiveEventTrack(eventId);
       }
 
       isDragging = false;
@@ -890,34 +896,29 @@ function enableDragToActivate(containerId, userEmail) {
  */
 function setActiveEventTrack(eventId) {
   console.log("Loading event detail state for ID:", eventId);
-  
-  // 1. Locate data records out of our global cache framework
+
   if (!window.cachedUserUniverse || !window.cachedUserUniverse.events) {
     console.error("Global cache universe is missing!");
     return;
   }
-  
+
   const targetEvent = window.cachedUserUniverse.events.find(e => String(e.EventID || e.eventId) === String(eventId));
-  
+
   if (!targetEvent) {
     alert("Error: Tournament record could not be found.");
     return;
   }
-  
-  // 2. Clear out time strings safely for standard date pickers (YYYY-MM-DD)
+
   let inputDate = '';
   if (targetEvent.EventDate) {
     inputDate = targetEvent.EventDate.split('T')[0];
   }
 
-  // 3. Target dynamic container grid
   const detailContainer = document.getElementById('event-detail-content');
   if (!detailContainer) return;
 
-  // Handle spaces and case variations securely: targetEvent["DUPR Limit"]
   const duprVal = targetEvent["DUPR Limit"] !== undefined ? targetEvent["DUPR Limit"] : (targetEvent.duprLimit || 0);
 
-  // 4. Inject clean AppSheet-styled edit template
   detailContainer.innerHTML = `
     <input type="hidden" id="edit-event-id" value="${targetEvent.EventID || ''}">
 
@@ -952,19 +953,16 @@ function setActiveEventTrack(eventId) {
     </div>
   `;
 
-  // 5. Fire screen router navigation to pull up the detail screen card view panel
   navigateToScreen('event-detail');
 }
 
 function saveAndActivateEventAction() {
-  // 1. Pull the specific event target ID out of our hidden input node
   const eventId = document.getElementById('edit-event-id').value;
   if (!eventId) {
     console.error("Missing event context ID context framework.");
     return;
   }
 
-  // 2. Gather the form fields to prepare the structural update object
   const updatedData = {
     EventID: eventId,
     EventName: document.getElementById('edit-event-name').value,
@@ -977,10 +975,8 @@ function saveAndActivateEventAction() {
   console.log("Saving form data adjustments:", updatedData);
 
   if (window.cachedUserUniverse) {
-    // 3. Update local global cache universe instantly so the active event swaps over
     window.cachedUserUniverse.activeEventId = eventId;
 
-    // 4. Update the actual data attributes inside the array row so modifications are visible
     const eventIndex = window.cachedUserUniverse.events.findIndex(e => String(e.EventID || e.eventId) === String(eventId));
     if (eventIndex !== -1) {
       window.cachedUserUniverse.events[eventIndex] = {
@@ -989,16 +985,14 @@ function saveAndActivateEventAction() {
       };
     }
 
-    // 5. Instantly rebuild the 'My Events' screen list layout panels
     renderUserEventCards(window.cachedUserUniverse);
   }
 
-  // 6. Asynchronously save changes and the active assignment state down to your server rows
   const userEmail = "brett.collins028@gmail.com";
 
   fetch(APPS_SCRIPT_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'text/plain' }, // avoids CORS preflight — Apps Script reads raw body either way
+    headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify({ action: 'Event Update', userEmail, eventId, updatedData })
   })
     .then(response => response.json())
@@ -1013,11 +1007,8 @@ function saveAndActivateEventAction() {
       console.error("Background Server Sync Failed:", err);
     });
 
-  // 7. Route the UI view context instantly over to your next workflow panel step
   navigateToScreen('players');
 }
-
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzwWWH_GMZBOSu_Mw_7JPd5pibdxBWbf9Tgvp0-j_J4cIS5h7fgxQeHQCMJVgUzvBUG/exec"; // <-- your deployment URL
 
 function preFetchUserUniverseData() {
   const userEmail = "brett.collins028@gmail.com";
@@ -1059,56 +1050,3 @@ document.addEventListener('click', (e) => {
     window.suppressNextCardClick = false;
   }
 }, true);
-
-function enableDragToActivate(containerId, userEmail) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-
-  container.querySelectorAll('.app-card[data-event-id]').forEach(card => {
-    let startY = 0, currentY = 0, isDragging = false;
-
-    card.addEventListener('touchstart', (e) => {
-      startY = e.touches[0].clientY;
-      isDragging = false;
-    }, { passive: true });
-
-    card.addEventListener('touchmove', (e) => {
-      currentY = e.touches[0].clientY;
-      const deltaY = currentY - startY;
-
-      if (deltaY < -10) {
-        isDragging = true;
-        const dragDistance = Math.min(Math.abs(deltaY), 80);
-        card.style.transform = `translateY(${-dragDistance}px)`;
-        card.style.opacity = 1 - (dragDistance / 160);
-      }
-    }, { passive: true });
-
-    card.addEventListener('touchend', async () => {
-      const deltaY = currentY - startY;
-      card.style.transform = '';
-      card.style.opacity = '';
-
-      if (isDragging && deltaY < -60) {
-        const eventId = card.dataset.eventId;
-
-        if (String(eventId) === String(window.cachedUserUniverse.activeEventId)) {
-          isDragging = false;
-          return;
-        }
-
-        window.suppressNextCardClick = true;
-
-        try {
-          await window.setActiveEventInFirestore(eventId, "brett.collins028@gmail.com");
-          window.cachedUserUniverse.activeEventId = eventId;
-          renderUserEventCards(window.cachedUserUniverse);
-        } catch (err) {
-          console.error("Failed to set active event:", err);
-        }
-      }
-
-      isDragging = false;
-    });
-  });
-}
