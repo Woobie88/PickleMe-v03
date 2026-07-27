@@ -172,7 +172,7 @@ async function renderDrawCards(payload) {
   // 2. Build a PlayerID -> Name lookup
   const playerMap = {};
   players.forEach(p => {
-    playerMap[p.PlayerID] = p.Name;
+    playerMap[p.PlayerID] = p.FirstName;
   });
 
   // 3. Validate every player ID referenced in the draw resolves to a known player
