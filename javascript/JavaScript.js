@@ -812,6 +812,7 @@ function renderUserEventCards(payload) {
   }
 
   container.innerHTML = finalHtml;
+  enableDragToActivate('active-events-list', "brett.collins028@gmail.com"); // swap for your real userEmail source
   console.log("Successfully rendered event grid sorted chronologically (ascending).");
 }
 
@@ -834,6 +835,54 @@ function getDayIconUrl(dateString) {
     console.error("Error evaluating day icon:", err);
     return fallbackEmoji;
   }
+}
+
+function enableDragToActivate(containerId, userEmail) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  container.querySelectorAll('.app-card[data-event-id]').forEach(card => {
+    let startY = 0, currentY = 0, isDragging = false;
+
+    card.addEventListener('touchstart', (e) => {
+      startY = e.touches[0].clientY;
+      isDragging = false;
+    }, { passive: true });
+
+    card.addEventListener('touchmove', (e) => {
+      currentY = e.touches[0].clientY;
+      const deltaY = currentY - startY;
+
+      if (deltaY < -10) { // any meaningful upward movement starts the drag visual
+        isDragging = true;
+        const dragDistance = Math.min(Math.abs(deltaY), 80);
+        card.style.transform = `translateY(${-dragDistance}px)`;
+        card.style.opacity = 1 - (dragDistance / 160);
+      }
+    }, { passive: true });
+
+    card.addEventListener('touchend', async () => {
+      const deltaY = currentY - startY;
+      card.style.transform = '';
+      card.style.opacity = '';
+
+      if (isDragging && deltaY < -60) {
+        // Dragged up far enough — set as active event
+        window.suppressNextCardClick = true; // prevents the tap handler from also firing
+        const eventId = card.dataset.eventId;
+
+        try {
+          await window.setActiveEventInFirestore(eventId, userEmail);
+          window.cachedUserUniverse.activeEventId = eventId;
+          renderUserEventCards(window.cachedUserUniverse);
+        } catch (err) {
+          console.error("Failed to set active event:", err);
+        }
+      }
+
+      isDragging = false;
+    });
+  });
 }
 
 /**
@@ -1001,4 +1050,40 @@ window.addEventListener("DOMContentLoaded", async (event) => {
       loader.style.display = "none";
     }
   }
+});
+
+document.addEventListener('click', (e) => {
+  if (window.suppressNextCardClick) {
+    e.stopImmediatePropagation();
+    e.preventDefault();
+    window.suppressNextCardClick = false;
+  }
+}, true);
+
+card.addEventListener('touchend', async () => {
+  const deltaY = currentY - startY;
+  card.style.transform = '';
+  card.style.opacity = '';
+
+  if (isDragging && deltaY < -60) {
+    const eventId = card.dataset.eventId;
+
+    // Do nothing if this event is already active
+    if (String(eventId) === String(window.cachedUserUniverse.activeEventId)) {
+      isDragging = false;
+      return;
+    }
+
+    window.suppressNextCardClick = true;
+
+    try {
+      await window.setActiveEventInFirestore(eventId, "brett.collins028@gmail.com");
+      window.cachedUserUniverse.activeEventId = eventId;
+      renderUserEventCards(window.cachedUserUniverse);
+    } catch (err) {
+      console.error("Failed to set active event:", err);
+    }
+  }
+
+  isDragging = false;
 });
