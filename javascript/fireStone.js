@@ -69,3 +69,24 @@ window.fetchPlayersFromFirestore = async function(eventId, playerVersion) {
   const snapshot = await getDocs(playersQuery);
   return snapshot.docs.map(doc => doc.data());
 };
+
+window.fetchDrawFromFirestore = async function(eventId, drawVersion) {
+  const db = window.db;
+
+  const drawQuery = query(
+    collection(db, "draw"),
+    where("EventID", "==", eventId),
+    where("DrawVersion", "==", drawVersion)
+  );
+  const snapshot = await getDocs(drawQuery);
+  return snapshot.docs.map(doc => doc.data());
+};
+
+window.updateMatchScoreInFirestore = async function(matchId, team1Score, team2Score) {
+  const db = window.db;
+  const matchDocRef = doc(db, "draw", String(matchId));
+  await updateDoc(matchDocRef, {
+    Team1Score: team1Score,
+    Team2Score: team2Score
+  });
+};
