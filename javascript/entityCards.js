@@ -528,18 +528,22 @@ function persistCurrentRound() {
 
 function initCurrentRoundSwipeHandlers() {
   const container = document.getElementById('view-current-round');
+  console.log("Current round container found:", container); // ADD THIS
   if (!container) return;
 
   let startX = 0, startY = 0;
 
   container.addEventListener('touchstart', (e) => {
+    console.log("Current round touchstart fired"); // ADD THIS
     startX = e.changedTouches[0].screenX;
     startY = e.changedTouches[0].screenY;
   });
 
   container.addEventListener('touchend', (e) => {
+    console.log("Current round touchend fired"); // ADD THIS
     const deltaX = e.changedTouches[0].screenX - startX;
     const deltaY = e.changedTouches[0].screenY - startY;
+    console.log(`deltaX: ${deltaX}, deltaY: ${deltaY}`); // ADD THIS
 
     if (Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY)) return;
 
