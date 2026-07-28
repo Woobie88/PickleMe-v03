@@ -274,11 +274,8 @@
           <div class="team-score-block">
             <div id="team1-label" class="team-label"></div>
             <p id="team1-players" class="team-players-line"></p>
-            <div class="score-control">
-              <button class="score-btn" onclick="updateMatchScore(1, -1)">−</button>
-              <span id="team1-score-value" class="score-value">0</span>
-              <button class="score-btn" onclick="updateMatchScore(1, 1)">+</button>
-            </div>
+            <p id="team1-dupr" class="team-dupr-line"></p>
+            <div id="team1-controls"></div> <!-- content injected based on Scoring mode -->
           </div>
           
           <hr class="team-divider">
@@ -286,11 +283,8 @@
           <div class="team-score-block">
             <div id="team2-label" class="team-label"></div>
             <p id="team2-players" class="team-players-line"></p>
-            <div class="score-control">
-              <button class="score-btn" onclick="updateMatchScore(2, -1)">−</button>
-              <span id="team2-score-value" class="score-value">0</span>
-              <button class="score-btn" onclick="updateMatchScore(2, 1)">+</button>
-            </div>
+            <p id="team2-dupr" class="team-dupr-line"></p>
+            <div id="team2-controls"></div>
           </div>
           <!-- Placeholder confirm button -->
           <div class="fab-wrapper">
