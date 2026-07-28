@@ -275,6 +275,29 @@ function buildPlayerMap(payload) {
   return playerMap;
 }
 
+function renderScoringToggle(currentValue) {
+  document.querySelectorAll('.scoring-option').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.value === currentValue);
+  });
+}
+
+function setScoringMode(newValue) {
+  const activeEventId = window.cachedUserUniverse.activeEventId;
+  const activeEvent = window.cachedUserUniverse.events.find(
+    e => String(e.EventID || e.eventId) === String(activeEventId)
+  );
+  if (!activeEvent) return;
+
+  // Update UI + local cache immediately
+  activeEvent.Scoring = newValue;
+  renderScoringToggle(newValue);
+
+  // Persist to Firestore
+  window.updateScoringModeInFirestore(activeEventId, newValue)
+    .then(() => console.log("Scoring mode updated in Firestore:", newValue))
+    .catch(err => console.error("Failed to update scoring mode:", err));
+}
+
 function openMatchScoreView(matchId) {
   const payload = window.cachedUserUniverse;
   const match = (payload.draw || []).find(m => m.MatchID === matchId);
@@ -456,6 +479,8 @@ async function renderCurrentRoundView(payload) {
     e => String(e.EventID || e.eventId) === String(activeEventId)
   );
   if (!activeEvent) return;
+
+  renderScoringToggle(activeEvent.Scoring || 'None');
 
   // Initialize the round tracker only once per event load
   window.currentRoundNumber = parseInt(activeEvent.CurrentRound) || 1;
