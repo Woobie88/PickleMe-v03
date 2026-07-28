@@ -96,3 +96,9 @@ window.updateCurrentRoundInFirestore = async function(eventId, roundNumber) {
   const eventDocRef = doc(db, "events", String(eventId));
   await updateDoc(eventDocRef, { CurrentRound: roundNumber });
 };
+
+window.updateScoringModeInFirestore = async function(eventId, scoringMode) {
+  const db = window.db;
+  const eventDocRef = doc(db, "events", String(eventId));
+  await updateDoc(eventDocRef, { Scoring: scoringMode });
+};
