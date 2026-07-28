@@ -1,3 +1,15 @@
+function showLoadingState(containerId, message = 'Loading...') {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="inline-loading-state">
+      <div class="inline-spinner"></div>
+      <p>${message}</p>
+    </div>
+  `;
+}
+
 function buildCardMarkup({ iconAsset, contentHtml, onClickAttr = '' }) {
   const iconMarkup = iconAsset.startsWith('http')
     ? `<img src="${iconAsset}" alt="Icon" class="card-icon-images-small" loading="lazy">`
@@ -133,6 +145,7 @@ async function renderPlayerCards(payload) {
 
 async function renderDrawCards(payload) {
   console.log('Calling renderDrawCards');
+  showLoadingState('active-draw-list', 'Loading draw...'); // NEW
 
   const container = document.getElementById('active-draw-list');
   const placeholder = document.getElementById('placeholder-view-draw');
@@ -436,6 +449,8 @@ function switchDrawTab(tabId) {
 }
 
 async function renderCurrentRoundView(payload) {
+  showLoadingState('current-round-list', 'Loading current round...'); // NEW
+  
   const activeEventId = payload.activeEventId;
   const activeEvent = (payload.events || []).find(
     e => String(e.EventID || e.eventId) === String(activeEventId)
