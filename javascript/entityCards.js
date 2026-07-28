@@ -346,7 +346,6 @@ function goToPreviousMatch() {
 }
 
 function exitToCurrentRoundScreen() {
-  alert("exitToCurrentRoundScreen called"); // TEMPORARY
   navigateToScreen('draw');
   switchDrawTab('current-round');
 }
