@@ -90,3 +90,9 @@ window.updateMatchScoreInFirestore = async function(matchId, team1Score, team2Sc
     Team2Score: team2Score
   });
 };
+
+window.updateCurrentRoundInFirestore = async function(eventId, roundNumber) {
+  const db = window.db;
+  const eventDocRef = doc(db, "events", String(eventId));
+  await updateDoc(eventDocRef, { CurrentRound: roundNumber });
+};
