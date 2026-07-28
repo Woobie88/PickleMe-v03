@@ -333,7 +333,7 @@ function renderMatchScoreView() {
   const activeEvent = window.cachedUserUniverse.events.find(
     e => String(e.EventID || e.eventId) === String(window.cachedUserUniverse.activeEventId)
   );
-  const scoringMode = (activeEvent && activeEvent.Scoring) || 'Point';
+  const scoringMode = (activeEvent && activeEvent.Scoring) || 'Points';
 
   document.getElementById('match-round-court-heading').innerText =
     `Round ${match.Round} — Court ${match.Court}`;
@@ -354,7 +354,7 @@ function renderMatchScoreView() {
   const team1Controls = document.getElementById('team1-controls');
   const team2Controls = document.getElementById('team2-controls');
 
-  if (scoringMode === 'Point') {
+  if (scoringMode === 'Points') {
     team1Controls.innerHTML = `
       <div class="score-control">
         <button class="score-btn" onclick="updateMatchScore(1, -1)">−</button>
