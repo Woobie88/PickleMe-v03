@@ -275,6 +275,17 @@ function buildPlayerMap(payload) {
   return playerMap;
 }
 
+function calculateTeamAvgDupr(playerMap, pid1, pid2) {
+  const d1 = parseFloat(playerMap[pid1]?.dupr);
+  const d2 = parseFloat(playerMap[pid2]?.dupr);
+
+  const values = [d1, d2].filter(v => !isNaN(v));
+  if (values.length === 0) return 'N/A';
+
+  const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
+  return avg.toFixed(2);
+}
+
 function renderScoringToggle(currentValue) {
   document.querySelectorAll('.scoring-option').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.value === currentValue);
