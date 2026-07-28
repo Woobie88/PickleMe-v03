@@ -411,7 +411,6 @@ function preFetchUserUniverseData() {
 // Global initialization event listener running on app startup
 window.addEventListener("DOMContentLoaded", async (event) => {
   console.log("App loaded. Pre-fetching database universes...");
-
   try {
     await preFetchUserUniverseData();
   } catch (error) {
@@ -422,6 +421,9 @@ window.addEventListener("DOMContentLoaded", async (event) => {
       loader.style.display = "none";
     }
   }
+
+  initMatchSwipeHandlers();
+  initCurrentRoundSwipeHandlers();
 });
 
 document.addEventListener('click', (e) => {
