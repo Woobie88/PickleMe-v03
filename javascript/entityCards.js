@@ -329,6 +329,9 @@ function goToNextMatch() {
   if (window.currentMatchIndex < window.currentRoundMatches.length - 1) {
     window.currentMatchIndex++;
     renderMatchScoreView();
+  } else {
+    // Already at the last court in this round — exit back to Current Round
+    exitToCurrentRoundScreen();
   }
 }
 
@@ -336,7 +339,15 @@ function goToPreviousMatch() {
   if (window.currentMatchIndex > 0) {
     window.currentMatchIndex--;
     renderMatchScoreView();
+  } else {
+    // Already at the first court in this round — exit back to Current Round
+    exitToCurrentRoundScreen();
   }
+}
+
+function exitToCurrentRoundScreen() {
+  navigateToScreen('draw');
+  switchDrawTab('current-round');
 }
 
 function initMatchSwipeHandlers() {
