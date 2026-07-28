@@ -790,6 +790,36 @@ body {
   margin-bottom: 4px;
 }
 
+.current-round-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.scoring-toggle {
+  display: flex;
+  background-color: var(--card-bg);
+  border: 1px solid var(--nav-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.scoring-option {
+  background: none;
+  border: none;
+  padding: 6px 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.scoring-option.active {
+  background-color: var(--accent);
+  color: #121212;
+}
+
 /* Floating buttons on screen */
 .fab-container {
   display: flex;
