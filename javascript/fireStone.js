@@ -108,3 +108,9 @@ window.updateMatchWinLossInFirestore = async function(matchId, team1WinLoss, tea
   const matchDocRef = doc(db, "draw", String(matchId));
   await updateDoc(matchDocRef, { Team1WinLoss: team1WinLoss, Team2WinLoss: team2WinLoss });
 };
+
+window.updateScoringModeInFirestore = async function(eventId, scoringMode) {
+  const db = window.db;
+  const eventDocRef = doc(db, "events", String(eventId));
+  await updateDoc(eventDocRef, { Scoring: scoringMode });
+};
