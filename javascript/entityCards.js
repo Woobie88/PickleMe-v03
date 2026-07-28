@@ -551,6 +551,3 @@ function initCurrentRoundSwipeHandlers() {
   });
 }
 
-window.addEventListener("DOMContentLoaded", () => {
-  initCurrentRoundSwipeHandlers();
-});
