@@ -494,9 +494,10 @@ async function renderCurrentRoundView(payload) {
 function goToNextRound() {
   const matches = window.cachedUserUniverse.draw || [];
   const maxRound = Math.max(...matches.map(m => parseInt(m.Round) || 0), window.currentRoundNumber);
-  console.log("maxRound:", maxRound, "currentRoundNumber:", window.currentRoundNumber); // ADD THIS
+
   if (window.currentRoundNumber < maxRound) {
     window.currentRoundNumber++;
+    updateLocalCurrentRoundCache(); // NEW — sync cache BEFORE render
     renderCurrentRoundView(window.cachedUserUniverse);
     persistCurrentRound();
   }
@@ -505,8 +506,19 @@ function goToNextRound() {
 function goToPreviousRound() {
   if (window.currentRoundNumber > 1) {
     window.currentRoundNumber--;
+    updateLocalCurrentRoundCache(); // NEW
     renderCurrentRoundView(window.cachedUserUniverse);
     persistCurrentRound();
+  }
+}
+
+function updateLocalCurrentRoundCache() {
+  const activeEventId = window.cachedUserUniverse.activeEventId;
+  const activeEvent = window.cachedUserUniverse.events.find(
+    e => String(e.EventID || e.eventId) === String(activeEventId)
+  );
+  if (activeEvent) {
+    activeEvent.CurrentRound = window.currentRoundNumber;
   }
 }
 
@@ -516,15 +528,6 @@ function persistCurrentRound() {
   window.updateCurrentRoundInFirestore(activeEventId, window.currentRoundNumber)
     .then(() => console.log("CurrentRound updated in Firestore:", window.currentRoundNumber))
     .catch(err => console.error("Failed to update CurrentRound:", err));
-
-  // Keep the local cached event record in sync too, so re-navigating within the
-  // same session doesn't re-read a stale value from window.cachedUserUniverse.events
-  const activeEvent = window.cachedUserUniverse.events.find(
-    e => String(e.EventID || e.eventId) === String(activeEventId)
-  );
-  if (activeEvent) {
-    activeEvent.CurrentRound = window.currentRoundNumber;
-  }
 }
 
 function initCurrentRoundSwipeHandlers() {
