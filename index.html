@@ -177,10 +177,39 @@
           <h2>Event Draw</h2>
           <p>Matches for the event</p>
         </div>
-        <div id="placeholder-view-draw" class="placeholder-view">
-          <h3>Draw Generator</h3>
-          <p>Active generator tools for courts and scheduling live matrix.</p>
+      
+        <div class="top-tab-bar">
+          <div class="tab-item active" id="tab-current-round" onclick="switchDrawTab('current-round')">Current Round</div>
+          <div class="tab-item" id="tab-all-matches" onclick="switchDrawTab('all-matches')">All Matches</div>
+          <div class="tab-item" id="tab-standings" onclick="switchDrawTab('standings')">Standings</div>
         </div>
+        
+        <div class="tab-viewport">
+
+        <!-- TAB 1: Current Round -->
+        <div id="view-current-round" class="tab-view active">
+          <div id="current-round-heading" class="event-section-title current"></div>
+          <div id="placeholder-view-current-round" class="placeholder-view">
+            <h3>No Matches This Round</h3>
+          </div>
+          <div id="current-round-list" class="card-grid"></div>
+        </div>
+    
+        <!-- TAB 2: All Matches (your existing draw screen content) -->
+        <div id="view-all-matches" class="tab-view">
+          <div id="placeholder-view-draw" class="placeholder-view">
+            <h3>Draw Generator</h3>
+            <p>Active generator tools for courts and scheduling live matrix.</p>
+          </div>
+          <div id="active-draw-list" class="card-grid"></div>
+        </div>
+    
+        <!-- TAB 3: Standings -->
+        <div id="view-standings" class="tab-view">
+          <!-- left blank for now -->
+        </div>
+    
+      </div>
 
         <!-- Dynamic Container where Player Cards load -->
         <div id="active-draw-list" class="card-grid">
