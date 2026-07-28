@@ -188,14 +188,17 @@
 
         <!-- TAB 1: Current Round -->
         <div id="view-current-round" class="tab-view active">
-          <div class="current-round-header-row">
-            <div id="current-round-heading" class="event-section-title current"></div>
+          <div class="scoring-toggle-block">
+            <span class="scoring-toggle-label">Scoring Method</span>
             <div class="scoring-toggle" id="scoring-toggle">
-              <button class="scoring-option" data-value="Points" onclick="setScoringMode('Points')">Points</button>
+              <button class="scoring-option" data-value="Point" onclick="setScoringMode('Point')">Points</button>
               <button class="scoring-option" data-value="Wins" onclick="setScoringMode('Wins')">Wins</button>
               <button class="scoring-option" data-value="None" onclick="setScoringMode('None')">None</button>
             </div>
           </div>
+        
+          <div id="current-round-heading" class="event-section-title current"></div>
+        
           <div id="placeholder-view-current-round" class="placeholder-view">
             <h3>No Matches This Round</h3>
           </div>
