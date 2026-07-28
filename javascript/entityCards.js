@@ -494,6 +494,7 @@ async function renderCurrentRoundView(payload) {
 function goToNextRound() {
   const matches = window.cachedUserUniverse.draw || [];
   const maxRound = Math.max(...matches.map(m => parseInt(m.Round) || 0), window.currentRoundNumber);
+  console.log("maxRound:", maxRound, "currentRoundNumber:", window.currentRoundNumber); // ADD THIS
   if (window.currentRoundNumber < maxRound) {
     window.currentRoundNumber++;
     renderCurrentRoundView(window.cachedUserUniverse);
