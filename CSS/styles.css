@@ -790,11 +790,20 @@ body {
   margin-bottom: 4px;
 }
 
-.current-round-header-row {
+.scoring-toggle-block {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.scoring-toggle-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
 }
 
 .scoring-toggle {
