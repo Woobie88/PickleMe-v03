@@ -412,7 +412,128 @@ function handleFabAction(action) {
   }
 }
 
-// Register the swipe listener once, on app startup
+function switchDrawTab(tabId) {
+  document.querySelectorAll('#screen-draw .top-tab-bar .tab-item').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  document.querySelectorAll('#screen-draw .tab-viewport .tab-view').forEach(view => {
+    view.classList.remove('active');
+  });
+
+  document.getElementById('tab-' + tabId).classList.add('active');
+  document.getElementById('view-' + tabId).classList.add('active');
+}
+
+async function renderCurrentRoundView(payload) {
+  const activeEventId = payload.activeEventId;
+  const activeEvent = (payload.events || []).find(
+    e => String(e.EventID || e.eventId) === String(activeEventId)
+  );
+  if (!activeEvent) return;
+
+  // Initialize the round tracker only once per event load
+  if (window.currentRoundNumber === undefined || window.currentRoundNumber === null) {
+    window.currentRoundNumber = parseInt(activeEvent.CurrentRound) || 1;
+  }
+
+  const currentDrawVersion = activeEvent.CurrentDrawVersion;
+
+  const matches = window.cachedUserUniverse.draw && window.cachedUserUniverse.draw.length > 0
+    ? window.cachedUserUniverse.draw
+    : await window.fetchDrawFromFirestore(activeEventId, currentDrawVersion);
+  window.cachedUserUniverse.draw = matches;
+
+  const players = window.cachedUserUniverse.players && window.cachedUserUniverse.players.length > 0
+    ? window.cachedUserUniverse.players
+    : await window.fetchPlayersFromFirestore(activeEventId, activeEvent.CurrentPlayerVersion);
+  window.cachedUserUniverse.players = players;
+
+  const playerMap = {};
+  players.forEach(p => { playerMap[p.PlayerID] = p.FirstName; });
+
+  const roundMatches = matches
+    .filter(m => parseInt(m.Round) === window.currentRoundNumber)
+    .sort((a, b) => (parseInt(a.Court) || 0) - (parseInt(b.Court) || 0));
+
+  document.getElementById('current-round-heading').innerText = `Round ${window.currentRoundNumber}`;
+
+  const container = document.getElementById('current-round-list');
+  const placeholder = document.getElementById('placeholder-view-current-round');
+
+  if (roundMatches.length === 0) {
+    if (placeholder) placeholder.style.display = '';
+    container.innerHTML = '';
+    return;
+  }
+  if (placeholder) placeholder.style.display = 'none';
+
+  let html = '';
+  roundMatches.forEach(m => {
+    const iconAsset = courts[0]['court-' + m.Court] || '🏟️';
+    const team1 = `${playerMap[m.Team1Player1]} & ${playerMap[m.Team1Player2]}`;
+    const team2 = `${playerMap[m.Team2Player1]} & ${playerMap[m.Team2Player2]}`;
+
+    const isComplete = m.Team1WinLoss && m.Team2WinLoss;
+    let metaLine;
+    if (isComplete) {
+      metaLine = `Score ${m.Team1Score} - ${m.Team2Score} || Exp Res. ${m.ExpectedTeam1Score} - ${m.ExpectedTeam2Score}`;
+    } else {
+      const duprDelta = Math.abs((parseFloat(m.Team1AvgDUPR) || 0) - (parseFloat(m.Team2AvgDUPR) || 0)).toFixed(2);
+      metaLine = `DUPR Diff ${duprDelta} || Exp Res. ${m.ExpectedTeam1Score} - ${m.ExpectedTeam2Score}`;
+    }
+
+    const contentHtml = `
+      <h3>${team1} vs. ${team2}</h3>
+      <p class="card-meta-line">${metaLine}</p>
+    `;
+    const onClickAttr = `onclick="openMatchScoreView('${m.MatchID}')"`;
+    html += buildCardMarkup({ iconAsset, contentHtml, onClickAttr });
+  });
+
+  container.innerHTML = html;
+}
+
+function goToNextRound() {
+  const matches = window.cachedUserUniverse.draw || [];
+  const maxRound = Math.max(...matches.map(m => parseInt(m.Round) || 0), window.currentRoundNumber);
+  if (window.currentRoundNumber < maxRound) {
+    window.currentRoundNumber++;
+    renderCurrentRoundView(window.cachedUserUniverse);
+  }
+}
+
+function goToPreviousRound() {
+  if (window.currentRoundNumber > 1) {
+    window.currentRoundNumber--;
+    renderCurrentRoundView(window.cachedUserUniverse);
+  }
+}
+
+function initCurrentRoundSwipeHandlers() {
+  const container = document.getElementById('view-current-round');
+  if (!container) return;
+
+  let startX = 0, startY = 0;
+
+  container.addEventListener('touchstart', (e) => {
+    startX = e.changedTouches[0].screenX;
+    startY = e.changedTouches[0].screenY;
+  });
+
+  container.addEventListener('touchend', (e) => {
+    const deltaX = e.changedTouches[0].screenX - startX;
+    const deltaY = e.changedTouches[0].screenY - startY;
+
+    if (Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY)) return;
+
+    if (deltaX < 0) {
+      goToNextRound(); // swipe left -> next round
+    } else {
+      goToPreviousRound(); // swipe right -> previous round
+    }
+  });
+}
+
 window.addEventListener("DOMContentLoaded", () => {
-  initMatchSwipeHandlers();
+  initCurrentRoundSwipeHandlers();
 });
