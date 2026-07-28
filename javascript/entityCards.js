@@ -330,19 +330,64 @@ function renderMatchScoreView() {
 
   const playerMap = buildPlayerMap(window.cachedUserUniverse);
 
+  const activeEvent = window.cachedUserUniverse.events.find(
+    e => String(e.EventID || e.eventId) === String(window.cachedUserUniverse.activeEventId)
+  );
+  const scoringMode = (activeEvent && activeEvent.Scoring) || 'Point';
+
   document.getElementById('match-round-court-heading').innerText =
-    `Round ${match.Round} || Court ${match.Court}`;
+    `Round ${match.Round} — Court ${match.Court}`;
 
   document.getElementById('team1-label').innerText = `Team ${match.Team1}`;
   document.getElementById('team2-label').innerText = `Team ${match.Team2}`;
 
   document.getElementById('team1-players').innerText =
-  `${playerMap[match.Team1Player1]?.name || '?'} & ${playerMap[match.Team1Player2]?.name || '?'}`;
+    `${playerMap[match.Team1Player1]?.name || '?'} & ${playerMap[match.Team1Player2]?.name || '?'}`;
   document.getElementById('team2-players').innerText =
-  `${playerMap[match.Team2Player1]?.name || '?'} & ${playerMap[match.Team2Player2]?.name || '?'}`;
+    `${playerMap[match.Team2Player1]?.name || '?'} & ${playerMap[match.Team2Player2]?.name || '?'}`;
 
-  document.getElementById('team1-score-value').innerText = match.Team1Score || 0;
-  document.getElementById('team2-score-value').innerText = match.Team2Score || 0;
+  document.getElementById('team1-dupr').innerText =
+    `Avg DUPR: ${calculateTeamAvgDupr(playerMap, match.Team1Player1, match.Team1Player2)}`;
+  document.getElementById('team2-dupr').innerText =
+    `Avg DUPR: ${calculateTeamAvgDupr(playerMap, match.Team2Player1, match.Team2Player2)}`;
+
+  const team1Controls = document.getElementById('team1-controls');
+  const team2Controls = document.getElementById('team2-controls');
+
+  if (scoringMode === 'Point') {
+    team1Controls.innerHTML = `
+      <div class="score-control">
+        <button class="score-btn" onclick="updateMatchScore(1, -1)">−</button>
+        <span id="team1-score-value" class="score-value">0</span>
+        <button class="score-btn" onclick="updateMatchScore(1, 1)">+</button>
+      </div>
+    `;
+    team2Controls.innerHTML = `
+      <div class="score-control">
+        <button class="score-btn" onclick="updateMatchScore(2, -1)">−</button>
+        <span id="team2-score-value" class="score-value">0</span>
+        <button class="score-btn" onclick="updateMatchScore(2, 1)">+</button>
+      </div>
+    `;
+    document.getElementById('team1-score-value').innerText = match.Team1Score || 0;
+    document.getElementById('team2-score-value').innerText = match.Team2Score || 0;
+
+  } else if (scoringMode === 'Wins') {
+    const team1Selected = match.Team1WinLoss === 'Win';
+    const team2Selected = match.Team2WinLoss === 'Win';
+
+    team1Controls.innerHTML = `
+      <button class="win-btn ${team1Selected ? 'selected' : ''}" id="team1-win-btn" onclick="setMatchWinner(1)">WIN</button>
+    `;
+    team2Controls.innerHTML = `
+      <button class="win-btn ${team2Selected ? 'selected' : ''}" id="team2-win-btn" onclick="setMatchWinner(2)">WIN</button>
+    `;
+
+  } else {
+    // None — show nothing
+    team1Controls.innerHTML = '';
+    team2Controls.innerHTML = '';
+  }
 }
 
 function updateMatchScore(team, delta) {
@@ -358,6 +403,36 @@ function updateMatchScore(team, delta) {
   document.getElementById(`team${team}-score-value`).innerText = updated;
 
   scheduleScoreSave(match);
+}
+
+function setMatchWinner(team) {
+  const matches = window.currentRoundMatches;
+  const idx = window.currentMatchIndex;
+  const match = matches ? matches[idx] : null;
+  if (!match) return;
+
+  if (team === 1) {
+    match.Team1WinLoss = 'Win';
+    match.Team2WinLoss = 'Loss';
+  } else {
+    match.Team1WinLoss = 'Loss';
+    match.Team2WinLoss = 'Win';
+  }
+
+  renderMatchScoreView(); // re-render to reflect the toggle state
+  scheduleWinLossSave(match);
+}
+
+let winLossSaveTimer = null;
+function scheduleWinLossSave(match) {
+  clearTimeout(winLossSaveTimer);
+  winLossSaveTimer = setTimeout(() => saveMatchWinLoss(match), 600);
+}
+
+function saveMatchWinLoss(match) {
+  window.updateMatchWinLossInFirestore(match.MatchID, match.Team1WinLoss, match.Team2WinLoss)
+    .then(() => console.log("Win/Loss saved to Firestore."))
+    .catch(err => console.error("Win/Loss save failed:", err));
 }
 
 // --- Swipe between courts in the same round ---
