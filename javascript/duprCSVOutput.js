@@ -30,12 +30,14 @@ window.exportDuprCsv = async function() {
   }
 
   const headers = [
-    'matchType', 'scoreType', 'event', 'date',
-    'playerA1', 'playerA1DuprId', 'playerA2', 'playerA2DuprId',
-    'playerB1', 'playerB1DuprId', 'playerB2', 'playerB2DuprId',
-    'teamAGame1', 'teamBGame1', 'teamAGame2', 'teamBGame2',
-    'teamAGame3', 'teamBGame3', 'teamAGame4', 'teamBGame4',
-    'teamAGame5', 'teamBGame5'
+    'matchType',	'event',	'date',	
+    'playerA1',	'playerA1DuprId',	'playerA1ExternalId',
+    'playerA2',	'playerA2DuprId',	'playerA2ExternalId',
+    'playerB1',	'playerB1DuprId',	'playerB1ExternalId',
+    'playerB2',	'playerB2DuprId',	'playerB2ExternalId',
+    'teamAGame1',	'teamBGame1',	'teamAGame2',	'teamBGame2',	'teamAGame3',	'teamBGame3',	
+    'teamAGame4',	'teamBGame4',	'teamAGame5',	'teamBGame5',
+    'location',	'scoreType'
   ];
 
   const eventDate = activeEvent.EventDate ? activeEvent.EventDate.split('T')[0] : '';
