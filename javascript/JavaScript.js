@@ -408,3 +408,29 @@ function preFetchUserUniverseData() {
       throw err;
     });
 }
+
+function startDrawListener() {
+  const activeEventId = window.cachedUserUniverse.activeEventId;
+  const activeEvent = window.cachedUserUniverse.events.find(
+    e => String(e.EventID || e.eventId) === String(activeEventId)
+  );
+  if (!activeEvent) return;
+
+  const drawVersion = activeEvent.CurrentDrawVersion;
+
+  window.listenToDrawChanges(activeEventId, drawVersion, (matches) => {
+    console.log("Live draw update received:", matches.length, "matches");
+    window.cachedUserUniverse.draw = matches;
+
+    // Refresh whichever screens are currently visible
+    if (document.getElementById('view-current-round')?.classList.contains('active')) {
+      renderCurrentRoundView(window.cachedUserUniverse);
+    }
+    if (document.getElementById('view-standings')?.classList.contains('active')) {
+      renderStandingsView(window.cachedUserUniverse);
+    }
+    if (document.getElementById('screen-draw')?.style.display === 'block') {
+      renderDrawCards(window.cachedUserUniverse); // All Matches tab, if that screen is open
+    }
+  });
+}
