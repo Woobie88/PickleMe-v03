@@ -105,7 +105,7 @@ async function renderStandingsView(payload) {
 
     const contentHtml = `
       <h3>${entry.player.FirstName || 'Unnamed'} (Seed: ${entry.player.Seed || '?'})</h3>
-      <p class="card-meta-line">Games ${entry.stats.games} || Wins: ${entry.stats.wins} - Loss: ${entry.stats.losses}</p>
+      <p class="card-meta-line">Gm: ${entry.stats.games} || Wins: ${entry.stats.wins} || Loss: ${entry.stats.losses}</p>
     `;
 
     html += `
