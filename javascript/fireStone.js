@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, query, where, getDocs, doc, updateDoc, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, query, where, getDocs, doc, updateDoc, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAVmJJ-uHf366tdd4T0BcceKkEEP16WIbE",
@@ -44,10 +44,8 @@ window.setActiveEventInFirestore = async function(eventId, userEmail) {
   const snapshot = await getDocs(q);
 
   if (!snapshot.empty) {
-    // User already has an active-event record — update it (enforces only one active at a time)
     await updateDoc(snapshot.docs[0].ref, { EventID: eventId });
   } else {
-    // First time this user has an active event — create the record
     await addDoc(collection(db, "activeEvent"), { UserEmail: userEmail, EventID: eventId });
   }
 };
@@ -109,14 +107,27 @@ window.updateMatchWinLossInFirestore = async function(matchId, team1WinLoss, tea
   await updateDoc(matchDocRef, { Team1WinLoss: team1WinLoss, Team2WinLoss: team2WinLoss });
 };
 
-window.updateScoringModeInFirestore = async function(eventId, scoringMode) {
-  const db = window.db;
-  const eventDocRef = doc(db, "events", String(eventId));
-  await updateDoc(eventDocRef, { Scoring: scoringMode });
-};
-
 window.updateLadderScoringInFirestore = async function(eventId, ladderScoringMode) {
   const db = window.db;
   const eventDocRef = doc(db, "events", String(eventId));
   await updateDoc(eventDocRef, { LadderScoring: ladderScoringMode });
+};
+
+window.listenToDrawChanges = function(eventId, drawVersion, onChangeCallback) {
+  const db = window.db;
+
+  const drawQuery = query(
+    collection(db, "draw"),
+    where("EventID", "==", eventId),
+    where("DrawVersion", "==", drawVersion)
+  );
+
+  const unsubscribe = onSnapshot(drawQuery, (snapshot) => {
+    const matches = snapshot.docs.map(doc => doc.data());
+    onChangeCallback(matches);
+  }, (error) => {
+    console.error("Draw listener error:", error);
+  });
+
+  return unsubscribe;
 };
