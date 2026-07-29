@@ -70,8 +70,9 @@ function navigateToScreen(screenId) {
       renderPlayerCards(payload);
       break;
     case 'draw':
-      renderDrawCards(payload);        // All Matches tab
-      renderCurrentRoundView(payload); // Current Round tab
+      renderDrawCards(payload);
+      renderCurrentRoundView(payload);
+      renderStandingsView(payload); // replaces renderStandingsToggleOnly
       break;
     case 'ladder':
       renderLadderCards(payload);
