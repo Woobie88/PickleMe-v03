@@ -133,3 +133,9 @@ window.listenToDrawChanges = function(eventId, drawVersion, onChangeCallback) {
 
   return unsubscribe;
 };
+
+window.updateActiveGameInFirestore = async function(eventId, gameId) {
+  const db = window.db;
+  const eventDocRef = doc(db, "events", String(eventId));
+  await updateDoc(eventDocRef, { GameID: gameId });
+};
