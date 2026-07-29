@@ -140,3 +140,18 @@ function renderLadderScoringToggle(activeEvent) {
     btn.classList.toggle('active', btn.dataset.value === currentValue);
   });
 }
+
+function setLadderScoringMode(newValue) {
+  const activeEventId = window.cachedUserUniverse.activeEventId;
+  const activeEvent = window.cachedUserUniverse.events.find(
+    e => String(e.EventID || e.eventId) === String(activeEventId)
+  );
+  if (!activeEvent) return;
+
+  activeEvent.LadderScoring = newValue;
+  renderLadderScoringToggle(activeEvent);
+
+  window.updateLadderScoringInFirestore(activeEventId, newValue)
+    .then(() => console.log("LadderScoring updated in Firestore:", newValue))
+    .catch(err => console.error("Failed to update LadderScoring:", err));
+}
