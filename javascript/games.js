@@ -2,19 +2,18 @@
  * SUB-TAB CONTROL ENGINE FOR GAME SELECTOR MODULE
  */
 function switchGameTab(tabId) {
-  // 1. Clear highlight state from tabs
   document.querySelectorAll('.top-tab-bar .tab-item').forEach(tab => {
     tab.classList.remove('active');
   });
   
-  // 2. Hide all layout card groupings 
   document.querySelectorAll('.tab-viewport .tab-view').forEach(view => {
     view.classList.remove('active');
   });
   
-  // 3. Mount targeted selections cleanly
   document.getElementById('tab-' + tabId).classList.add('active');
   document.getElementById('view-' + tabId).classList.add('active');
+
+  renderActiveGameHighlight(); // NEW — keeps the green highlight correct on whichever tab is now visible
 }
 
 /**
