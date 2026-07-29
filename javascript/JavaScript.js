@@ -79,6 +79,10 @@ function navigateToScreen(screenId) {
     case 'profile':
       renderProfileCards(payload);
       break;
+    case 'games':
+      enableGameDragToActivate();
+      renderActiveGameHighlight();
+      break;
   }
 }
 
