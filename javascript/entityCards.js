@@ -414,6 +414,7 @@ function updateMatchScore(team, delta) {
   document.getElementById(`team${team}-score-value`).innerText = updated;
 
   scheduleScoreSave(match);
+  refreshStandingsIfVisible(); // NEW
 }
 
 function setMatchWinner(team) {
@@ -430,14 +431,9 @@ function setMatchWinner(team) {
     match.Team2WinLoss = 'Win';
   }
 
-  renderMatchScoreView(); // re-render to reflect the toggle state
+  renderMatchScoreView();
   scheduleWinLossSave(match);
-}
-
-let winLossSaveTimer = null;
-function scheduleWinLossSave(match) {
-  clearTimeout(winLossSaveTimer);
-  winLossSaveTimer = setTimeout(() => saveMatchWinLoss(match), 600);
+  refreshStandingsIfVisible(); // NEW
 }
 
 function saveMatchWinLoss(match) {
