@@ -52,20 +52,25 @@ window.exportDuprCsv = async function() {
 
     const row = [
       'D',
-      'SIDEOUT',
       escapeCsvValue(activeEvent.EventName || ''),
       eventDate,
       escapeCsvValue(a1.name || ''),
       a1.duprId || '',
+      '',
       escapeCsvValue(a2.name || ''),
       a2.duprId || '',
+      '',
       escapeCsvValue(b1.name || ''),
       b1.duprId || '',
+      '',
       escapeCsvValue(b2.name || ''),
       b2.duprId || '',
+      '',
       m.Team1Score || '',
       m.Team2Score || '',
-      '', '', '', '', '', '' // Game 2-5 left blank
+      '', '', '', '', '', '', '', '', // Game 2-5 left blank
+      escapeCsvValue(activeEvent.EventLocation || ''),
+      'SIDEOUT'
     ];
 
     csvRows.push(row.join(','));
