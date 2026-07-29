@@ -24,13 +24,11 @@ function switchScreen(screenId, navButton) {
 function navigateToScreen(screenId) {
   console.log("Routing viewport layout to:", screenId);
   
-  // 1. Hide all screen containers across the panel frame
   const screens = document.querySelectorAll('.app-screen');
   screens.forEach(screen => {
     screen.style.display = 'none';
   });
   
-  // 2. Reveal the specific target dashboard panel
   const activeScreen = document.getElementById('screen-' + screenId);
   if (activeScreen) {
     activeScreen.style.display = 'block';
@@ -38,10 +36,9 @@ function navigateToScreen(screenId) {
     console.error("Could not find view panel framework container:", 'screen-' + screenId);
   }
 
-  // --- NEW: highlight the correct bottom nav item ---
   const navMap = {
     dashboard: 'nav-dashboard',
-    events: 'nav-dashboard',        // sub-screens fall back to their parent tab
+    events: 'nav-dashboard',
     'event-detail': 'nav-dashboard',
     games: 'nav-dashboard',
     dupr: 'nav-dashboard',
@@ -62,7 +59,6 @@ function navigateToScreen(screenId) {
     if (activeNavEl) activeNavEl.classList.add('active');
   }
 
-  // 3. Lazy-render the right cards for whichever screen was just opened
   const payload = window.cachedUserUniverse;
 
   switch (screenId) {
@@ -72,7 +68,7 @@ function navigateToScreen(screenId) {
     case 'draw':
       renderDrawCards(payload);
       renderCurrentRoundView(payload);
-      renderStandingsView(payload); // replaces renderStandingsToggleOnly
+      renderStandingsView(payload);
       break;
     case 'ladder':
       renderLadderCards(payload);
@@ -83,8 +79,6 @@ function navigateToScreen(screenId) {
     case 'profile':
       renderProfileCards(payload);
       break;
-    // 'events' is handled separately by renderUserEventCards on initial load —
-    // no case needed here unless you want it re-rendered on every nav click too
   }
 }
 
@@ -158,7 +152,6 @@ function renderUserEventCards(payload) {
     const cardClass = isActive ? 'app-card active-event' : 'app-card';
     const activeBadge = isActive ? `<span class="active-pill-badge">ACTIVE</span>` : '';
 
-    // NOTE: no onclick here anymore — tap/drag are both handled by enableDragToActivate's touchend
     const cardMarkup = `
       <div class="${cardClass}" id="event-card-${currentId}" data-event-id="${currentId}">
         <div class="card-icon-wrapper">
@@ -368,7 +361,6 @@ async function updateActiveEventDetails() {
 
   console.log("Saving form data adjustments:", updatedData);
 
-  // Update local cache so the UI reflects the change instantly
   if (window.cachedUserUniverse) {
     const eventIndex = window.cachedUserUniverse.events.findIndex(e => String(e.EventID || e.eventId) === String(eventId));
     if (eventIndex !== -1) {
@@ -380,7 +372,6 @@ async function updateActiveEventDetails() {
     renderUserEventCards(window.cachedUserUniverse);
   }
 
-  // Persist to Firestore
   try {
     await window.updateEventInFirestore(eventId, updatedData);
     console.log("Event updated successfully in Firestore.");
@@ -388,7 +379,6 @@ async function updateActiveEventDetails() {
     console.error("Failed to update event in Firestore:", err);
   }
 
-  // Same destination as Cancel
   navigateToScreen('events');
 }
 
@@ -422,7 +412,6 @@ function startDrawListener() {
     console.log("Live draw update received:", matches.length, "matches");
     window.cachedUserUniverse.draw = matches;
 
-    // Refresh whichever screens are currently visible
     if (document.getElementById('view-current-round')?.classList.contains('active')) {
       renderCurrentRoundView(window.cachedUserUniverse);
     }
@@ -430,7 +419,35 @@ function startDrawListener() {
       renderStandingsView(window.cachedUserUniverse);
     }
     if (document.getElementById('screen-draw')?.style.display === 'block') {
-      renderDrawCards(window.cachedUserUniverse); // All Matches tab, if that screen is open
+      renderDrawCards(window.cachedUserUniverse);
     }
   });
 }
+
+// Global initialization event listener running on app startup
+window.addEventListener("DOMContentLoaded", async (event) => {
+  console.log("App loaded. Pre-fetching database universes...");
+
+  try {
+    await preFetchUserUniverseData();
+    startDrawListener();
+  } catch (error) {
+    console.error("Failed to load universe data:", error);
+  } finally {
+    const loader = document.getElementById("app-splash-preloader");
+    if (loader) {
+      loader.style.display = "none";
+    }
+  }
+
+  initMatchSwipeHandlers();
+  initCurrentRoundSwipeHandlers();
+});
+
+document.addEventListener('click', (e) => {
+  if (window.suppressNextCardClick) {
+    e.stopImmediatePropagation();
+    e.preventDefault();
+    window.suppressNextCardClick = false;
+  }
+}, true);
