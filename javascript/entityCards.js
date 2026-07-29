@@ -413,8 +413,24 @@ function updateMatchScore(team, delta) {
 
   document.getElementById(`team${team}-score-value`).innerText = updated;
 
+  // Derive Win/Loss from the current scores whenever they differ
+  const t1 = parseInt(match.Team1Score) || 0;
+  const t2 = parseInt(match.Team2Score) || 0;
+
+  if (t1 > t2) {
+    match.Team1WinLoss = 'Win';
+    match.Team2WinLoss = 'Loss';
+  } else if (t2 > t1) {
+    match.Team1WinLoss = 'Loss';
+    match.Team2WinLoss = 'Win';
+  } else {
+    // Scores tied (e.g. 0-0 before anyone's scored, or a genuine tie) — not yet a completed result
+    match.Team1WinLoss = '';
+    match.Team2WinLoss = '';
+  }
+
   scheduleScoreSave(match);
-  refreshStandingsIfVisible(); // NEW
+  refreshStandingsIfVisible();
 }
 
 function setMatchWinner(team) {
@@ -500,7 +516,7 @@ function scheduleScoreSave(match) {
 }
 
 function saveMatchScore(match) {
-  window.updateMatchScoreInFirestore(match.MatchID, match.Team1Score, match.Team2Score)
+  window.updateMatchScoreInFirestore(match.MatchID, match.Team1Score, match.Team2Score, match.Team1WinLoss, match.Team2WinLoss)
     .then(() => {
       console.log("Score saved successfully to Firestore.");
     })
