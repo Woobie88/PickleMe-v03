@@ -30,7 +30,7 @@ window.exportDuprCsv = async function() {
   }
 
   const headers = [
-    'matchType',	'event',	'date',	
+    'matchType', 'event',	'date',	
     'playerA1',	'playerA1DuprId',	'playerA1ExternalId',
     'playerA2',	'playerA2DuprId',	'playerA2ExternalId',
     'playerB1',	'playerB1DuprId',	'playerB1ExternalId',
