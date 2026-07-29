@@ -114,3 +114,9 @@ window.updateScoringModeInFirestore = async function(eventId, scoringMode) {
   const eventDocRef = doc(db, "events", String(eventId));
   await updateDoc(eventDocRef, { Scoring: scoringMode });
 };
+
+window.updateLadderScoringInFirestore = async function(eventId, ladderScoringMode) {
+  const db = window.db;
+  const eventDocRef = doc(db, "events", String(eventId));
+  await updateDoc(eventDocRef, { LadderScoring: ladderScoringMode });
+};
