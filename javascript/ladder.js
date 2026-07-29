@@ -101,7 +101,7 @@ async function renderStandingsView(payload) {
   standings.forEach((entry, index) => {
     const rank = index + 1;
     const iconAsset = ladderRankings[0]['rank-' + rank] || '🏅';
-    const iconMarkup = `<img src="${iconAsset}" alt="Rank ${rank}" class="card-icon-images" loading="lazy">`;
+    const iconMarkup = `<img src="${iconAsset}" alt="Rank ${rank}" class="card-icon-images-small" loading="lazy">`;
 
     const contentHtml = `
       <h3>${entry.player.FirstName || 'Unnamed'} (Seed: ${entry.player.Seed || '?'})</h3>
