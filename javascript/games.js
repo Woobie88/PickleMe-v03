@@ -541,3 +541,71 @@ function selectFormat(formatKey) {
 function closeFormatDetail() {
   document.getElementById('format-detail-overlay').classList.remove('open');
 }
+
+function enableGameDragToActivate() {
+  document.querySelectorAll('#screen-games .app-card[data-game-id]').forEach(card => {
+    let startY = 0, currentY = 0, isDragging = false;
+
+    card.addEventListener('touchstart', (e) => {
+      startY = e.touches[0].clientY;
+      isDragging = false;
+    }, { passive: true });
+
+    card.addEventListener('touchmove', (e) => {
+      currentY = e.touches[0].clientY;
+      const deltaY = currentY - startY;
+
+      if (deltaY < -25) {
+        isDragging = true;
+        const dragDistance = Math.min(Math.abs(deltaY), 80);
+        card.style.transform = `translateY(${-dragDistance}px)`;
+        card.style.opacity = 1 - (dragDistance / 160);
+      }
+    }, { passive: true });
+
+    card.addEventListener('touchend', async () => {
+      const deltaY = currentY - startY;
+      card.style.transform = '';
+      card.style.opacity = '';
+
+      if (isDragging && deltaY < -60) {
+        const gameId = card.dataset.gameId;
+        const activeEventId = window.cachedUserUniverse.activeEventId;
+        const activeEvent = window.cachedUserUniverse.events.find(
+          e => String(e.EventID || e.eventId) === String(activeEventId)
+        );
+
+        if (activeEvent && String(activeEvent.GameID) === String(gameId)) {
+          isDragging = false;
+          return; // already active — do nothing
+        }
+
+        try {
+          await window.updateActiveGameInFirestore(activeEventId, gameId);
+          if (activeEvent) activeEvent.GameID = gameId;
+          renderActiveGameHighlight();
+        } catch (err) {
+          console.error("Failed to set active game:", err);
+        }
+      } else if (!isDragging) {
+        const gameId = card.dataset.gameId;
+        selectFormat(gameId); // tap still opens the detail overlay
+      }
+
+      isDragging = false;
+    });
+  });
+}
+
+function renderActiveGameHighlight() {
+  const activeEventId = window.cachedUserUniverse.activeEventId;
+  const activeEvent = window.cachedUserUniverse.events.find(
+    e => String(e.EventID || e.eventId) === String(activeEventId)
+  );
+  const activeGameId = activeEvent ? activeEvent.GameID : null;
+
+  document.querySelectorAll('#screen-games .app-card[data-game-id]').forEach(card => {
+    const isActive = String(card.dataset.gameId) === String(activeGameId);
+    card.classList.toggle('active-event', isActive);
+  });
+}
