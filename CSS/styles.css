@@ -790,6 +790,7 @@ body {
   margin-bottom: 4px;
 }
 
+/* ===== SCORING / LADDER SCORING TOGGLE (shared styling) ===== */
 .scoring-toggle-block {
   display: flex;
   flex-direction: column;
@@ -827,6 +828,23 @@ body {
 .scoring-option.active {
   background-color: var(--accent);
   color: #121212;
+}
+
+/* ===== STANDINGS CARD — points circle badge ===== */
+.points-badge {
+  min-width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background-color: rgba(16, 185, 129, 0.12);
+  border: 1px solid var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--accent);
+  flex-shrink: 0;
+  padding: 0 4px;
 }
 
 .win-btn {
