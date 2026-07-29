@@ -123,3 +123,20 @@ async function renderStandingsView(payload) {
 
   container.innerHTML = html;
 }
+
+function renderLadderScoringToggle(activeEvent) {
+  const block = document.getElementById('ladder-scoring-block');
+  if (!block) return;
+
+  const scoringMode = activeEvent.Scoring || 'Points';
+  if (scoringMode !== 'Points') {
+    block.style.display = 'none';
+    return;
+  }
+  block.style.display = 'flex';
+
+  const currentValue = activeEvent.LadderScoring || 'Margin';
+  document.querySelectorAll('#ladder-scoring-toggle .scoring-option').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.value === currentValue);
+  });
+}
