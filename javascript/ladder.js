@@ -149,7 +149,9 @@ function setLadderScoringMode(newValue) {
   if (!activeEvent) return;
 
   activeEvent.LadderScoring = newValue;
-  renderLadderScoringToggle(activeEvent);
+
+  // Re-run the full standings render so points/order update immediately
+  renderStandingsView(window.cachedUserUniverse);
 
   window.updateLadderScoringInFirestore(activeEventId, newValue)
     .then(() => console.log("LadderScoring updated in Firestore:", newValue))
