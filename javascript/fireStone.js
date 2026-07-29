@@ -80,12 +80,14 @@ window.fetchDrawFromFirestore = async function(eventId, drawVersion) {
   return snapshot.docs.map(doc => doc.data());
 };
 
-window.updateMatchScoreInFirestore = async function(matchId, team1Score, team2Score) {
+window.updateMatchScoreInFirestore = async function(matchId, team1Score, team2Score, team1WinLoss, team2WinLoss) {
   const db = window.db;
   const matchDocRef = doc(db, "draw", String(matchId));
   await updateDoc(matchDocRef, {
     Team1Score: team1Score,
-    Team2Score: team2Score
+    Team2Score: team2Score,
+    Team1WinLoss: team1WinLoss,
+    Team2WinLoss: team2WinLoss
   });
 };
 
