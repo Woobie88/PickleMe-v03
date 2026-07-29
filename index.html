@@ -216,9 +216,18 @@
     
         <!-- TAB 3: Standings -->
         <div id="view-standings" class="tab-view">
-          <!-- left blank for now -->
+          <div class="scoring-toggle-block" id="ladder-scoring-block" style="display: none;">
+            <span class="scoring-toggle-label">Ladder Scoring</span>
+            <div class="scoring-toggle" id="ladder-scoring-toggle">
+              <button class="scoring-option" data-value="Margin" onclick="setLadderScoringMode('Margin')">Margin</button>
+              <button class="scoring-option" data-value="Overs" onclick="setLadderScoringMode('Overs')">Overs</button>
+              <button class="scoring-option" data-value="Wins" onclick="setLadderScoringMode('Wins')">Wins</button>
+            </div>
+          </div>
+        
+          <div id="standings-list" class="card-grid"></div>
         </div>
-    
+          
       </div>
 
         <!-- Dynamic Container where Player Cards load -->
