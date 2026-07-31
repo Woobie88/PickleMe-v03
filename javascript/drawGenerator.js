@@ -223,7 +223,7 @@ function generateRoundDraw(players, matches, byePlayerIds, roundNumber, courtsCo
     const winProb1 = calculateWinProbability(avg1, avg2);
 
     return {
-      MatchID: MatchID: generateMatchId(),
+      MatchID: generateMatchId(),
       EventID: eventId,
       Round: roundNumber,
       Court: m.court,
