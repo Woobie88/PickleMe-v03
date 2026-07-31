@@ -90,6 +90,158 @@ function renderEntityCards(options) {
   console.log(`Successfully rendered ${filtered.length} card(s) into #${containerId}.`);
 }
 
+function renderCheckInView(payload) {
+  const activeEventId = payload.activeEventId;
+  const activeEvent = payload.events.find(e => String(e.EventID) === String(activeEventId));
+  const currentPlayerVersion = activeEvent.CurrentPlayerVersion;
+
+  const players = (payload.players || []).filter(p => String(p.PlayerVersion) === String(currentPlayerVersion));
+
+  const manualPlayers = players
+    .filter(p => p.byeOrder !== undefined && p.byeOrder !== null && p.byeOrder !== '')
+    .sort((a, b) => (parseInt(a.byeOrder) || 0) - (parseInt(b.byeOrder) || 0));
+
+  const randomPlayers = players.filter(p => p.byeOrder === undefined || p.byeOrder === null || p.byeOrder === '');
+
+  const manualContainer = document.getElementById('manual-bye-list');
+  const randomContainer = document.getElementById('random-bye-list');
+  const emptyPlaceholder = document.getElementById('manual-bye-empty');
+
+  manualContainer.innerHTML = manualPlayers.length === 0
+    ? `<div class="no-data-placeholder" id="manual-bye-empty"><h3>Nil</h3></div>`
+    : manualPlayers.map(p => buildCardMarkup({
+        iconAsset: '🎾',
+        contentHtml: `<h3>${p.FirstName || 'Unnamed'}</h3><p class="card-meta-line">Order: ${p.byeOrder}</p>`,
+        cardId: p.PlayerID
+      })).join('');
+
+  randomContainer.innerHTML = randomPlayers.length === 0
+    ? `<div class="no-data-placeholder"><h3>No Players</h3></div>`
+    : randomPlayers.map(p => buildCardMarkup({
+        iconAsset: '🎾',
+        contentHtml: `<h3>${p.FirstName || 'Unnamed'}</h3>`,
+        cardId: p.PlayerID
+      })).join('');
+
+  enableCheckInDragDrop();
+}
+
+function enableCheckInDragDrop() {
+  const manualList = document.getElementById('manual-bye-list');
+  const randomList = document.getElementById('random-bye-list');
+  const containers = [manualList, randomList];
+
+  containers.forEach(container => {
+    container.querySelectorAll('.app-card[data-card-id]').forEach(card => {
+      let startY = 0, isDragging = false, longPressTimer = null;
+      let placeholder = null;
+
+      card.addEventListener('touchstart', () => {
+        longPressTimer = setTimeout(() => {
+          isDragging = true;
+          startY = 0;
+          card.classList.add('dragging');
+          if (navigator.vibrate) navigator.vibrate(30);
+
+          placeholder = document.createElement('div');
+          placeholder.className = 'app-card';
+          placeholder.style.opacity = '0.2';
+          placeholder.style.height = card.offsetHeight + 'px';
+          card.parentNode.insertBefore(placeholder, card.nextSibling);
+
+          document.body.appendChild(card);
+          card.style.position = 'fixed';
+          card.style.width = placeholder.getBoundingClientRect().width + 'px';
+          card.style.zIndex = 1000;
+        }, 350);
+      }, { passive: true });
+
+      card.addEventListener('touchmove', (e) => {
+        if (!isDragging) { clearTimeout(longPressTimer); return; }
+        e.preventDefault();
+        const touch = e.touches[0];
+        card.style.left = (touch.clientX - card.offsetWidth / 2) + 'px';
+        card.style.top = (touch.clientY - card.offsetHeight / 2) + 'px';
+
+        // Find what's under the touch point
+        card.style.display = 'none';
+        const elBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+        card.style.display = '';
+
+        const targetContainer = elBelow?.closest('#manual-bye-list, #random-bye-list');
+        if (!targetContainer) return;
+
+        const targetCard = elBelow.closest('.app-card[data-card-id]');
+
+        if (targetCard && targetCard !== placeholder) {
+          const box = targetCard.getBoundingClientRect();
+          const midY = box.top + box.height / 2;
+          if (touch.clientY < midY) {
+            targetContainer.insertBefore(placeholder, targetCard);
+          } else {
+            targetContainer.insertBefore(placeholder, targetCard.nextSibling);
+          }
+        } else if (targetContainer.children.length === 0 || (targetContainer.children.length === 1 && targetContainer.contains(placeholder))) {
+          targetContainer.appendChild(placeholder);
+        }
+      }, { passive: false });
+
+      card.addEventListener('touchend', () => {
+        clearTimeout(longPressTimer);
+        if (!isDragging) return;
+        isDragging = false;
+
+        card.classList.remove('dragging');
+        card.style.position = '';
+        card.style.left = '';
+        card.style.top = '';
+        card.style.width = '';
+        card.style.zIndex = '';
+
+        if (placeholder && placeholder.parentNode) {
+          placeholder.parentNode.insertBefore(card, placeholder);
+          placeholder.remove();
+        }
+
+        window.suppressNextCardClick = true;
+        commitCheckInOrder();
+      });
+    });
+  });
+}
+
+async function commitCheckInOrder() {
+  const manualCards = Array.from(document.getElementById('manual-bye-list').querySelectorAll('.app-card[data-card-id]'));
+  const randomCards = Array.from(document.getElementById('random-bye-list').querySelectorAll('.app-card[data-card-id]'));
+
+  const manualIds = manualCards.map(c => c.dataset.cardId);
+  const randomIds = randomCards.map(c => c.dataset.cardId);
+
+  const payload = window.cachedUserUniverse;
+  const updates = [];
+
+  manualIds.forEach((pid, idx) => {
+    const player = payload.players.find(p => p.PlayerID === pid);
+    if (player) player.byeOrder = idx + 1;
+    updates.push({ playerId: pid, byeOrder: idx + 1 });
+  });
+
+  randomIds.forEach(pid => {
+    const player = payload.players.find(p => p.PlayerID === pid);
+    if (player) player.byeOrder = null;
+    updates.push({ playerId: pid, byeOrder: null });
+  });
+
+  try {
+    await Promise.all(updates.map(u => window.updatePlayerByeOrderInFirestore(u.playerId, u.byeOrder)));
+    console.log("Bye order saved to Firestore.");
+  } catch (err) {
+    console.error("Failed to save bye order:", err);
+  }
+
+  renderCheckInView(payload); // re-render to show updated sequence numbers
+}
+
 async function renderPlayerCards(payload) {
   console.log('Calling renderPlayerCards');
 
