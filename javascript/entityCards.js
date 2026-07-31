@@ -105,23 +105,34 @@ function renderCheckInView(payload) {
 
   const manualContainer = document.getElementById('manual-bye-list');
   const randomContainer = document.getElementById('random-bye-list');
-  const emptyPlaceholder = document.getElementById('manual-bye-empty');
+
+  // Sort random players the same way the Players screen does — DUPR desc, tiebreak RandomNumber
+  randomPlayers.sort((a, b) => {
+    const duprDiff = (parseFloat(b.DUPR) || 0) - (parseFloat(a.DUPR) || 0);
+    if (duprDiff !== 0) return duprDiff;
+    return (parseFloat(a.RandomNumber) || 0) - (parseFloat(b.RandomNumber) || 0);
+  });
+
+  function buildPlayerCardMarkup(player, index) {
+    const seedNumber = index + 1;
+    const seedUrl = playerSeeds[0]['seed-' + seedNumber];
+    const iconAsset = seedUrl || '🎾';
+
+    const contentHtml = `
+      <h3>${player.Name || 'Unnamed Player'} ${player.FirstName ? '(' + player.FirstName + ')' : ''}</h3>
+      <p class="card-meta-line">${player.DUPRId || 'N/A'} ${player.DUPR ? ' || DUPR ' + player.DUPR : '0'}</p>
+    `;
+
+    return buildCardMarkup({ iconAsset, contentHtml, cardId: player.PlayerID });
+  }
 
   manualContainer.innerHTML = manualPlayers.length === 0
     ? `<div class="no-data-placeholder" id="manual-bye-empty"><h3>Nil</h3></div>`
-    : manualPlayers.map(p => buildCardMarkup({
-        iconAsset: '🎾',
-        contentHtml: `<h3>${p.FirstName || 'Unnamed'}</h3><p class="card-meta-line">Order: ${p.byeOrder}</p>`,
-        cardId: p.PlayerID
-      })).join('');
+    : manualPlayers.map((p, idx) => buildPlayerCardMarkup(p, idx)).join('');
 
   randomContainer.innerHTML = randomPlayers.length === 0
     ? `<div class="no-data-placeholder"><h3>No Players</h3></div>`
-    : randomPlayers.map(p => buildCardMarkup({
-        iconAsset: '🎾',
-        contentHtml: `<h3>${p.FirstName || 'Unnamed'}</h3>`,
-        cardId: p.PlayerID
-      })).join('');
+    : randomPlayers.map((p, idx) => buildPlayerCardMarkup(p, idx)).join('');
 
   enableCheckInDragDrop();
 }
