@@ -1,10 +1,12 @@
 /**
  * ============================================================
  * DRAW GENERATION ENGINE
- * Generates N rounds of round-robin matchups, minimizing
- * partner repeats, opponent repeats, and DUPR gaps, while
- * balancing court exposure. Byes rotate through a fixed
- * shuffled order that repeats each cycle.
+ * Generates N rounds of matchups for both single-group games
+ * (Rotating Partners) and clustered games (Divisions, Ladder
+ * Scramble, Pools, Pool Fusion), minimizing partner repeats,
+ * opponent repeats, and DUPR gaps, while balancing court
+ * exposure. Byes rotate through a fixed shuffled order that
+ * repeats each cycle — calculated per-team for clustered games.
  * ============================================================
  */
 
@@ -29,6 +31,15 @@ function calculateWinProbability(duprA, duprB) {
   return 1 / (1 + Math.pow(10, -diff / 2));
 }
 
+function generateMatchId() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let id = '';
+  for (let i = 0; i < 8; i++) {
+    id += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return id;
+}
+
 // ---------- BYE SCHEDULE ----------
 
 function generateByeSchedule(players, numberOfRounds, courtsCount) {
@@ -42,7 +53,6 @@ function generateByeSchedule(players, numberOfRounds, courtsCount) {
     return byesByRound;
   }
 
-  // Shuffle ONCE — this fixed order repeats every cycle
   const baseOrder = shuffle(players.map(p => p.PlayerID));
   let pointer = 0;
 
@@ -56,6 +66,24 @@ function generateByeSchedule(players, numberOfRounds, courtsCount) {
   }
 
   return byesByRound;
+}
+
+function generateByeScheduleByTeam(players, numberOfRounds, courtsPerTeam) {
+  const teams = {};
+  players.forEach(p => {
+    const t = p.Team;
+    if (!teams[t]) teams[t] = [];
+    teams[t].push(p);
+  });
+
+  const teamKeys = Object.keys(teams).sort((a, b) => parseInt(a) - parseInt(b));
+  const byeSchedulesByTeam = {};
+
+  teamKeys.forEach(teamKey => {
+    byeSchedulesByTeam[teamKey] = generateByeSchedule(teams[teamKey], numberOfRounds, courtsPerTeam);
+  });
+
+  return byeSchedulesByTeam;
 }
 
 // ---------- HISTORY BUILDING ----------
@@ -186,8 +214,8 @@ function generateBestMatchups(partnerships, opponentCounts, attempts = 300) {
 
 // ---------- COURT ALLOCATION ----------
 
-function assignCourts(matchups, courtsCount, courtCounts) {
-  const remainingCourts = Array.from({ length: courtsCount }, (_, i) => i + 1);
+function assignCourts(matchups, courtNumbers, courtCounts) {
+  const remainingCourts = [...courtNumbers];
   const assigned = [];
 
   matchups.forEach(match => {
@@ -206,80 +234,127 @@ function assignCourts(matchups, courtsCount, courtCounts) {
   return assigned;
 }
 
-// ---------- SINGLE ROUND GENERATION ----------
+// ---------- MATCH RECORD BUILDER ----------
+
+function buildMatchRecord(m, idx, roundNumber, eventId, drawVersion) {
+  const avg1 = teamAvgDupr(m.teamA);
+  const avg2 = teamAvgDupr(m.teamB);
+  const winProb1 = calculateWinProbability(avg1, avg2);
+
+  return {
+    MatchID: generateMatchId(),
+    EventID: eventId,
+    Round: roundNumber,
+    Court: m.court,
+    DrawVersion: drawVersion,
+    MatchType: "Round Robin",
+    Team1: idx + 1,
+    Team2: idx + 1,
+    Team1Player1: m.teamA[0].PlayerID,
+    Team1Player2: m.teamA[1].PlayerID,
+    Team2Player1: m.teamB[0].PlayerID,
+    Team2Player2: m.teamB[1].PlayerID,
+    Team1AvgDUPR: avg1,
+    Team2AvgDUPR: avg2,
+    Team1WinProb: winProb1,
+    Team2WinProb: 1 - winProb1,
+    ExpectedTeam1Score: winProb1 >= 0.5 ? 11 : Math.round(winProb1 * 11 / (1 - winProb1)),
+    ExpectedTeam2Score: winProb1 >= 0.5 ? Math.round((1 - winProb1) * 11 / winProb1) : 11,
+    Team1Score: 0,
+    Team2Score: 0,
+    Team1WinLoss: '',
+    Team2WinLoss: '',
+    Timestamp: new Date().toISOString()
+  };
+}
+
+// ---------- SHARED GROUP GENERATOR ----------
+
+function generateGroupMatches(groupPlayers, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion) {
+  const partnerships = generateBestPartnerships(groupPlayers, partnerCounts);
+  const matchups = generateBestMatchups(partnerships, opponentCounts);
+  const courted = assignCourts(matchups, courtNumbers, courtCounts);
+
+  return courted.map((m, idx) => buildMatchRecord(m, idx, roundNumber, eventId, drawVersion));
+}
+
+// ---------- SINGLE ROUND GENERATION (Rotating Partners — one group, all courts) ----------
 
 function generateRoundDraw(players, matches, byePlayerIds, roundNumber, courtsCount, eventId, drawVersion) {
   const eligible = players.filter(p => !byePlayerIds.includes(p.PlayerID));
-
   const { partnerCounts, opponentCounts, courtCounts } = buildDrawHistory(matches);
+  const courtNumbers = Array.from({ length: courtsCount }, (_, i) => i + 1);
 
-  const partnerships = generateBestPartnerships(eligible, partnerCounts);
-  const matchups = generateBestMatchups(partnerships, opponentCounts);
-  const courted = assignCourts(matchups, courtsCount, courtCounts);
-
-  return courted.map((m, idx) => {
-    const avg1 = teamAvgDupr(m.teamA);
-    const avg2 = teamAvgDupr(m.teamB);
-    const winProb1 = calculateWinProbability(avg1, avg2);
-
-    return {
-      MatchID: generateMatchId(),
-      EventID: eventId,
-      Round: roundNumber,
-      Court: m.court,
-      DrawVersion: drawVersion,
-      MatchType: "Round Robin",
-      Team1: idx + 1,
-      Team2: idx + 1,
-      Team1Player1: m.teamA[0].PlayerID,
-      Team1Player2: m.teamA[1].PlayerID,
-      Team2Player1: m.teamB[0].PlayerID,
-      Team2Player2: m.teamB[1].PlayerID,
-      Team1AvgDUPR: avg1,
-      Team2AvgDUPR: avg2,
-      Team1WinProb: winProb1,
-      Team2WinProb: 1 - winProb1,
-      ExpectedTeam1Score: winProb1 >= 0.5 ? 11 : Math.min(Math.round(winProb1 * 11 / (1 - winProb1)), 9),
-      ExpectedTeam2Score: winProb1 >= 0.5 ? Math.min(Math.round((1 - winProb1) * 11 / winProb1), 9) : 11,
-      Team1Score: 0,
-      Team2Score: 0,
-      Team1WinLoss: '',
-      Team2WinLoss: '',
-      Timestamp: new Date().toISOString()
-    };
-  });
+  return generateGroupMatches(eligible, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion);
 }
 
-// ---------- UNIQUE CODE GENERATION ----------
+// ---------- CLUSTERED ROUND GENERATION (Divisions, Ladder Scramble, Pools, Pool Fusion) ----------
 
-function generateMatchId() {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let id = '';
-  for (let i = 0; i < 8; i++) {
-    id += chars[Math.floor(Math.random() * chars.length)];
+function generateClusteredRoundDraw(players, matches, byesByTeamForThisRound, roundNumber, courtsCount, eventId, drawVersion, numberOfTeams) {
+  if (courtsCount % numberOfTeams !== 0) {
+    console.error(`Cannot generate draw: courtsCount (${courtsCount}) is not evenly divisible by NumberOfTeams (${numberOfTeams}).`);
+    return [];
   }
-  return id;
+
+  const courtsPerTeam = courtsCount / numberOfTeams;
+  const { partnerCounts, opponentCounts, courtCounts } = buildDrawHistory(matches);
+
+  const teams = {};
+  players.forEach(p => {
+    const t = p.Team;
+    if (!teams[t]) teams[t] = [];
+    teams[t].push(p);
+  });
+
+  const teamKeys = Object.keys(teams).sort((a, b) => parseInt(a) - parseInt(b));
+
+  let allMatches = [];
+  let courtCursor = 1;
+
+  teamKeys.forEach(teamKey => {
+    const teamByes = byesByTeamForThisRound[teamKey] || [];
+    const teamPlayers = teams[teamKey].filter(p => !teamByes.includes(p.PlayerID));
+
+    const courtNumbers = [];
+    for (let i = 0; i < courtsPerTeam; i++) {
+      courtNumbers.push(courtCursor);
+      courtCursor++;
+    }
+
+    if (teamPlayers.length !== courtsPerTeam * 4) {
+      console.warn(`Team ${teamKey} has ${teamPlayers.length} eligible players but ${courtsPerTeam} courts expect ${courtsPerTeam * 4}. Proceeding anyway.`);
+    }
+
+    const teamMatches = generateGroupMatches(teamPlayers, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion);
+    allMatches.push(...teamMatches);
+  });
+
+  return allMatches;
 }
 
 // ---------- MULTI-ROUND GENERATION ----------
 
-function generateMultipleRounds(players, existingMatches, byesByRound, startRound, numberOfRounds, courtsCount, eventId, drawVersion) {
+function generateMultipleRounds(players, existingMatches, byesByRound, startRound, numberOfRounds, courtsCount, eventId, drawVersion, gameId, numberOfTeams) {
   let allMatches = [...existingMatches];
   const generatedRounds = [];
 
+  const clusteredGames = ['divisions', 'ladder-scramble', 'pools', 'pool-fusion'];
+  const isClustered = clusteredGames.includes(gameId);
+
   for (let i = 0; i < numberOfRounds; i++) {
     const roundNumber = startRound + i;
-    const byesForThisRound = byesByRound[roundNumber] || [];
 
-    const roundMatches = generateRoundDraw(
-      players,
-      allMatches,
-      byesForThisRound,
-      roundNumber,
-      courtsCount,
-      eventId,
-      drawVersion
-    );
+    let roundMatches;
+    if (isClustered) {
+      const byesByTeamForThisRound = {};
+      Object.keys(byesByRound).forEach(teamKey => {
+        byesByTeamForThisRound[teamKey] = byesByRound[teamKey][i] || [];
+      });
+      roundMatches = generateClusteredRoundDraw(players, allMatches, byesByTeamForThisRound, roundNumber, courtsCount, eventId, drawVersion, numberOfTeams);
+    } else {
+      const byesForThisRound = byesByRound[roundNumber] || [];
+      roundMatches = generateRoundDraw(players, allMatches, byesForThisRound, roundNumber, courtsCount, eventId, drawVersion);
+    }
 
     generatedRounds.push(...roundMatches);
     allMatches = [...allMatches, ...roundMatches];
@@ -288,7 +363,7 @@ function generateMultipleRounds(players, existingMatches, byesByRound, startRoun
   return generatedRounds;
 }
 
-// ---------- PLAYER SUMMARY -----------------
+// ---------- PLAYER SUMMARY LOGGING ----------
 
 function logPlayerSummary(players, matches, byesByRound) {
   const summary = {};
@@ -302,14 +377,12 @@ function logPlayerSummary(players, matches, byesByRound) {
     };
   });
 
-  // Count byes across all rounds
   Object.values(byesByRound).forEach(byeList => {
     byeList.forEach(pid => {
       if (summary[pid]) summary[pid].byes++;
     });
   });
 
-  // Count games, partners, opponents from generated matches
   matches.forEach(m => {
     const t1 = [m.Team1Player1, m.Team1Player2];
     const t2 = [m.Team2Player1, m.Team2Player2];
@@ -318,13 +391,11 @@ function logPlayerSummary(players, matches, byesByRound) {
       if (summary[pid]) summary[pid].games++;
     });
 
-    // Partners
     if (summary[t1[0]]) summary[t1[0]].partners[t1[1]] = (summary[t1[0]].partners[t1[1]] || 0) + 1;
     if (summary[t1[1]]) summary[t1[1]].partners[t1[0]] = (summary[t1[1]].partners[t1[0]] || 0) + 1;
     if (summary[t2[0]]) summary[t2[0]].partners[t2[1]] = (summary[t2[0]].partners[t2[1]] || 0) + 1;
     if (summary[t2[1]]) summary[t2[1]].partners[t2[0]] = (summary[t2[1]].partners[t2[0]] || 0) + 1;
 
-    // Opponents
     t1.forEach(p1 => t2.forEach(p2 => {
       if (summary[p1]) summary[p1].opponents[p2] = (summary[p1].opponents[p2] || 0) + 1;
       if (summary[p2]) summary[p2].opponents[p1] = (summary[p2].opponents[p1] || 0) + 1;
@@ -351,8 +422,6 @@ async function generateNRoundsAndPreview(numberOfRounds) {
   const payload = window.cachedUserUniverse;
   const activeEventId = payload.activeEventId;
   const activeEvent = payload.events.find(e => String(e.EventID) === String(activeEventId));
-  
-  const startRound = 1; // always starts fresh at Round 1, ignoring any existing draw
 
   const players = payload.players && payload.players.length > 0
     ? payload.players
@@ -362,29 +431,48 @@ async function generateNRoundsAndPreview(numberOfRounds) {
   const courtsCount = Math.min(parseInt(activeEvent.NumberofCourts) || 1, Math.floor(players.length / 4) || 1);
   console.log(`Courts calculated: ${courtsCount} (NumberofCourts: ${activeEvent.NumberofCourts}, Players: ${players.length}, Max supportable courts: ${Math.floor(players.length / 4)})`);
 
-  
+  const gameId = activeEvent.GameID;
+  const numberOfTeams = parseInt(activeEvent.NumberOfTeams) || 1;
 
-  const byeSchedule = generateByeSchedule(players, numberOfRounds, courtsCount);
+  const startRound = 1;
 
-  const byesByRound = {};
-  Object.keys(byeSchedule).forEach(i => {
-    byesByRound[startRound + parseInt(i)] = byeSchedule[i];
-  });
+  const clusteredGames = ['divisions', 'ladder-scramble', 'pools', 'pool-fusion'];
+  const isClustered = clusteredGames.includes(gameId);
+
+  let byesByRound;
+  if (isClustered) {
+    const courtsPerTeam = courtsCount / numberOfTeams;
+    byesByRound = generateByeScheduleByTeam(players, numberOfRounds, courtsPerTeam);
+  } else {
+    const byeSchedule = generateByeSchedule(players, numberOfRounds, courtsCount);
+    byesByRound = {};
+    Object.keys(byeSchedule).forEach(i => {
+      byesByRound[startRound + parseInt(i)] = byeSchedule[i];
+    });
+  }
 
   const newMatches = generateMultipleRounds(
     players,
-    [], // no existing history — every generation starts clean
+    [],
     byesByRound,
     startRound,
     numberOfRounds,
     courtsCount,
     activeEventId,
-    activeEvent.CurrentDrawVersion
+    activeEvent.CurrentDrawVersion,
+    gameId,
+    numberOfTeams
   );
 
-  console.log(`Generated ${newMatches.length} matches across ${numberOfRounds} round(s):`, newMatches);
+  console.log(`Generated ${newMatches.length} matches across ${numberOfRounds} round(s) for game type "${gameId}":`, newMatches);
 
-  logPlayerSummary(players, newMatches, byesByRound);
-  
+  const flatByesByRound = {};
+  for (let i = 0; i < numberOfRounds; i++) {
+    flatByesByRound[startRound + i] = isClustered
+      ? Object.values(byesByRound).flatMap(teamSchedule => teamSchedule[i] || [])
+      : byesByRound[startRound + i] || [];
+  }
+  logPlayerSummary(players, newMatches, flatByesByRound);
+
   return newMatches;
 }
