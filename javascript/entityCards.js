@@ -150,24 +150,29 @@ function enableCheckInDragDrop() {
       let startY = 0, isDragging = false, longPressTimer = null;
       let placeholder = null;
 
-      card.addEventListener('touchstart', () => {
-        console.log("touchstart on card:", card.dataset.cardId); // ADD THIS
+      card.addEventListener('touchstart', (e) => {
+        console.log("touchstart on card:", card.dataset.cardId);
+        const touchStartEvent = e; // capture for initial positioning
+      
         longPressTimer = setTimeout(() => {
-          console.log("Long press triggered — isDragging = true"); // ADD THIS
+          console.log("Long press triggered — isDragging = true");
           isDragging = true;
-          startY = 0;
           card.classList.add('dragging');
           if (navigator.vibrate) navigator.vibrate(30);
-
+      
+          const rect = card.getBoundingClientRect(); // capture position BEFORE moving it
+      
           placeholder = document.createElement('div');
           placeholder.className = 'app-card';
           placeholder.style.opacity = '0.2';
           placeholder.style.height = card.offsetHeight + 'px';
           card.parentNode.insertBefore(placeholder, card.nextSibling);
-
+      
           document.body.appendChild(card);
           card.style.position = 'fixed';
-          card.style.width = placeholder.getBoundingClientRect().width + 'px';
+          card.style.width = rect.width + 'px';
+          card.style.left = rect.left + 'px';   // ADD — set immediately, using pre-move position
+          card.style.top = rect.top + 'px';     // ADD
           card.style.zIndex = 1000;
         }, 350);
       }, { passive: true });
