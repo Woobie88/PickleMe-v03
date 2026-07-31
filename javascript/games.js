@@ -543,31 +543,15 @@ function closeFormatDetail() {
 
 function enableGameDragToActivate() {
   document.querySelectorAll('#screen-games .app-card[data-game-id]').forEach(card => {
-    let startY = 0, currentY = 0, isDragging = false;
+    let longPressTimer = null;
+    let longPressTriggered = false;
 
-    card.addEventListener('touchstart', (e) => {
-      startY = e.touches[0].clientY;
-      isDragging = false;
-    }, { passive: true });
+    card.addEventListener('touchstart', () => {
+      longPressTriggered = false;
+      longPressTimer = setTimeout(async () => {
+        longPressTriggered = true;
+        if (navigator.vibrate) navigator.vibrate(30);
 
-    card.addEventListener('touchmove', (e) => {
-      currentY = e.touches[0].clientY;
-      const deltaY = currentY - startY;
-
-      if (deltaY < -25) {
-        isDragging = true;
-        const dragDistance = Math.min(Math.abs(deltaY), 80);
-        card.style.transform = `translateY(${-dragDistance}px)`;
-        card.style.opacity = 1 - (dragDistance / 160);
-      }
-    }, { passive: true });
-
-    card.addEventListener('touchend', async () => {
-      const deltaY = currentY - startY;
-      card.style.transform = '';
-      card.style.opacity = '';
-
-      if (isDragging && deltaY < -60) {
         const gameId = card.dataset.gameId;
         const activeEventId = window.cachedUserUniverse.activeEventId;
         const activeEvent = window.cachedUserUniverse.events.find(
@@ -575,7 +559,6 @@ function enableGameDragToActivate() {
         );
 
         if (activeEvent && String(activeEvent.GameID) === String(gameId)) {
-          isDragging = false;
           return; // already active — do nothing
         }
 
@@ -586,12 +569,25 @@ function enableGameDragToActivate() {
         } catch (err) {
           console.error("Failed to set active game:", err);
         }
-      } else if (!isDragging) {
-        const gameId = card.dataset.gameId;
-        selectFormat(gameId); // tap still opens the detail overlay
-      }
+      }, 600); // long-press threshold
+    }, { passive: true });
 
-      isDragging = false;
+    card.addEventListener('touchmove', () => {
+      // Any movement cancels the long-press (so it doesn't fire mid-scroll)
+      clearTimeout(longPressTimer);
+    }, { passive: true });
+
+    card.addEventListener('touchend', () => {
+      clearTimeout(longPressTimer);
+
+      if (longPressTriggered) {
+        // Long-press already handled activation — suppress the click so tap-to-detail doesn't also fire
+        window.suppressNextCardClick = true;
+      } else {
+        // Short tap — open the detail overlay
+        const gameId = card.dataset.gameId;
+        selectFormat(gameId);
+      }
     });
   });
 }
