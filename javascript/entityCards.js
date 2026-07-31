@@ -146,11 +146,14 @@ function enableCheckInDragDrop() {
 
   containers.forEach(container => {
     container.querySelectorAll('.app-card[data-card-id]').forEach(card => {
+      console.log("Attaching listeners to card:", card.dataset.cardId); // ADD THIS
       let startY = 0, isDragging = false, longPressTimer = null;
       let placeholder = null;
 
       card.addEventListener('touchstart', () => {
+        console.log("touchstart on card:", card.dataset.cardId); // ADD THIS
         longPressTimer = setTimeout(() => {
+          console.log("Long press triggered — isDragging = true"); // ADD THIS
           isDragging = true;
           startY = 0;
           card.classList.add('dragging');
