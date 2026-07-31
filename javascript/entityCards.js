@@ -138,9 +138,11 @@ function renderCheckInView(payload) {
 }
 
 function enableCheckInDragDrop() {
+  console.log("enableCheckInDragDrop called"); // ADD THIS
   const manualList = document.getElementById('manual-bye-list');
   const randomList = document.getElementById('random-bye-list');
   const containers = [manualList, randomList];
+  console.log("manualList:", manualList, "randomList:", randomList); // ADD THIS
 
   containers.forEach(container => {
     container.querySelectorAll('.app-card[data-card-id]').forEach(card => {
