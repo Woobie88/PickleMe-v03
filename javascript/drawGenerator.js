@@ -360,7 +360,7 @@ async function generateNRoundsAndPreview(numberOfRounds) {
     : await window.fetchPlayersFromFirestore(activeEventId, activeEvent.CurrentPlayerVersion);
   window.cachedUserUniverse.players = players;
 
-  console.log(`Number of players ${players.length});
+  console.log(`Number of players ${players.length}`);
 
   const byeSchedule = generateByeSchedule(players, numberOfRounds, courtsCount);
 
