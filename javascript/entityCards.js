@@ -138,48 +138,37 @@ function renderCheckInView(payload) {
 }
 
 function enableCheckInDragDrop() {
-  console.log("enableCheckInDragDrop called"); // ADD THIS
   const manualList = document.getElementById('manual-bye-list');
   const randomList = document.getElementById('random-bye-list');
   const containers = [manualList, randomList];
-  console.log("manualList:", manualList, "randomList:", randomList); // ADD THIS
 
   containers.forEach(container => {
     container.querySelectorAll('.app-card[data-card-id]').forEach(card => {
-      console.log("Attaching listeners to card:", card.dataset.cardId); // ADD THIS
-      let startY = 0, isDragging = false, longPressTimer = null;
+      let isDragging = false, longPressTimer = null;
       let placeholder = null;
 
-      card.addEventListener('touchmove', (e) => {
-        if (!isDragging) { clearTimeout(longPressTimer); return; }
-        e.preventDefault();
-        const touch = e.touches[0];
-        card.style.left = (touch.clientX - card.offsetWidth / 2) + 'px';
-        card.style.top = (touch.clientY - card.offsetHeight / 2) + 'px';
-      
-        card.style.display = 'none';
-        const elBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-        card.style.display = '';
-      
-        const targetContainer = elBelow?.closest('#manual-bye-list, #random-bye-list');
-        console.log("elBelow:", elBelow, "targetContainer:", targetContainer?.id); // ADD THIS
-      
-        if (!targetContainer) return;
-      
-        const targetCard = elBelow.closest('.app-card[data-card-id]');
-      
-        if (targetCard && targetCard !== placeholder) {
-          const box = targetCard.getBoundingClientRect();
-          const midY = box.top + box.height / 2;
-          if (touch.clientY < midY) {
-            targetContainer.insertBefore(placeholder, targetCard);
-          } else {
-            targetContainer.insertBefore(placeholder, targetCard.nextSibling);
-          }
-        } else if (targetContainer.children.length === 0 || (targetContainer.children.length === 1 && targetContainer.contains(placeholder))) {
-          targetContainer.appendChild(placeholder);
-        }
-      }, { passive: false });
+      card.addEventListener('touchstart', () => {
+        longPressTimer = setTimeout(() => {
+          isDragging = true;
+          card.classList.add('dragging');
+          if (navigator.vibrate) navigator.vibrate(30);
+
+          const rect = card.getBoundingClientRect();
+
+          placeholder = document.createElement('div');
+          placeholder.className = 'app-card';
+          placeholder.style.opacity = '0.2';
+          placeholder.style.height = card.offsetHeight + 'px';
+          card.parentNode.insertBefore(placeholder, card.nextSibling);
+
+          document.body.appendChild(card);
+          card.style.position = 'fixed';
+          card.style.width = rect.width + 'px';
+          card.style.left = rect.left + 'px';
+          card.style.top = rect.top + 'px';
+          card.style.zIndex = 1000;
+        }, 350);
+      }, { passive: true });
 
       card.addEventListener('touchmove', (e) => {
         if (!isDragging) { clearTimeout(longPressTimer); return; }
@@ -188,7 +177,6 @@ function enableCheckInDragDrop() {
         card.style.left = (touch.clientX - card.offsetWidth / 2) + 'px';
         card.style.top = (touch.clientY - card.offsetHeight / 2) + 'px';
 
-        // Find what's under the touch point
         card.style.display = 'none';
         const elBelow = document.elementFromPoint(touch.clientX, touch.clientY);
         card.style.display = '';
@@ -206,7 +194,9 @@ function enableCheckInDragDrop() {
           } else {
             targetContainer.insertBefore(placeholder, targetCard.nextSibling);
           }
-        } else if (targetContainer.children.length === 0 || (targetContainer.children.length === 1 && targetContainer.contains(placeholder))) {
+        } else if (!targetContainer.querySelector('.app-card[data-card-id]')) {
+          // Container is empty of real cards (only the "Nil"/"No Players" placeholder, or nothing)
+          targetContainer.innerHTML = '';
           targetContainer.appendChild(placeholder);
         }
       }, { passive: false });
