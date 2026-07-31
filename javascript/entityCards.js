@@ -150,32 +150,36 @@ function enableCheckInDragDrop() {
       let startY = 0, isDragging = false, longPressTimer = null;
       let placeholder = null;
 
-      card.addEventListener('touchstart', (e) => {
-        console.log("touchstart on card:", card.dataset.cardId);
-        const touchStartEvent = e; // capture for initial positioning
+      card.addEventListener('touchmove', (e) => {
+        if (!isDragging) { clearTimeout(longPressTimer); return; }
+        e.preventDefault();
+        const touch = e.touches[0];
+        card.style.left = (touch.clientX - card.offsetWidth / 2) + 'px';
+        card.style.top = (touch.clientY - card.offsetHeight / 2) + 'px';
       
-        longPressTimer = setTimeout(() => {
-          console.log("Long press triggered — isDragging = true");
-          isDragging = true;
-          card.classList.add('dragging');
-          if (navigator.vibrate) navigator.vibrate(30);
+        card.style.display = 'none';
+        const elBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+        card.style.display = '';
       
-          const rect = card.getBoundingClientRect(); // capture position BEFORE moving it
+        const targetContainer = elBelow?.closest('#manual-bye-list, #random-bye-list');
+        console.log("elBelow:", elBelow, "targetContainer:", targetContainer?.id); // ADD THIS
       
-          placeholder = document.createElement('div');
-          placeholder.className = 'app-card';
-          placeholder.style.opacity = '0.2';
-          placeholder.style.height = card.offsetHeight + 'px';
-          card.parentNode.insertBefore(placeholder, card.nextSibling);
+        if (!targetContainer) return;
       
-          document.body.appendChild(card);
-          card.style.position = 'fixed';
-          card.style.width = rect.width + 'px';
-          card.style.left = rect.left + 'px';   // ADD — set immediately, using pre-move position
-          card.style.top = rect.top + 'px';     // ADD
-          card.style.zIndex = 1000;
-        }, 350);
-      }, { passive: true });
+        const targetCard = elBelow.closest('.app-card[data-card-id]');
+      
+        if (targetCard && targetCard !== placeholder) {
+          const box = targetCard.getBoundingClientRect();
+          const midY = box.top + box.height / 2;
+          if (touch.clientY < midY) {
+            targetContainer.insertBefore(placeholder, targetCard);
+          } else {
+            targetContainer.insertBefore(placeholder, targetCard.nextSibling);
+          }
+        } else if (targetContainer.children.length === 0 || (targetContainer.children.length === 1 && targetContainer.contains(placeholder))) {
+          targetContainer.appendChild(placeholder);
+        }
+      }, { passive: false });
 
       card.addEventListener('touchmove', (e) => {
         if (!isDragging) { clearTimeout(longPressTimer); return; }
