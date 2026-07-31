@@ -1010,3 +1010,10 @@ body {
 #fab-x-icon {
   position: absolute;
 }
+
+.app-card.dragging {
+  opacity: 0.85;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+  z-index: 1000;
+  position: relative;
+}
