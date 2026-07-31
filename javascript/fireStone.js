@@ -145,3 +145,9 @@ window.updatePlayerByeOrderInFirestore = async function(playerId, byeOrder) {
   const playerDocRef = doc(db, "players", String(playerId));
   await updateDoc(playerDocRef, { byeOrder: byeOrder });
 };
+
+window.updatePlayerExcludeInFirestore = async function(playerId, playerExclude) {
+  const db = window.db;
+  const playerDocRef = doc(db, "players", String(playerId));
+  await updateDoc(playerDocRef, { playerExclude: playerExclude });
+};
