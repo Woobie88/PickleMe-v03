@@ -294,15 +294,15 @@ async function renderPlayerCards(payload) {
 }
 
 function switchPlayersTab(tabId) {
-  document.querySelectorAll('#screen-players .top-tab-bar .tab-item').forEach(tab => {
-    tab.classList.remove('active');
-  });
-  document.querySelectorAll('#screen-players .tab-viewport .tab-view').forEach(view => {
-    view.classList.remove('active');
-  });
+  document.querySelectorAll('#screen-players .top-tab-bar .tab-item').forEach(tab => tab.classList.remove('active'));
+  document.querySelectorAll('#screen-players .tab-viewport .tab-view').forEach(view => view.classList.remove('active'));
 
   document.getElementById('tab-' + tabId).classList.add('active');
   document.getElementById('view-' + tabId).classList.add('active');
+
+  if (tabId === 'checkin') {
+    renderCheckInView(window.cachedUserUniverse);
+  }
 }
 
 function enableDragReorder(containerId, onReorderComplete) {
