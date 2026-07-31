@@ -139,3 +139,9 @@ window.updateActiveGameInFirestore = async function(eventId, gameId) {
   const eventDocRef = doc(db, "events", String(eventId));
   await updateDoc(eventDocRef, { GameID: gameId });
 };
+
+window.updatePlayerByeOrderInFirestore = async function(playerId, byeOrder) {
+  const db = window.db;
+  const playerDocRef = doc(db, "players", String(playerId));
+  await updateDoc(playerDocRef, { byeOrder: byeOrder });
+};
