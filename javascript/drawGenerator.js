@@ -351,8 +351,7 @@ async function generateNRoundsAndPreview(numberOfRounds) {
   const payload = window.cachedUserUniverse;
   const activeEventId = payload.activeEventId;
   const activeEvent = payload.events.find(e => String(e.EventID) === String(activeEventId));
-  const courtsCount = parseInt(activeEvent.NumberofCourts) || 1;
-
+  
   const startRound = 1; // always starts fresh at Round 1, ignoring any existing draw
 
   const players = payload.players && payload.players.length > 0
@@ -360,7 +359,10 @@ async function generateNRoundsAndPreview(numberOfRounds) {
     : await window.fetchPlayersFromFirestore(activeEventId, activeEvent.CurrentPlayerVersion);
   window.cachedUserUniverse.players = players;
 
-  console.log(`Number of players ${players.length}`);
+  const courtsCount = Math.min(parseInt(activeEvent.NumberofCourts) || 1, Math.floor(players.length / 4) || 1);
+  console.log(`Courts calculated: ${courtsCount} (NumberofCourts: ${activeEvent.NumberofCourts}, Players: ${players.length}, Max supportable courts: ${Math.floor(players.length / 4)})`);
+
+  
 
   const byeSchedule = generateByeSchedule(players, numberOfRounds, courtsCount);
 
