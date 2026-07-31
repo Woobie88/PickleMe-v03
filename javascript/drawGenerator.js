@@ -223,7 +223,7 @@ function generateRoundDraw(players, matches, byePlayerIds, roundNumber, courtsCo
     const winProb1 = calculateWinProbability(avg1, avg2);
 
     return {
-      MatchID: `${eventId}_r${roundNumber}_${idx}`,
+      MatchID: MatchID: generateMatchId(),
       EventID: eventId,
       Round: roundNumber,
       Court: m.court,
@@ -239,8 +239,8 @@ function generateRoundDraw(players, matches, byePlayerIds, roundNumber, courtsCo
       Team2AvgDUPR: avg2,
       Team1WinProb: winProb1,
       Team2WinProb: 1 - winProb1,
-      ExpectedTeam1Score: Math.round(winProb1 * 11),
-      ExpectedTeam2Score: Math.round((1 - winProb1) * 11),
+      ExpectedTeam1Score: winProb1 >= 0.5 ? 11 : Math.round(winProb1 * 11 / (1 - winProb1)),
+      ExpectedTeam2Score: winProb1 >= 0.5 ? Math.round((1 - winProb1) * 11 / winProb1) : 11,
       Team1Score: 0,
       Team2Score: 0,
       Team1WinLoss: '',
@@ -248,6 +248,17 @@ function generateRoundDraw(players, matches, byePlayerIds, roundNumber, courtsCo
       Timestamp: new Date().toISOString()
     };
   });
+}
+
+// ---------- UNIQUE CODE GENERATION ----------
+
+function generateMatchId() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let id = '';
+  for (let i = 0; i < 8; i++) {
+    id += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return id;
 }
 
 // ---------- MULTI-ROUND GENERATION ----------
