@@ -188,16 +188,29 @@ function enableCheckInDragDrop() {
         const touch = e.touches[0];
         card.style.left = (touch.clientX - card.offsetWidth / 2) + 'px';
         card.style.top = (touch.clientY - card.offsetHeight / 2) + 'px';
-
+      
+        // AUTO-SCROLL: if dragging near the top or bottom edge of the scrollable area, scroll automatically
+        const scrollContainer = document.querySelector('.app-container');
+        const edgeThreshold = 80; // px from edge that triggers scrolling
+        const scrollSpeed = 12;
+      
+        if (scrollContainer) {
+          if (touch.clientY < edgeThreshold) {
+            scrollContainer.scrollTop -= scrollSpeed;
+          } else if (touch.clientY > window.innerHeight - edgeThreshold) {
+            scrollContainer.scrollTop += scrollSpeed;
+          }
+        }
+      
         card.style.display = 'none';
         const elBelow = document.elementFromPoint(touch.clientX, touch.clientY);
         card.style.display = '';
-
+      
         const targetContainer = elBelow?.closest('#manual-bye-list, #random-bye-list');
         if (!targetContainer) return;
-
+      
         const targetCard = elBelow.closest('.app-card[data-card-id]');
-
+      
         if (targetCard && targetCard !== placeholder) {
           const box = targetCard.getBoundingClientRect();
           const midY = box.top + box.height / 2;
@@ -207,7 +220,6 @@ function enableCheckInDragDrop() {
             targetContainer.insertBefore(placeholder, targetCard.nextSibling);
           }
         } else if (!targetContainer.querySelector('.app-card[data-card-id]')) {
-          // Container is empty of real cards (only the "Nil"/"No Players" placeholder, or nothing)
           targetContainer.innerHTML = '';
           targetContainer.appendChild(placeholder);
         }
