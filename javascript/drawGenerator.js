@@ -277,6 +277,63 @@ function generateMultipleRounds(players, existingMatches, byesByRound, startRoun
   return generatedRounds;
 }
 
+// ---------- PLAYER SUMMARY -----------------
+
+function logPlayerSummary(players, matches, byesByRound) {
+  const summary = {};
+
+  players.forEach(p => {
+    summary[p.PlayerID] = {
+      games: 0,
+      byes: 0,
+      partners: {},
+      opponents: {}
+    };
+  });
+
+  // Count byes across all rounds
+  Object.values(byesByRound).forEach(byeList => {
+    byeList.forEach(pid => {
+      if (summary[pid]) summary[pid].byes++;
+    });
+  });
+
+  // Count games, partners, opponents from generated matches
+  matches.forEach(m => {
+    const t1 = [m.Team1Player1, m.Team1Player2];
+    const t2 = [m.Team2Player1, m.Team2Player2];
+
+    [...t1, ...t2].forEach(pid => {
+      if (summary[pid]) summary[pid].games++;
+    });
+
+    // Partners
+    if (summary[t1[0]]) summary[t1[0]].partners[t1[1]] = (summary[t1[0]].partners[t1[1]] || 0) + 1;
+    if (summary[t1[1]]) summary[t1[1]].partners[t1[0]] = (summary[t1[1]].partners[t1[0]] || 0) + 1;
+    if (summary[t2[0]]) summary[t2[0]].partners[t2[1]] = (summary[t2[0]].partners[t2[1]] || 0) + 1;
+    if (summary[t2[1]]) summary[t2[1]].partners[t2[0]] = (summary[t2[1]].partners[t2[0]] || 0) + 1;
+
+    // Opponents
+    t1.forEach(p1 => t2.forEach(p2 => {
+      if (summary[p1]) summary[p1].opponents[p2] = (summary[p1].opponents[p2] || 0) + 1;
+      if (summary[p2]) summary[p2].opponents[p1] = (summary[p2].opponents[p1] || 0) + 1;
+    }));
+  });
+
+  console.log("=== PLAYER SUMMARY ===");
+  players.forEach(p => {
+    const s = summary[p.PlayerID];
+    const uniquePartners = Object.keys(s.partners).length;
+    const uniqueOpponents = Object.keys(s.opponents).length;
+    const maxSamePartner = Object.values(s.partners).reduce((max, c) => Math.max(max, c), 0);
+    const maxSameOpponent = Object.values(s.opponents).reduce((max, c) => Math.max(max, c), 0);
+
+    console.log(
+      `${p.PlayerID} || Games ${s.games} || Byes ${s.byes} || Unique Partners ${uniquePartners} || Unique Opponents ${uniqueOpponents} || Max Same Partner ${maxSamePartner} || Max Same Opponent ${maxSameOpponent}`
+    );
+  });
+}
+
 // ---------- TOP-LEVEL ENTRY POINT ----------
 
 async function generateNRoundsAndPreview(numberOfRounds) {
@@ -285,9 +342,14 @@ async function generateNRoundsAndPreview(numberOfRounds) {
   const activeEvent = payload.events.find(e => String(e.EventID) === String(activeEventId));
   const courtsCount = parseInt(activeEvent.NumberofCourts) || 1;
 
-  const startRound = (parseInt(activeEvent.CurrentRound) || 1) + 1;
+  const startRound = 1; // always starts fresh at Round 1, ignoring any existing draw
 
-  const byeSchedule = generateByeSchedule(payload.players, numberOfRounds, courtsCount);
+  const players = payload.players && payload.players.length > 0
+    ? payload.players
+    : await window.fetchPlayersFromFirestore(activeEventId, activeEvent.CurrentPlayerVersion);
+  window.cachedUserUniverse.players = players;
+
+  const byeSchedule = generateByeSchedule(players, numberOfRounds, courtsCount);
 
   const byesByRound = {};
   Object.keys(byeSchedule).forEach(i => {
@@ -295,8 +357,8 @@ async function generateNRoundsAndPreview(numberOfRounds) {
   });
 
   const newMatches = generateMultipleRounds(
-    payload.players,
-    payload.draw || [],
+    players,
+    [], // no existing history — every generation starts clean
     byesByRound,
     startRound,
     numberOfRounds,
@@ -306,5 +368,8 @@ async function generateNRoundsAndPreview(numberOfRounds) {
   );
 
   console.log(`Generated ${newMatches.length} matches across ${numberOfRounds} round(s):`, newMatches);
+
+  logPlayerSummary(players, newMatches, byesByRound);
+  
   return newMatches;
 }
