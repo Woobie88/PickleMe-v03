@@ -97,24 +97,35 @@ function renderCheckInView(payload) {
 
   const players = (payload.players || []).filter(p => String(p.PlayerVersion) === String(currentPlayerVersion));
 
+  // Build a fixed DUPR-based seed ranking ONCE, across ALL players — independent of bye-order grouping
+  const duprRanked = [...players].sort((a, b) => {
+    const duprDiff = (parseFloat(b.DUPR) || 0) - (parseFloat(a.DUPR) || 0);
+    if (duprDiff !== 0) return duprDiff;
+    return (parseFloat(a.RandomNumber) || 0) - (parseFloat(b.RandomNumber) || 0);
+  });
+
+  const seedRankMap = {};
+  duprRanked.forEach((p, idx) => {
+    seedRankMap[p.PlayerID] = idx + 1;
+  });
+
   const manualPlayers = players
     .filter(p => p.byeOrder !== undefined && p.byeOrder !== null && p.byeOrder !== '')
     .sort((a, b) => (parseInt(a.byeOrder) || 0) - (parseInt(b.byeOrder) || 0));
 
   const randomPlayers = players.filter(p => p.byeOrder === undefined || p.byeOrder === null || p.byeOrder === '');
 
-  const manualContainer = document.getElementById('manual-bye-list');
-  const randomContainer = document.getElementById('random-bye-list');
-
-  // Sort random players the same way the Players screen does — DUPR desc, tiebreak RandomNumber
   randomPlayers.sort((a, b) => {
     const duprDiff = (parseFloat(b.DUPR) || 0) - (parseFloat(a.DUPR) || 0);
     if (duprDiff !== 0) return duprDiff;
     return (parseFloat(a.RandomNumber) || 0) - (parseFloat(b.RandomNumber) || 0);
   });
 
-  function buildPlayerCardMarkup(player, index) {
-    const seedNumber = index + 1;
+  const manualContainer = document.getElementById('manual-bye-list');
+  const randomContainer = document.getElementById('random-bye-list');
+
+  function buildPlayerCardMarkup(player) {
+    const seedNumber = seedRankMap[player.PlayerID]; // fixed, based on DUPR rank only
     const seedUrl = playerSeeds[0]['seed-' + seedNumber];
     const iconAsset = seedUrl || '🎾';
 
@@ -128,15 +139,14 @@ function renderCheckInView(payload) {
 
   manualContainer.innerHTML = manualPlayers.length === 0
     ? `<div class="no-data-placeholder" id="manual-bye-empty"><h3>Nil</h3></div>`
-    : manualPlayers.map((p, idx) => buildPlayerCardMarkup(p, idx)).join('');
+    : manualPlayers.map(p => buildPlayerCardMarkup(p)).join('');
 
   randomContainer.innerHTML = randomPlayers.length === 0
     ? `<div class="no-data-placeholder"><h3>No Players</h3></div>`
-    : randomPlayers.map((p, idx) => buildPlayerCardMarkup(p, idx)).join('');
+    : randomPlayers.map(p => buildPlayerCardMarkup(p)).join('');
 
   enableCheckInDragDrop();
 }
-
 function enableCheckInDragDrop() {
   const manualList = document.getElementById('manual-bye-list');
   const randomList = document.getElementById('random-bye-list');
