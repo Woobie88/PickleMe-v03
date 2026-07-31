@@ -329,13 +329,23 @@ function updateActiveEvent(eventId) {
     </div>
 
     <div class="detail-form-group">
-      <label for="edit-event-courts">Number of Courts</label>
-      <input type="number" id="edit-event-courts" class="detail-input" min="1" value="${targetEvent.NumberofCourts || 1}">
+      <label>Number of Courts</label>
+      <div class="score-control">
+        <button class="score-btn" onclick="adjustCourts(-1)">−</button>
+        <span id="courts-value" class="score-value">${targetEvent.NumberofCourts || 1}</span>
+        <button class="score-btn" onclick="adjustCourts(1)">+</button>
+      </div>
+      <input type="hidden" id="edit-event-courts" value="${targetEvent.NumberofCourts || 1}">
     </div>
-
+    
     <div class="detail-form-group">
-      <label for="edit-event-dupr">DUPR Limit</label>
-      <input type="number" step="0.05" min="0" max="8" id="edit-event-dupr" class="detail-input" value="${duprVal}">
+      <label>DUPR Limit</label>
+      <div class="score-control">
+        <button class="score-btn" onclick="adjustDuprLimit(-1)">−</button>
+        <span id="dupr-value" class="score-value">${duprVal}</span>
+        <button class="score-btn" onclick="adjustDuprLimit(1)">+</button>
+      </div>
+      <input type="hidden" id="edit-event-dupr" value="${duprVal}">
     </div>
 
     <div class="form-action-bar">
@@ -345,6 +355,46 @@ function updateActiveEvent(eventId) {
   `;
 
   navigateToScreen('event-detail');
+}
+
+function adjustCourts(direction) {
+  const hiddenInput = document.getElementById('edit-event-courts');
+  const displaySpan = document.getElementById('courts-value');
+
+  let current = parseInt(hiddenInput.value) || 1;
+  current += direction;
+  current = Math.max(1, current); // minimum 1
+
+  hiddenInput.value = current;
+  displaySpan.innerText = current;
+}
+
+function adjustDuprLimit(direction) {
+  const hiddenInput = document.getElementById('edit-event-dupr');
+  const displaySpan = document.getElementById('dupr-value');
+
+  let current = parseFloat(hiddenInput.value) || 0;
+
+  if (direction > 0) {
+    // Increasing
+    if (current === 0) {
+      current = 2; // first press from 0 jumps straight to 2
+    } else {
+      current = Math.round((current + 0.25) * 100) / 100; // avoid floating point drift
+    }
+  } else {
+    // Decreasing
+    if (current > 2) {
+      current = Math.round((current - 0.25) * 100) / 100;
+    } else if (current === 2) {
+      current = 0; // stepping down from 2 goes straight back to 0
+    }
+    // if current is already 0, do nothing (stays at 0 — the floor)
+  }
+
+  current = Math.max(0, current); // safety floor
+  hiddenInput.value = current;
+  displaySpan.innerText = current;
 }
 
 async function updateActiveEventDetails() {
