@@ -148,7 +148,9 @@ function enableCheckInDragDrop() {
       let placeholder = null;
 
       card.addEventListener('touchstart', () => {
+        console.log("touchstart fired, card:", card.dataset.cardId);
         longPressTimer = setTimeout(() => {
+          console.log("Long press activated");
           isDragging = true;
           card.classList.add('dragging');
           if (navigator.vibrate) navigator.vibrate(30);
