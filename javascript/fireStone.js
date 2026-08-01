@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, query, where, getDocs, doc, updateDoc, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, query, where, getDocs, doc, updateDoc, addDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAVmJJ-uHf366tdd4T0BcceKkEEP16WIbE",
@@ -150,4 +150,37 @@ window.updatePlayerExcludeInFirestore = async function(playerId, playerExclude) 
   const db = window.db;
   const playerDocRef = doc(db, "players", String(playerId));
   await updateDoc(playerDocRef, { playerExclude: playerExclude });
+};
+
+window.deleteAllDrawDocumentsInFirestore = async function(eventId) {
+  const db = window.db;
+  const q = query(collection(db, "draw"), where("EventID", "==", eventId));
+  const snapshot = await getDocs(q);
+
+  const deletions = snapshot.docs.map(docSnap => deleteDoc(docSnap.ref));
+  await Promise.all(deletions);
+  console.log(`Deleted ${snapshot.docs.length} draw document(s) for event ${eventId}.`);
+};
+
+window.deleteAllPlayerDocumentsInFirestore = async function(eventId) {
+  const db = window.db;
+  const q = query(collection(db, "players"), where("EventID", "==", eventId));
+  const snapshot = await getDocs(q);
+
+  const deletions = snapshot.docs.map(docSnap => deleteDoc(docSnap.ref));
+  await Promise.all(deletions);
+  console.log(`Deleted ${snapshot.docs.length} player document(s) for event ${eventId}.`);
+};
+
+window.resetEventVersionsInFirestore = async function(eventId, resetDraw, resetPlayers) {
+  const db = window.db;
+  const eventDocRef = doc(db, "events", String(eventId));
+
+  const updates = {};
+  if (resetDraw) updates.CurrentDrawVersion = 0;
+  if (resetPlayers) updates.CurrentPlayerVersion = 0;
+
+  if (Object.keys(updates).length > 0) {
+    await updateDoc(eventDocRef, updates);
+  }
 };
