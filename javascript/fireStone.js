@@ -187,3 +187,12 @@ window.resetEventVersionsInFirestore = async function(eventId, resetDraw, resetP
     await updateDoc(eventDocRef, updates);
   }
 };
+
+window.updateEventDrawVersionAndRoundInFirestore = async function(eventId, newDrawVersion) {
+  const db = window.db;
+  const eventDocRef = doc(db, "events", String(eventId));
+  await updateDoc(eventDocRef, {
+    CurrentDrawVersion: newDrawVersion,
+    CurrentRound: 1
+  });
+};
