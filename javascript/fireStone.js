@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, query, where, getDocs, doc, updateDoc, addDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, query, where, getDocs, doc, updateDoc, addDoc, onSnapshot, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAVmJJ-uHf366tdd4T0BcceKkEEP16WIbE",
@@ -195,4 +195,16 @@ window.updateEventDrawVersionAndRoundInFirestore = async function(eventId, newDr
     CurrentDrawVersion: newDrawVersion,
     CurrentRound: 1
   });
+};
+
+window.saveGeneratedDrawToFirestore = async function(matches) {
+  const db = window.db;
+
+  const writes = matches.map(match => {
+    const matchDocRef = doc(db, "draw", String(match.MatchID));
+    return setDoc(matchDocRef, match);
+  });
+
+  await Promise.all(writes);
+  console.log(`Saved ${matches.length} match document(s) to Firestore.`);
 };
