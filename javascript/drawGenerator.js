@@ -281,27 +281,27 @@ function buildMatchRecord(m, idx, roundNumber, eventId, drawVersion, userEmail) 
 
 // ---------- SHARED GROUP GENERATOR ----------
 
-function generateGroupMatches(groupPlayers, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion) {
+function generateGroupMatches(groupPlayers, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion, userEmail) {
   const partnerships = generateBestPartnerships(groupPlayers, partnerCounts);
   const matchups = generateBestMatchups(partnerships, opponentCounts);
   const courted = assignCourts(matchups, courtNumbers, courtCounts);
 
-  return courted.map((m, idx) => buildMatchRecord(m, idx, roundNumber, eventId, drawVersion));
+  return courted.map((m, idx) => buildMatchRecord(m, idx, roundNumber, eventId, drawVersion, userEmail));
 }
 
 // ---------- SINGLE ROUND GENERATION (Rotating Partners — one group, all courts) ----------
 
-function generateRoundDraw(players, matches, byePlayerIds, roundNumber, courtsCount, eventId, drawVersion) {
+function generateRoundDraw(players, matches, byePlayerIds, roundNumber, courtsCount, eventId, drawVersion, userEmail) {
   const eligible = players.filter(p => !byePlayerIds.includes(p.PlayerID));
   const { partnerCounts, opponentCounts, courtCounts } = buildDrawHistory(matches);
   const courtNumbers = Array.from({ length: courtsCount }, (_, i) => i + 1);
 
-  return generateGroupMatches(eligible, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion);
+  return generateGroupMatches(eligible, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion, userEmail);
 }
 
 // ---------- CLUSTERED ROUND GENERATION (Divisions, Ladder Scramble, Pools, Pool Fusion) ----------
 
-function generateClusteredRoundDraw(players, matches, byesByTeamForThisRound, roundNumber, courtsCount, eventId, drawVersion, numberOfTeams) {
+function generateClusteredRoundDraw(players, matches, byesByTeamForThisRound, roundNumber, courtsCount, eventId, drawVersion, numberOfTeams, userEmail) {
   if (courtsCount % numberOfTeams !== 0) {
     console.error(`Cannot generate draw: courtsCount (${courtsCount}) is not evenly divisible by NumberOfTeams (${numberOfTeams}).`);
     return [];
@@ -336,7 +336,7 @@ function generateClusteredRoundDraw(players, matches, byesByTeamForThisRound, ro
       console.warn(`Team ${teamKey} has ${teamPlayers.length} eligible players but ${courtsPerTeam} courts expect ${courtsPerTeam * 4}. Proceeding anyway.`);
     }
 
-    const teamMatches = generateGroupMatches(teamPlayers, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion);
+    const teamMatches = generateGroupMatches(teamPlayers, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion, userEmail);
     allMatches.push(...teamMatches);
   });
 
@@ -345,7 +345,7 @@ function generateClusteredRoundDraw(players, matches, byesByTeamForThisRound, ro
 
 // ---------- MULTI-ROUND GENERATION ----------
 
-function generateMultipleRounds(players, existingMatches, byesByRound, startRound, numberOfRounds, courtsCount, eventId, drawVersion, gameId, numberOfTeams) {
+function generateMultipleRounds(players, existingMatches, byesByRound, startRound, numberOfRounds, courtsCount, eventId, drawVersion, gameId, numberOfTeams, userEmail) {
   let allMatches = [...existingMatches];
   const generatedRounds = [];
 
@@ -361,10 +361,10 @@ function generateMultipleRounds(players, existingMatches, byesByRound, startRoun
       Object.keys(byesByRound).forEach(teamKey => {
         byesByTeamForThisRound[teamKey] = byesByRound[teamKey][i] || [];
       });
-      roundMatches = generateClusteredRoundDraw(players, allMatches, byesByTeamForThisRound, roundNumber, courtsCount, eventId, drawVersion, numberOfTeams);
+      roundMatches = generateClusteredRoundDraw(players, allMatches, byesByTeamForThisRound, roundNumber, courtsCount, eventId, drawVersion, numberOfTeams, userEmail);
     } else {
       const byesForThisRound = byesByRound[roundNumber] || [];
-      roundMatches = generateRoundDraw(players, allMatches, byesForThisRound, roundNumber, courtsCount, eventId, drawVersion);
+      roundMatches = generateRoundDraw(players, allMatches, byesForThisRound, roundNumber, courtsCount, eventId, drawVersion, userEmail);
     }
 
     generatedRounds.push(...roundMatches);
@@ -434,18 +434,21 @@ async function generateNRoundsAndPreview(numberOfRounds) {
   const activeEventId = payload.activeEventId;
   const activeEvent = payload.events.find(e => String(e.EventID) === String(activeEventId));
 
-  console.log(`Number of rounds: ${numberOfRounds}`);
-
   const players = payload.players && payload.players.length > 0
     ? payload.players
     : await window.fetchPlayersFromFirestore(activeEventId, activeEvent.CurrentPlayerVersion);
   window.cachedUserUniverse.players = players;
 
   const courtsCount = Math.min(parseInt(activeEvent.NumberofCourts) || 1, Math.floor(players.length / 4) || 1);
-  console.log(`Courts calculated: ${courtsCount} (NumberofCourts: ${activeEvent.NumberofCourts}, Players: ${players.length}, Max supportable courts: ${Math.floor(players.length / 4)})`);
-
   const gameId = activeEvent.GameID;
   const numberOfTeams = parseInt(activeEvent.NumberOfTeams) || 1;
+  const userEmail = "brett.collins028@gmail.com"; // swap for your real logged-in user source
+
+  // NEW — increment DrawVersion, reset CurrentRound to 1, persist immediately
+  const newDrawVersion = (parseInt(activeEvent.CurrentDrawVersion) || 0) + 1;
+  await window.updateEventDrawVersionAndRoundInFirestore(activeEventId, newDrawVersion);
+  activeEvent.CurrentDrawVersion = newDrawVersion;
+  activeEvent.CurrentRound = 1;
 
   const startRound = 1;
 
@@ -472,12 +475,13 @@ async function generateNRoundsAndPreview(numberOfRounds) {
     numberOfRounds,
     courtsCount,
     activeEventId,
-    activeEvent.CurrentDrawVersion,
+    newDrawVersion, // use the newly incremented version
     gameId,
-    numberOfTeams
+    numberOfTeams,
+    userEmail
   );
 
-  console.log(`Generated ${newMatches.length} matches across ${numberOfRounds} round(s) for game type "${gameId}":`, newMatches);
+  console.log(`Generated ${newMatches.length} matches across ${numberOfRounds} round(s) for game type "${gameId}" (DrawVersion ${newDrawVersion}):`, newMatches);
 
   const flatByesByRound = {};
   for (let i = 0; i < numberOfRounds; i++) {
