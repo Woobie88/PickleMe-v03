@@ -45,7 +45,7 @@ function generateMatchId() {
 function getEventRoundCount() {
   const payload = window.cachedUserUniverse;
   const activeEvent = payload.events.find(e => String(e.EventID) === String(payload.activeEventId));
-  return parseInt(activeEvent?.NumberOfRound) || 1;
+  return parseInt(activeEvent?.NumberofRound) || 1;
 }
 
 // ---------- BYE SCHEDULE ----------
