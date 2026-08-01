@@ -442,9 +442,8 @@ async function generateNRoundsAndPreview(numberOfRounds) {
   const courtsCount = Math.min(parseInt(activeEvent.NumberofCourts) || 1, Math.floor(players.length / 4) || 1);
   const gameId = activeEvent.GameID;
   const numberOfTeams = parseInt(activeEvent.NumberOfTeams) || 1;
-  const userEmail = "brett.collins028@gmail.com"; // swap for your real logged-in user source
+  const userEmail = "brett.collins028@gmail.com";
 
-  // NEW — increment DrawVersion, reset CurrentRound to 1, persist immediately
   const newDrawVersion = (parseInt(activeEvent.CurrentDrawVersion) || 0) + 1;
   await window.updateEventDrawVersionAndRoundInFirestore(activeEventId, newDrawVersion);
   activeEvent.CurrentDrawVersion = newDrawVersion;
@@ -475,7 +474,7 @@ async function generateNRoundsAndPreview(numberOfRounds) {
     numberOfRounds,
     courtsCount,
     activeEventId,
-    newDrawVersion, // use the newly incremented version
+    newDrawVersion,
     gameId,
     numberOfTeams,
     userEmail
@@ -490,6 +489,11 @@ async function generateNRoundsAndPreview(numberOfRounds) {
       : byesByRound[startRound + i] || [];
   }
   logPlayerSummary(players, newMatches, flatByesByRound);
+
+  // NEW — actually persist the generated draw to Firestore
+  await window.saveGeneratedDrawToFirestore(newMatches);
+
+  window.cachedUserUniverse.draw = newMatches; // keep local cache in sync too
 
   return newMatches;
 }
