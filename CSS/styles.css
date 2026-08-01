@@ -1017,3 +1017,12 @@ body {
   z-index: 1000;
   position: relative;
 }
+
+#screen-games .app-card {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none; /* prevents iOS Safari's press-and-hold context menu/callout */
+  -webkit-tap-highlight-color: transparent;
+}
