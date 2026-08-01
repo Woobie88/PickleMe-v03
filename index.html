@@ -557,10 +557,31 @@
         </div>
       </section>
       
-      <section id="screen-cleanup" class="app-screen">
-        <div class="placeholder-view">
-          <h3>System Cache Cleanup</h3>
-          <p>Administrative commands to drop state variables and wipe dynamic configurations.</p>
+      <section id="screen-cleanup-confirm" class="app-screen">
+        <div class="welcome-banner">
+          <h2>Clean Up Event Data</h2>
+          <p>Select what you want to permanently delete for this event</p>
+        </div>
+      
+        <div class="detail-view-container">
+          <div class="detail-form-group">
+            <label style="display: flex; align-items: center; gap: 10px; text-transform: none;">
+              <input type="checkbox" id="cleanup-delete-draw" onchange="handleCleanupDrawToggle()">
+              Delete Draw
+            </label>
+          </div>
+      
+          <div class="detail-form-group">
+            <label style="display: flex; align-items: center; gap: 10px; text-transform: none;">
+              <input type="checkbox" id="cleanup-delete-players" disabled>
+              Delete Players
+            </label>
+          </div>
+      
+          <div class="form-action-bar">
+            <button class="btn-secondary" onclick="navigateToScreen('dashboard')">Cancel</button>
+            <button class="btn-primary" onclick="confirmCleanupSelection()">Confirm</button>
+          </div>
         </div>
       </section>
 
