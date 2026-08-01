@@ -431,6 +431,8 @@ async function generateNRoundsAndPreview(numberOfRounds) {
   const activeEventId = payload.activeEventId;
   const activeEvent = payload.events.find(e => String(e.EventID) === String(activeEventId));
 
+  console.log(`Number of rounds: ${numberOfRounds}`);
+
   const players = payload.players && payload.players.length > 0
     ? payload.players
     : await window.fetchPlayersFromFirestore(activeEventId, activeEvent.CurrentPlayerVersion);
