@@ -177,7 +177,10 @@ window.resetEventVersionsInFirestore = async function(eventId, resetDraw, resetP
   const eventDocRef = doc(db, "events", String(eventId));
 
   const updates = {};
-  if (resetDraw) updates.CurrentDrawVersion = 0;
+  if (resetDraw) {
+    updates.CurrentDrawVersion = 0;
+    updates.CurrentRound = 1;
+  }
   if (resetPlayers) updates.CurrentPlayerVersion = 0;
 
   if (Object.keys(updates).length > 0) {
