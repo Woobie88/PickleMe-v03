@@ -244,7 +244,7 @@ function assignCourts(matchups, courtNumbers, courtCounts) {
 
 // ---------- MATCH RECORD BUILDER ----------
 
-function buildMatchRecord(m, idx, roundNumber, eventId, drawVersion) {
+function buildMatchRecord(m, idx, roundNumber, eventId, drawVersion, userEmail) {
   const avg1 = teamAvgDupr(m.teamA);
   const avg2 = teamAvgDupr(m.teamB);
   const winProb1 = calculateWinProbability(avg1, avg2);
@@ -264,6 +264,7 @@ function buildMatchRecord(m, idx, roundNumber, eventId, drawVersion) {
     Team2Player2: m.teamB[1].PlayerID,
     Team1AvgDUPR: avg1,
     Team2AvgDUPR: avg2,
+    DUPRMatchDelta: Math.abs(avg1 - avg2), // NEW
     Team1WinProb: winProb1,
     Team2WinProb: 1 - winProb1,
     ExpectedTeam1Score: winProb1 >= 0.5 ? 11 : Math.round(winProb1 * 11 / (1 - winProb1)),
@@ -272,6 +273,8 @@ function buildMatchRecord(m, idx, roundNumber, eventId, drawVersion) {
     Team2Score: 0,
     Team1WinLoss: '',
     Team2WinLoss: '',
+    Active: 'Active', // NEW
+    UserEmail: userEmail, // NEW
     Timestamp: new Date().toISOString()
   };
 }
