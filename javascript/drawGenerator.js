@@ -441,7 +441,6 @@ async function generateNRoundsAndPreview(numberOfRounds) {
 
   const courtsCount = Math.min(parseInt(activeEvent.NumberofCourts) || 1, Math.floor(players.length / 4) || 1);
   const gameId = activeEvent.GameID;
-  const numberOfTeams = parseInt(activeEvent.NumberOfTeams) || 1;
   const userEmail = "brett.collins028@gmail.com";
 
   const newDrawVersion = (parseInt(activeEvent.CurrentDrawVersion) || 0) + 1;
@@ -449,51 +448,49 @@ async function generateNRoundsAndPreview(numberOfRounds) {
   activeEvent.CurrentDrawVersion = newDrawVersion;
   activeEvent.CurrentRound = 1;
 
-  const startRound = 1;
+  let newMatches; // declared here, assigned inside whichever branch runs
 
-  const clusteredGames = ['divisions', 'ladder-scramble', 'pools', 'pool-fusion'];
-  const isClustered = clusteredGames.includes(gameId);
-
-  let byesByRound;
-  if (isClustered) {
-    const courtsPerTeam = courtsCount / numberOfTeams;
-    byesByRound = generateByeScheduleByTeam(players, numberOfRounds, courtsPerTeam);
+  // ---- BRANCH GOES HERE ----
+  if (gameId === 'doubles-pro') {
+    newMatches = generateDoublesProDraw(players, courtsCount, activeEventId, newDrawVersion, userEmail);
+    console.log(`Generated Doubles Pro draw: ${newMatches.length} matches across ${Math.max(...newMatches.map(m => m.Round))} round(s).`);
   } else {
-    const byeSchedule = generateByeSchedule(players, numberOfRounds, courtsCount);
-    byesByRound = {};
-    Object.keys(byeSchedule).forEach(i => {
-      byesByRound[startRound + parseInt(i)] = byeSchedule[i];
-    });
+    const numberOfTeams = parseInt(activeEvent.NumberOfTeams) || 1;
+    const startRound = 1;
+    const clusteredGames = ['divisions', 'ladder-scramble', 'pools', 'pool-fusion'];
+    const isClustered = clusteredGames.includes(gameId);
+
+    let byesByRound;
+    if (isClustered) {
+      const courtsPerTeam = courtsCount / numberOfTeams;
+      byesByRound = generateByeScheduleByTeam(players, numberOfRounds, courtsPerTeam);
+    } else {
+      const byeSchedule = generateByeSchedule(players, numberOfRounds, courtsCount);
+      byesByRound = {};
+      Object.keys(byeSchedule).forEach(i => {
+        byesByRound[startRound + parseInt(i)] = byeSchedule[i];
+      });
+    }
+
+    newMatches = generateMultipleRounds(
+      players, [], byesByRound, startRound, numberOfRounds, courtsCount,
+      activeEventId, newDrawVersion, gameId, numberOfTeams, userEmail
+    );
+
+    console.log(`Generated ${newMatches.length} matches across ${numberOfRounds} round(s) for game type "${gameId}" (DrawVersion ${newDrawVersion}):`, newMatches);
+
+    const flatByesByRound = {};
+    for (let i = 0; i < numberOfRounds; i++) {
+      flatByesByRound[startRound + i] = isClustered
+        ? Object.values(byesByRound).flatMap(teamSchedule => teamSchedule[i] || [])
+        : byesByRound[startRound + i] || [];
+    }
+    logPlayerSummary(players, newMatches, flatByesByRound);
   }
+  // ---- END BRANCH ----
 
-  const newMatches = generateMultipleRounds(
-    players,
-    [],
-    byesByRound,
-    startRound,
-    numberOfRounds,
-    courtsCount,
-    activeEventId,
-    newDrawVersion,
-    gameId,
-    numberOfTeams,
-    userEmail
-  );
-
-  console.log(`Generated ${newMatches.length} matches across ${numberOfRounds} round(s) for game type "${gameId}" (DrawVersion ${newDrawVersion}):`, newMatches);
-
-  const flatByesByRound = {};
-  for (let i = 0; i < numberOfRounds; i++) {
-    flatByesByRound[startRound + i] = isClustered
-      ? Object.values(byesByRound).flatMap(teamSchedule => teamSchedule[i] || [])
-      : byesByRound[startRound + i] || [];
-  }
-  logPlayerSummary(players, newMatches, flatByesByRound);
-
-  // NEW — actually persist the generated draw to Firestore
   await window.saveGeneratedDrawToFirestore(newMatches);
-
-  window.cachedUserUniverse.draw = newMatches; // keep local cache in sync too
+  window.cachedUserUniverse.draw = newMatches;
 
   return newMatches;
 }
