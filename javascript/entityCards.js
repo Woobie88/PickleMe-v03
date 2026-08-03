@@ -818,10 +818,14 @@ function renderMatchScoreView() {
   document.getElementById('team1-label').innerText = `Team ${match.Team1}`;
   document.getElementById('team2-label').innerText = `Team ${match.Team2}`;
 
-  document.getElementById('team1-players').innerText =
-    `${playerMap[match.Team1Player1]?.name || '?'} & ${playerMap[match.Team1Player2]?.name || '?'}`;
-  document.getElementById('team2-players').innerText =
-    `${playerMap[match.Team2Player1]?.name || '?'} & ${playerMap[match.Team2Player2]?.name || '?'}`;
+  document.getElementById('team1-players').innerText = formatTeamNames([
+    playerMap[match.Team1Player1]?.name, playerMap[match.Team1Player2]?.name,
+    playerMap[match.Team1Player3]?.name, playerMap[match.Team1Player4]?.name
+  ]);
+  document.getElementById('team2-players').innerText = formatTeamNames([
+    playerMap[match.Team2Player1]?.name, playerMap[match.Team2Player2]?.name,
+    playerMap[match.Team2Player3]?.name, playerMap[match.Team2Player4]?.name
+  ]);
 
   document.getElementById('team1-dupr').innerText =
     `Avg DUPR: ${calculateTeamAvgDupr(playerMap, match.Team1Player1, match.Team1Player2)}`;
