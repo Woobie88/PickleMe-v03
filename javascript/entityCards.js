@@ -682,8 +682,14 @@ async function renderDrawCards(payload) {
 
     const iconAsset = courts[0]['court-' + m.Court] || '🏟️';
 
-    const team1 = `${playerMap[m.Team1Player1]} & ${playerMap[m.Team1Player2]}`;
-    const team2 = `${playerMap[m.Team2Player1]} & ${playerMap[m.Team2Player2]}`;
+    const team1 = formatTeamNames([
+      playerMap[m.Team1Player1], playerMap[m.Team1Player2],
+      playerMap[m.Team1Player3], playerMap[m.Team1Player4]
+    ]);
+    const team2 = formatTeamNames([
+      playerMap[m.Team2Player1], playerMap[m.Team2Player2],
+      playerMap[m.Team2Player3], playerMap[m.Team2Player4]
+    ]);
 
     const isComplete = m.Team1WinLoss && m.Team2WinLoss;
 
@@ -724,6 +730,15 @@ function buildPlayerMap(payload) {
     }
   });
   return playerMap;
+}
+
+function formatTeamNames(playerNames) {
+  // playerNames = array of names, already resolved, filtered of any nulls
+  const names = playerNames.filter(n => n); // drop any null/undefined entries
+  if (names.length === 0) return '?';
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return `${names[0]} & ${names[1]}`;
+  return `${names.slice(0, -1).join(', ')} & ${names[names.length - 1]}`;
 }
 
 function calculateTeamAvgDupr(playerMap, pid1, pid2) {
