@@ -1083,8 +1083,14 @@ async function renderCurrentRoundView(payload) {
   let html = '';
   roundMatches.forEach(m => {
     const iconAsset = courts[0]['court-' + m.Court] || '🏟️';
-    const team1 = `${playerMap[m.Team1Player1]} & ${playerMap[m.Team1Player2]}`;
-    const team2 = `${playerMap[m.Team2Player1]} & ${playerMap[m.Team2Player2]}`;
+    const team1 = formatTeamNames([
+      playerMap[m.Team1Player1], playerMap[m.Team1Player2],
+      playerMap[m.Team1Player3], playerMap[m.Team1Player4]
+    ]);
+    const team2 = formatTeamNames([
+      playerMap[m.Team2Player1], playerMap[m.Team2Player2],
+      playerMap[m.Team2Player3], playerMap[m.Team2Player4]
+    ]);
 
     const isComplete = m.Team1WinLoss && m.Team2WinLoss;
     let metaLine;
