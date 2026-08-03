@@ -451,7 +451,7 @@ async function generateNRoundsAndPreview(numberOfRounds) {
   let newMatches; // declared here, assigned inside whichever branch runs
 
   // ---- BRANCH GOES HERE ----
-  if (gameId === 'doubles-pro') {
+  if (gameId === 'doubles-pro' || gameId === 'rx-sports') {
     newMatches = generateDoublesProDraw(players, courtsCount, activeEventId, newDrawVersion, userEmail);
     console.log(`Generated Doubles Pro draw: ${newMatches.length} matches across ${Math.max(...newMatches.map(m => m.Round))} round(s).`);
   } else {
