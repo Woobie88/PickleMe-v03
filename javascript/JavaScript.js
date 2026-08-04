@@ -478,6 +478,22 @@ function startDrawListener() {
   });
 }
 
+function enableCardPressFeedback(selector) {
+  document.querySelectorAll(selector).forEach(card => {
+    card.addEventListener('touchstart', () => {
+      card.classList.add('pressed');
+    }, { passive: true });
+
+    card.addEventListener('touchend', () => {
+      card.classList.remove('pressed');
+    });
+
+    card.addEventListener('touchcancel', () => {
+      card.classList.remove('pressed');
+    });
+  });
+}
+
 // Global initialization event listener running on app startup
 window.addEventListener("DOMContentLoaded", async (event) => {
   console.log("App loaded. Pre-fetching database universes...");
@@ -496,6 +512,7 @@ window.addEventListener("DOMContentLoaded", async (event) => {
 
   initMatchSwipeHandlers();
   initCurrentRoundSwipeHandlers();
+  enableCardPressFeedback('#screen-dashboard .app-card');
 });
 
 document.addEventListener('click', (e) => {
