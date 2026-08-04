@@ -82,13 +82,13 @@
           </div>
           
           <!-- Card 4: Create Draw -->
-          <div class="app-card" id="card-draw" onclick="generateNRoundsAndPreview(getEventRoundCount())">
+          <div class="app-card" id="card-generate-draw" onclick="navigateToScreen('generate-draw')">
             <div class="card-icon-wrapper">
-              <img src="https://i.postimg.cc/50FVvhDb/Draw.png" alt="Events Icon" loading="lazy" class="card-icon-images">
+              <img src="https://i.postimg.cc/50FVvhDb/Draw.png" alt="Generate Draw Icon" loading="lazy" class="card-icon-images">
             </div>
             <div class="card-content">
               <h3>Generate Draw</h3>
-              <p>Run instant combinatorial court scheduling</p>
+              <p>Run draw logic, manage teams, and set player availability</p>
             </div>
             <span class="card-arrow">→</span>
           </div>
@@ -545,6 +545,47 @@
             </div>
           </div>
 
+        </div>
+      </section>
+
+      <!-- Draw Generate -->
+      <section id="screen-generate-draw" class="app-screen">
+        <div class="welcome-banner">
+          <h2>Generate Draw</h2>
+          <p>Configure and run draw generation for the active event</p>
+        </div>
+      
+        <div class="top-tab-bar">
+          <div class="tab-item active" id="tab-gd-details" onclick="switchGenerateDrawTab('gd-details')">Details</div>
+          <div class="tab-item" id="tab-gd-teams" onclick="switchGenerateDrawTab('gd-teams')">Teams</div>
+          <div class="tab-item" id="tab-gd-available" onclick="switchGenerateDrawTab('gd-available')">Available</div>
+        </div>
+      
+        <div class="tab-viewport">
+      
+          <!-- TAB 1: Details -->
+          <div id="view-gd-details" class="tab-view active">
+            <!-- draw generation controls will go here -->
+          </div>
+      
+          <!-- TAB 2: Teams -->
+          <div id="view-gd-teams" class="tab-view">
+            <!-- team grouping view will go here -->
+          </div>
+      
+          <!-- TAB 3: Available (mirrors Players' Availability tab) -->
+          <div id="view-gd-available" class="tab-view">
+            <div class="event-section-title current">Player Unavailable</div>
+            <div id="gd-unavailable-list" class="card-grid">
+              <div class="no-data-placeholder" id="gd-unavailable-empty">
+                <h3>Nil</h3>
+              </div>
+            </div>
+      
+            <div class="event-section-title other">Available</div>
+            <div id="gd-available-list" class="card-grid"></div>
+          </div>
+      
         </div>
       </section>
 
