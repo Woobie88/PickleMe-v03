@@ -207,6 +207,11 @@ body {
   background-color: #243249;
 }
 
+.app-card.pressed {
+  transform: scale(0.98);
+  background-color: #243249;
+}
+
 .card-icon-wrapper {
   background-color: rgba(16, 185, 129, 0.1);
   width: 55px;
