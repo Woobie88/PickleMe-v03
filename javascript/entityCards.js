@@ -594,6 +594,18 @@ async function commitAvailabilityStatus() {
   renderAvailabilityView(payload);
 }
 
+function switchGenerateDrawTab(tabId) {
+  document.querySelectorAll('#screen-generate-draw .top-tab-bar .tab-item').forEach(tab => tab.classList.remove('active'));
+  document.querySelectorAll('#screen-generate-draw .tab-viewport .tab-view').forEach(view => view.classList.remove('active'));
+
+  document.getElementById('tab-' + tabId).classList.add('active');
+  document.getElementById('view-' + tabId).classList.add('active');
+
+  if (tabId === 'gd-available') {
+    renderGenerateDrawAvailabilityView(window.cachedUserUniverse);
+  }
+}
+
 async function renderDrawCards(payload) {
   console.log('Calling renderDrawCards');
   showLoadingState('active-draw-list', 'Loading draw...'); // NEW
