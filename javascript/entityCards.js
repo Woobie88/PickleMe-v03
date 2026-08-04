@@ -606,6 +606,60 @@ function switchGenerateDrawTab(tabId) {
   }
 }
 
+function renderGenerateDrawAvailabilityView(payload) {
+  const activeEventId = payload.activeEventId;
+  const activeEvent = payload.events.find(e => String(e.EventID) === String(activeEventId));
+  const currentPlayerVersion = activeEvent.CurrentPlayerVersion;
+
+  const players = (payload.players || []).filter(p => String(p.PlayerVersion) === String(currentPlayerVersion));
+
+  const duprRanked = [...players].sort((a, b) => {
+    const duprDiff = (parseFloat(b.DUPR) || 0) - (parseFloat(a.DUPR) || 0);
+    if (duprDiff !== 0) return duprDiff;
+    return (parseFloat(a.RandomNumber) || 0) - (parseFloat(b.RandomNumber) || 0);
+  });
+
+  const seedRankMap = {};
+  duprRanked.forEach((p, idx) => {
+    seedRankMap[p.PlayerID] = idx + 1;
+  });
+
+  const unavailablePlayers = players.filter(p => p.playerExclude === 'Yes');
+  const availablePlayers = players.filter(p => p.playerExclude !== 'Yes');
+
+  availablePlayers.sort((a, b) => {
+    const duprDiff = (parseFloat(b.DUPR) || 0) - (parseFloat(a.DUPR) || 0);
+    if (duprDiff !== 0) return duprDiff;
+    return (parseFloat(a.RandomNumber) || 0) - (parseFloat(b.RandomNumber) || 0);
+  });
+
+  const unavailableContainer = document.getElementById('gd-unavailable-list');
+  const availableContainer = document.getElementById('gd-available-list');
+
+  function buildAvailabilityPlayerCard(player) {
+    const seedNumber = seedRankMap[player.PlayerID];
+    const seedUrl = playerSeeds[0]['seed-' + seedNumber];
+    const iconAsset = seedUrl || '🎾';
+
+    const contentHtml = `
+      <h3>${player.Name || 'Unnamed Player'} ${player.FirstName ? '(' + player.FirstName + ')' : ''}</h3>
+      <p class="card-meta-line">${player.DUPRId || 'N/A'} ${player.DUPR ? ' || DUPR ' + player.DUPR : '0'}</p>
+    `;
+
+    return buildCardMarkup({ iconAsset, contentHtml, cardId: player.PlayerID });
+  }
+
+  unavailableContainer.innerHTML = unavailablePlayers.length === 0
+    ? `<div class="no-data-placeholder" id="gd-unavailable-empty"><h3>Nil</h3></div>`
+    : unavailablePlayers.map(p => buildAvailabilityPlayerCard(p)).join('');
+
+  availableContainer.innerHTML = availablePlayers.length === 0
+    ? `<div class="no-data-placeholder"><h3>No Players</h3></div>`
+    : availablePlayers.map(p => buildAvailabilityPlayerCard(p)).join('');
+
+  enableGenerateDrawAvailabilityDragDrop();
+}
+
 async function renderDrawCards(payload) {
   console.log('Calling renderDrawCards');
   showLoadingState('active-draw-list', 'Loading draw...'); // NEW
