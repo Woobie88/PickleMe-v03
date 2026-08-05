@@ -342,7 +342,7 @@ function switchPlayersTab(tabId) {
   if (tabId === 'checkin') {
     renderCheckInView(window.cachedUserUniverse);
   } else if (tabId === 'availability') {
-    renderAvailabilityView(window.cachedUserUniverse);
+    renderAvailabilityView(window.cachedUserUniverse); // uses defaults: 'unavailable-list', 'available-list'
   }
 }
 
