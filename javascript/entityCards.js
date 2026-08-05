@@ -651,7 +651,7 @@ function renderGenerateDrawAvailabilityView(payload) {
   }
 
   unavailableContainer.innerHTML = unavailablePlayers.length === 0
-    ? `<div class="no-data-placeholder" id="gd-unavailable-empty"><h3>Nil</h3></div>`
+    ? `<div class="no-data-placeholder"><h3>Nil</h3></div>`
     : unavailablePlayers.map(p => buildAvailabilityPlayerCard(p)).join('');
 
   availableContainer.innerHTML = availablePlayers.length === 0
