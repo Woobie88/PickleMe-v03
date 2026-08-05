@@ -232,5 +232,18 @@ const gamesProfile = [
     Lives: "No",
     Redivisioning: "Yes",
     PlayOff: "Yes"
+  },
+  {
+    GameID: "rx-sports",
+    GameTitle: "Rx Sports",
+    GamesGroup: "Tiered Groups",
+    Team: "Yes",
+    Division: "Yes",
+    Draft: "Yes",
+    Rounds: "Yes",
+    CycleRounds: "No",
+    Lives: "No",
+    Redivisioning: "Yes",
+    PlayOff: "Yes"
   }
 ];
