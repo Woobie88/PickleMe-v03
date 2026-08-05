@@ -489,6 +489,12 @@ function preFetchUserUniverseData() {
 }
 
 function startDrawListener() {
+  // Stop any previously running listener before starting a new one
+  if (window.currentDrawUnsubscribe) {
+    window.currentDrawUnsubscribe();
+    window.currentDrawUnsubscribe = null;
+  }
+
   const activeEventId = window.cachedUserUniverse.activeEventId;
   const activeEvent = window.cachedUserUniverse.events.find(
     e => String(e.EventID || e.eventId) === String(activeEventId)
@@ -497,7 +503,7 @@ function startDrawListener() {
 
   const drawVersion = activeEvent.CurrentDrawVersion;
 
-  window.listenToDrawChanges(activeEventId, drawVersion, (matches) => {
+  window.currentDrawUnsubscribe = window.listenToDrawChanges(activeEventId, drawVersion, (matches) => {
     console.log("Live draw update received:", matches.length, "matches");
     window.cachedUserUniverse.draw = matches;
 
