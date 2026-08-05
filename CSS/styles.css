@@ -1031,3 +1031,14 @@ body {
   -webkit-touch-callout: none; /* prevents iOS Safari's press-and-hold context menu/callout */
   -webkit-tap-highlight-color: transparent;
 }
+
+.detail-readonly {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #1E222B;
+  border: 1px solid #2A303C;
+  color: #FFFFFF;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
