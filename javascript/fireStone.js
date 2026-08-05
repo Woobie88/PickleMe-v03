@@ -208,3 +208,9 @@ window.saveGeneratedDrawToFirestore = async function(matches) {
   await Promise.all(writes);
   console.log(`Saved ${matches.length} match document(s) to Firestore.`);
 };
+
+window.updateEventFieldInFirestore = async function(eventId, fieldName, value) {
+  const db = window.db;
+  const eventDocRef = doc(db, "events", String(eventId));
+  await updateDoc(eventDocRef, { [fieldName]: value });
+};
