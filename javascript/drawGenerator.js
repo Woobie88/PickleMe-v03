@@ -488,19 +488,6 @@ async function generateNRoundsAndPreview(numberOfRounds) {
     logPlayerSummary(players, newMatches, flatByesByRound);
   }
 
-  // ---------- BUTTON CALL ----------
-  async function handleBuildDraw() {
-    const numberOfRounds = parseInt(document.getElementById('gd-rounds-hidden').value) || 1;
-  
-    try {
-      const matches = await generateNRoundsAndPreview(numberOfRounds);
-      alert(`Draw generated successfully — ${matches.length} matches created.`);
-      navigateToScreen('dashboard');
-    } catch (err) {
-      console.error("Draw generation failed:", err);
-      alert("Draw generation failed — check the console for details.");
-    }
-  }
   // ---- END BRANCH ----
 
   await window.saveGeneratedDrawToFirestore(newMatches);
