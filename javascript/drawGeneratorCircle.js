@@ -109,24 +109,26 @@ function buildDoublesProMatchRecord(m, roundNumber, eventId, drawVersion, userEm
 
 // ---------- DOUBLES PRO ENTRY POINT (with full court balancing) ----------
 
-function generateDoublesProDraw(players, courtsCount, eventId, drawVersion, userEmail) {
+function generateDoublesProDraw(players, courtsCount, eventId, drawVersion, userEmail, numberOfRounds) {
   const teamGroups = assignDoublesProPartnerships(players);
-  const scheduledRounds = generateCircleMethodSchedule(teamGroups);
+  const oneCycle = generateCircleMethodSchedule(teamGroups); // one complete round-robin cycle
 
-  const { courtCounts } = buildDrawHistory([]); // fresh court-balance tracking for this generation
-
+  const { courtCounts } = buildDrawHistory([]);
   const allMatches = [];
 
-  scheduledRounds.forEach((roundMatchups, roundIdx) => {
-    const roundNumber = roundIdx + 1;
+  let roundNumber = 1;
+
+  while (roundNumber <= numberOfRounds) {
+    // Cycle back to the start of oneCycle once we've used all of it
+    const cycleIndex = (roundNumber - 1) % oneCycle.length;
+    const roundMatchups = oneCycle[cycleIndex];
 
     const courtNumbers = Array.from({ length: courtsCount }, (_, i) => i + 1);
-    const courted = assignCourts(roundMatchups, courtNumbers, courtCounts);
+    const courted = assignCourts(roundMatchups, courtNumbers, courtCounts); // court balance considers ALL prior rounds, including earlier cycles
 
     const roundRecords = courted.map(m => buildDoublesProMatchRecord(m, roundNumber, eventId, drawVersion, userEmail));
     allMatches.push(...roundRecords);
 
-    // Update courtCounts with this round's assignments so the NEXT round balances against it
     roundRecords.forEach(rec => {
       const allTeamPlayers = [
         rec.Team1Player1, rec.Team1Player2, rec.Team1Player3, rec.Team1Player4,
@@ -138,7 +140,9 @@ function generateDoublesProDraw(players, courtsCount, eventId, drawVersion, user
         courtCounts[pid][rec.Court] = (courtCounts[pid][rec.Court] || 0) + 1;
       });
     });
-  });
+
+    roundNumber++;
+  }
 
   return allMatches;
 }
