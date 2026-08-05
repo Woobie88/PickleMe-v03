@@ -603,7 +603,7 @@ function switchGenerateDrawTab(tabId) {
   document.getElementById('view-' + tabId).classList.add('active');
 
   if (tabId === 'gd-available') {
-    renderGenerateDrawAvailabilityView(window.cachedUserUniverse);
+    renderAvailabilityView(window.cachedUserUniverse, 'gd-unavailable-list', 'gd-available-list');
   }
 }
 
