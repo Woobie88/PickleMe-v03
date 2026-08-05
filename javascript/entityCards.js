@@ -412,7 +412,7 @@ function enableDragReorder(containerId, onReorderComplete) {
   });
 }
 
-function renderAvailabilityView(payload) {
+function renderAvailabilityView(payload, unavailableContainerId = 'unavailable-list', availableContainerId = 'available-list') {
   const activeEventId = payload.activeEventId;
   const activeEvent = payload.events.find(e => String(e.EventID) === String(activeEventId));
   const currentPlayerVersion = activeEvent.CurrentPlayerVersion;
@@ -439,8 +439,8 @@ function renderAvailabilityView(payload) {
     return (parseFloat(a.RandomNumber) || 0) - (parseFloat(b.RandomNumber) || 0);
   });
 
-  const unavailableContainer = document.getElementById('unavailable-list');
-  const availableContainer = document.getElementById('available-list');
+  const unavailableContainer = document.getElementById(unavailableContainerId);
+  const availableContainer = document.getElementById(availableContainerId);
 
   function buildAvailabilityPlayerCard(player) {
     const seedNumber = seedRankMap[player.PlayerID];
@@ -456,20 +456,21 @@ function renderAvailabilityView(payload) {
   }
 
   unavailableContainer.innerHTML = unavailablePlayers.length === 0
-    ? `<div class="no-data-placeholder" id="unavailable-empty"><h3>Nil</h3></div>`
+    ? `<div class="no-data-placeholder"><h3>Nil</h3></div>`
     : unavailablePlayers.map(p => buildAvailabilityPlayerCard(p)).join('');
 
   availableContainer.innerHTML = availablePlayers.length === 0
     ? `<div class="no-data-placeholder"><h3>No Players</h3></div>`
     : availablePlayers.map(p => buildAvailabilityPlayerCard(p)).join('');
 
-  enableAvailabilityDragDrop();
+  enableAvailabilityDragDrop(unavailableContainerId, availableContainerId);
 }
 
-function enableAvailabilityDragDrop() {
-  const unavailableList = document.getElementById('unavailable-list');
-  const availableList = document.getElementById('available-list');
+function enableAvailabilityDragDrop(unavailableContainerId = 'unavailable-list', availableContainerId = 'available-list') {
+  const unavailableList = document.getElementById(unavailableContainerId);
+  const availableList = document.getElementById(availableContainerId);
   const containers = [unavailableList, availableList];
+  const containerSelector = `#${unavailableContainerId}, #${availableContainerId}`;
 
   containers.forEach(container => {
     container.querySelectorAll('.app-card[data-card-id]').forEach(card => {
@@ -522,7 +523,7 @@ function enableAvailabilityDragDrop() {
         const elBelow = document.elementFromPoint(touch.clientX, touch.clientY);
         card.style.display = '';
 
-        const targetContainer = elBelow?.closest('#unavailable-list, #available-list');
+        const targetContainer = elBelow?.closest(containerSelector);
         if (!targetContainer) return;
 
         const targetCard = elBelow.closest('.app-card[data-card-id]');
@@ -559,15 +560,15 @@ function enableAvailabilityDragDrop() {
         }
 
         window.suppressNextCardClick = true;
-        commitAvailabilityStatus();
+        commitAvailabilityStatus(unavailableContainerId, availableContainerId);
       });
     });
   });
 }
 
-async function commitAvailabilityStatus() {
-  const unavailableIds = Array.from(document.getElementById('unavailable-list').querySelectorAll('.app-card[data-card-id]')).map(c => c.dataset.cardId);
-  const availableIds = Array.from(document.getElementById('available-list').querySelectorAll('.app-card[data-card-id]')).map(c => c.dataset.cardId);
+async function commitAvailabilityStatus(unavailableContainerId = 'unavailable-list', availableContainerId = 'available-list') {
+  const unavailableIds = Array.from(document.getElementById(unavailableContainerId).querySelectorAll('.app-card[data-card-id]')).map(c => c.dataset.cardId);
+  const availableIds = Array.from(document.getElementById(availableContainerId).querySelectorAll('.app-card[data-card-id]')).map(c => c.dataset.cardId);
 
   const payload = window.cachedUserUniverse;
   const updates = [];
@@ -591,7 +592,7 @@ async function commitAvailabilityStatus() {
     console.error("Failed to save player availability:", err);
   }
 
-  renderAvailabilityView(payload);
+  renderAvailabilityView(payload, unavailableContainerId, availableContainerId);
 }
 
 function switchGenerateDrawTab(tabId) {
