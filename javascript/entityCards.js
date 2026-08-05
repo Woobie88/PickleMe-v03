@@ -756,6 +756,20 @@ async function saveGdLives(value) {
   }
 }
 
+// ---------- BUTTON CALL ----------
+async function handleBuildDraw() {
+  const numberOfRounds = parseInt(document.getElementById('gd-rounds-hidden').value) || 1;
+
+  try {
+    const matches = await generateNRoundsAndPreview(numberOfRounds);
+    alert(`Draw generated successfully — ${matches.length} matches created.`);
+    navigateToScreen('dashboard');
+  } catch (err) {
+    console.error("Draw generation failed:", err);
+    alert("Draw generation failed — check the console for details.");
+  }
+}
+
 async function renderDrawCards(payload) {
   console.log('Calling renderDrawCards');
   showLoadingState('active-draw-list', 'Loading draw...'); // NEW
