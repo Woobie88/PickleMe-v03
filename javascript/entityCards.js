@@ -672,6 +672,88 @@ function renderGenerateDrawDetails(payload) {
 
   document.getElementById('gd-selected-game-title').innerText = gameProfile?.GameTitle || 'No Game Selected';
   document.getElementById('gd-game-type').innerText = gameProfile?.GamesGroup || '—';
+
+  // --- Number Of Rounds ---
+  const roundsSupported = gameProfile?.Rounds === 'Yes';
+  let roundsValue;
+
+  if (roundsSupported) {
+    roundsValue = parseInt(activeEvent?.NumberofRound) || 1;
+  } else {
+    roundsValue = 1;
+  }
+
+  document.getElementById('gd-rounds-value').innerText = roundsValue;
+  document.getElementById('gd-rounds-hidden').value = roundsValue;
+
+  // Rounds field is always visible, but only editable when the game supports it
+  document.querySelectorAll('#gd-rounds-group .score-btn').forEach(btn => {
+    btn.disabled = !roundsSupported;
+    btn.style.opacity = roundsSupported ? '1' : '0.4';
+  });
+
+  // --- Number Of Lives ---
+  const livesSupported = gameProfile?.Lives === 'Yes';
+  const livesGroup = document.getElementById('gd-lives-group');
+
+  if (livesSupported) {
+    livesGroup.style.display = '';
+    const livesValue = parseInt(activeEvent?.Lives) || 1;
+    document.getElementById('gd-lives-value').innerText = livesValue;
+    document.getElementById('gd-lives-hidden').value = livesValue;
+  } else {
+    livesGroup.style.display = 'none';
+  }
+}
+
+function adjustGdRounds(direction) {
+  const hiddenInput = document.getElementById('gd-rounds-hidden');
+  const displaySpan = document.getElementById('gd-rounds-value');
+
+  let current = parseInt(hiddenInput.value) || 1;
+  current = Math.max(1, current + direction);
+
+  hiddenInput.value = current;
+  displaySpan.innerText = current;
+
+  saveGdRounds(current);
+}
+
+function adjustGdLives(direction) {
+  const hiddenInput = document.getElementById('gd-lives-hidden');
+  const displaySpan = document.getElementById('gd-lives-value');
+
+  let current = parseInt(hiddenInput.value) || 1;
+  current = Math.max(1, current + direction);
+
+  hiddenInput.value = current;
+  displaySpan.innerText = current;
+
+  saveGdLives(current);
+}
+
+async function saveGdRounds(value) {
+  const activeEventId = window.cachedUserUniverse.activeEventId;
+  const activeEvent = window.cachedUserUniverse.events.find(e => String(e.EventID) === String(activeEventId));
+  if (activeEvent) activeEvent.NumberofRound = value;
+
+  try {
+    await window.updateEventFieldInFirestore(activeEventId, 'NumberofRound', value);
+  } catch (err) {
+    console.error("Failed to save NumberofRound:", err);
+  }
+}
+
+async function saveGdLives(value) {
+  const activeEventId = window.cachedUserUniverse.activeEventId;
+  const activeEvent = window.cachedUserUniverse.events.find(e => String(e.EventID) === String(activeEventId));
+  if (activeEvent) activeEvent.Lives = value;
+
+  try {
+    await window.updateEventFieldInFirestore(activeEventId, 'Lives', value);
+  } catch (err) {
+    console.error("Failed to save Lives:", err);
+  }
 }
 
 async function renderDrawCards(payload) {
