@@ -602,7 +602,9 @@ function switchGenerateDrawTab(tabId) {
   document.getElementById('tab-' + tabId).classList.add('active');
   document.getElementById('view-' + tabId).classList.add('active');
 
-  if (tabId === 'gd-available') {
+  if (tabId === 'gd-details') {
+    renderGenerateDrawDetails(window.cachedUserUniverse);
+  } else if (tabId === 'gd-available') {
     renderAvailabilityView(window.cachedUserUniverse, 'gd-unavailable-list', 'gd-available-list');
   }
 }
@@ -659,6 +661,17 @@ function renderGenerateDrawAvailabilityView(payload) {
     : availablePlayers.map(p => buildAvailabilityPlayerCard(p)).join('');
 
   enableGenerateDrawAvailabilityDragDrop();
+}
+
+function renderGenerateDrawDetails(payload) {
+  const activeEventId = payload.activeEventId;
+  const activeEvent = payload.events.find(e => String(e.EventID) === String(activeEventId));
+
+  const gameId = activeEvent?.GameID;
+  const gameProfile = gamesProfile.find(g => g.GameID === gameId);
+
+  document.getElementById('gd-selected-game-title').innerText = gameProfile?.GameTitle || 'No Game Selected';
+  document.getElementById('gd-game-type').innerText = gameProfile?.GamesGroup || '—';
 }
 
 async function renderDrawCards(payload) {
