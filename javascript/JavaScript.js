@@ -258,32 +258,67 @@ function enableDragToActivate(containerId, userEmail) {
       const deltaY = currentY - startY;
       card.style.transform = '';
       card.style.opacity = '';
-
+    
       if (isDragging && deltaY < -60) {
         const eventId = card.dataset.eventId;
-
+    
         if (String(eventId) === String(window.cachedUserUniverse.activeEventId)) {
           isDragging = false;
           return;
         }
-
+    
         window.suppressNextCardClick = true;
-
+    
         try {
           await window.setActiveEventInFirestore(eventId, userEmail);
           window.cachedUserUniverse.activeEventId = eventId;
+    
+          // Clear stale event-specific data
+          window.cachedUserUniverse.players = [];
+          window.cachedUserUniverse.draw = [];
+    
+          // Refresh the current event's own record too, in case fields differ (GameID, versions, etc.)
+          const freshEvent = window.cachedUserUniverse.events.find(
+            e => String(e.EventID || e.eventId) === String(eventId)
+          );
+    
           renderUserEventCards(window.cachedUserUniverse);
+    
+          // NEW — proactively re-fetch and re-render whatever screens might currently be visible
+          await refreshAllEventScopedViews();
+    
         } catch (err) {
           console.error("Failed to set active event:", err);
         }
-      } else if (!isDragging) {
-        const eventId = card.dataset.eventId;
-        updateActiveEvent(eventId);
       }
-
+    
       isDragging = false;
     });
   });
+}
+
+async function refreshAllEventScopedViews() {
+  const payload = window.cachedUserUniverse;
+
+  // Players screen
+  if (document.getElementById('screen-players')?.style.display === 'block') {
+    await renderPlayerCards(payload);
+  }
+
+  // Draw screen (any of its three tabs)
+  if (document.getElementById('screen-draw')?.style.display === 'block') {
+    await renderDrawCards(payload);
+    await renderCurrentRoundView(payload);
+    await renderStandingsView(payload);
+  }
+
+  // Generate Draw screen
+  if (document.getElementById('screen-generate-draw')?.style.display === 'block') {
+    renderGenerateDrawDetails(payload);
+  }
+
+  // Also restart the real-time listener, since it's scoped to a specific EventID/DrawVersion
+  startDrawListener();
 }
 
 /**
