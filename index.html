@@ -575,6 +575,26 @@
                 <label>Game Type</label>
                 <div class="detail-readonly" id="gd-game-type">—</div>
               </div>
+          
+              <div class="detail-form-group" id="gd-rounds-group">
+                <label>Number Of Rounds</label>
+                <div class="score-control">
+                  <button class="score-btn" onclick="adjustGdRounds(-1)">−</button>
+                  <span id="gd-rounds-value" class="score-value">1</span>
+                  <button class="score-btn" onclick="adjustGdRounds(1)">+</button>
+                </div>
+                <input type="hidden" id="gd-rounds-hidden" value="1">
+              </div>
+          
+              <div class="detail-form-group" id="gd-lives-group" style="display: none;">
+                <label>Number Of Lives</label>
+                <div class="score-control">
+                  <button class="score-btn" onclick="adjustGdLives(-1)">−</button>
+                  <span id="gd-lives-value" class="score-value">1</span>
+                  <button class="score-btn" onclick="adjustGdLives(1)">+</button>
+                </div>
+                <input type="hidden" id="gd-lives-hidden" value="1">
+              </div>
             </div>
           </div>
       
