@@ -45,6 +45,7 @@ function navigateToScreen(screenId) {
     cleanup: 'nav-dashboard',
     players: 'nav-players',
     'add-players': 'nav-players',
+    'generate-draw': 'nav-dashboard',
     draw: 'nav-draw',
     'match-detail': 'nav-draw',
     ladder: 'nav-ladder',
@@ -65,6 +66,9 @@ function navigateToScreen(screenId) {
     case 'players':
       renderPlayerCards(payload);
       break;
+    case 'generate-draw':
+      // Details/Teams tabs render on-demand when built; Available tab renders via switchGenerateDrawTab
+      break;  
     case 'draw':
       renderDrawCards(payload);
       renderCurrentRoundView(payload);
