@@ -67,7 +67,7 @@ function navigateToScreen(screenId) {
       renderPlayerCards(payload);
       break;
     case 'generate-draw':
-      // Details/Teams tabs render on-demand when built; Available tab renders via switchGenerateDrawTab
+      renderGenerateDrawDetails(window.cachedUserUniverse);
       break;  
     case 'draw':
       renderDrawCards(payload);
