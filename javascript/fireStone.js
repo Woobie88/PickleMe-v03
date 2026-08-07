@@ -214,3 +214,9 @@ window.updateEventFieldInFirestore = async function(eventId, fieldName, value) {
   const eventDocRef = doc(db, "events", String(eventId));
   await updateDoc(eventDocRef, { [fieldName]: value });
 };
+
+window.fetchDuprDatabaseFromFirestore = async function() {
+  const db = window.db;
+  const snapshot = await getDocs(collection(db, "duprDatabase"));
+  return snapshot.docs.map(doc => doc.data());
+};
