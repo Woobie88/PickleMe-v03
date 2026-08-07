@@ -17,8 +17,9 @@ function handleAddPlayersAction(action) {
 
   switch (action) {
     case 'opensports':
-      console.log('OpenSports import selected');
-      // next: navigate to the OpenSports OCR flow screen
+      window.osScannedNames = [];
+      window.osPhotoCount = 0;
+      navigateToScreen('opensports-import');
       break;
     case 'individual':
       console.log('Individual add selected');
