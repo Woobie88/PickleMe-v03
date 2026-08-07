@@ -147,8 +147,8 @@ function findBestDuprMatch(scannedName, duprDatabase) {
 
   // Multiple matches — pick the one with the highest DUPR Reliability
   const best = candidates.reduce((highest, current) => {
-    const currentReliability = parseFloat(current.Reliability) || 0;
-    const highestReliability = parseFloat(highest.Reliability) || 0;
+    const currentReliability = parseFloat(current["DUPR Reliability"]) || 0;
+    const highestReliability = parseFloat(highest["DUPR Reliability"]) || 0;
     return currentReliability > highestReliability ? current : highest;
   });
 
