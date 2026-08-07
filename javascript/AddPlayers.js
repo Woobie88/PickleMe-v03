@@ -55,9 +55,21 @@ async function handleOpenSportsImageSelected(event) {
     const rawText = result.data.text;
     const foundNames = parseAttendeeNames(rawText);
 
+    // Ensure duprDatabase is loaded
+    const duprDatabase = window.cachedUserUniverse.dupr && window.cachedUserUniverse.dupr.length > 0
+      ? window.cachedUserUniverse.dupr
+      : await window.fetchDuprDatabaseFromFirestore(); // see note below
+    window.cachedUserUniverse.dupr = duprDatabase;
+
+    // Attach DUPR match to each found name
+    const namesWithDupr = foundNames.map(name => {
+      const match = findBestDuprMatch(name, duprDatabase);
+      return { name, DUPRId: match.DUPRId, DUPR: match.DUPR };
+    });
+
     window.osPhotoCount++;
     const beforeCount = window.osScannedNames.length;
-    window.osScannedNames = mergeNewNames(window.osScannedNames, foundNames);
+    window.osScannedNames = mergeNewNamesWithDupr(window.osScannedNames, namesWithDupr);
     const newUniqueCount = window.osScannedNames.length - beforeCount;
 
     renderOsScanSummary(foundNames.length, newUniqueCount);
@@ -67,9 +79,23 @@ async function handleOpenSportsImageSelected(event) {
     statusEl.innerHTML = `<h3>Could not read image</h3><p>Try a clearer photo, then scan again</p>`;
   }
 
-  event.target.value = ''; // reset file input so the same photo could be re-selected if needed
+  event.target.value = '';
 }
 
+function mergeNewNamesWithDupr(existingEntries, newEntries) {
+  const existingNormalized = new Set(existingEntries.map(e => normalizeNameForDedup(e.name)));
+  const merged = [...existingEntries];
+
+  newEntries.forEach(entry => {
+    const normalized = normalizeNameForDedup(entry.name);
+    if (!existingNormalized.has(normalized)) {
+      merged.push(entry);
+      existingNormalized.add(normalized);
+    }
+  });
+
+  return merged;
+}
 function renderOsScanSummary(foundThisPhoto, newUniqueThisPhoto) {
   const statusEl = document.getElementById('os-scan-status');
   const summaryEl = document.getElementById('os-scanned-summary');
@@ -95,4 +121,36 @@ function renderOsScanSummary(foundThisPhoto, newUniqueThisPhoto) {
 
 function goToOpenSportsReview() {
   navigateToScreen('opensports-review');
+}
+
+// Matching OCR to DUPR database
+function normalizeNameForMatching(name) {
+  return name
+    .toLowerCase()
+    .replace(/[-'\s]/g, ''); // strip hyphens, apostrophes, and all whitespace entirely
+}
+
+function findBestDuprMatch(scannedName, duprDatabase) {
+  const targetNormalized = normalizeNameForMatching(scannedName);
+
+  const candidates = duprDatabase.filter(d => 
+    normalizeNameForMatching(d.Name || '') === targetNormalized
+  );
+
+  if (candidates.length === 0) {
+    return { DUPRId: 'Not Found', DUPR: 2.0 };
+  }
+
+  if (candidates.length === 1) {
+    return { DUPRId: candidates[0].DUPRId, DUPR: parseFloat(candidates[0].DUPR) || 2.0 };
+  }
+
+  // Multiple matches — pick the one with the highest DUPR Reliability
+  const best = candidates.reduce((highest, current) => {
+    const currentReliability = parseFloat(current.Reliability) || 0;
+    const highestReliability = parseFloat(highest.Reliability) || 0;
+    return currentReliability > highestReliability ? current : highest;
+  });
+
+  return { DUPRId: best.DUPRId, DUPR: parseFloat(best.DUPR) || 2.0 };
 }
