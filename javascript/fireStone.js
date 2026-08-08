@@ -220,3 +220,15 @@ window.fetchDuprDatabaseFromFirestore = async function() {
   const snapshot = await getDocs(collection(db, "duprDatabase"));
   return snapshot.docs.map(doc => doc.data());
 };
+
+window.saveGeneratedPlayersToFirestore = async function(players) {
+  const db = window.db;
+
+  const writes = players.map(player => {
+    const playerDocRef = doc(db, "players", String(player.PlayerID));
+    return setDoc(playerDocRef, player);
+  });
+
+  await Promise.all(writes);
+  console.log(`Saved ${players.length} player document(s) to Firestore.`);
+};
