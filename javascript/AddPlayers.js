@@ -53,14 +53,14 @@ async function handleOpenSportsImageSelected(event) {
     });
 
     const rawText = result.data.text;
-    console.log("OCR raw text:", rawText); // ADD THIS
+    alert("OCR raw text: " + rawText.substring(0, 300)); // show first 300 chars
     const foundNames = parseAttendeeNames(rawText);
-    console.log("Parsed names:", foundNames); // ADD THIS
+    alert("Parsed names: " + JSON.stringify(foundNames));
 
     const duprDatabase = window.cachedUserUniverse.dupr && window.cachedUserUniverse.dupr.length > 0
-       ? window.cachedUserUniverse.dupr
-       : await window.fetchDuprDatabaseFromFirestore();
-    console.log("DUPR database loaded:", duprDatabase.length, "records"); // ADD THIS
+      ? window.cachedUserUniverse.dupr
+      : await window.fetchDuprDatabaseFromFirestore();
+      alert("DUPR database loaded: " + duprDatabase.length + " records");
 
     // Attach DUPR match to each found name
     const namesWithDupr = foundNames.map(name => {
