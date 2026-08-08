@@ -199,3 +199,42 @@ function normalizeNameForDedup(name) {
     .trim()
     .replace(/\s+/g, ' ');
 }
+
+function renderOpenSportsReview() {
+  const container = document.getElementById('os-review-list');
+
+  if (window.osScannedNames.length === 0) {
+    container.innerHTML = `<div class="no-data-placeholder"><h3>No Names To Review</h3></div>`;
+    document.getElementById('os-import-count').innerText = '0';
+    return;
+  }
+
+  container.innerHTML = window.osScannedNames.map((entry, idx) => {
+    const isNotFound = entry.DUPRId === 'Not Found';
+    return `
+      <div class="os-review-card">
+        <div class="os-review-row">
+          <input type="text" class="os-review-input" value="${entry.name}" oninput="updateOsReviewField(${idx}, 'name', this.value)">
+          <button class="os-remove-btn" onclick="removeOsReviewEntry(${idx})">✕</button>
+        </div>
+        <div class="os-review-row">
+          <input type="text" class="os-review-input ${isNotFound ? 'not-found' : ''}" value="${entry.DUPRId}" oninput="updateOsReviewField(${idx}, 'DUPRId', this.value)" placeholder="DUPR ID">
+          <input type="number" step="0.01" class="os-review-input ${isNotFound ? 'not-found' : ''}" value="${entry.DUPR}" oninput="updateOsReviewField(${idx}, 'DUPR', this.value)" placeholder="DUPR Rating">
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('os-import-count').innerText = window.osScannedNames.length;
+}
+
+function updateOsReviewField(index, field, value) {
+  if (window.osScannedNames[index]) {
+    window.osScannedNames[index][field] = field === 'DUPR' ? parseFloat(value) || 0 : value;
+  }
+}
+
+function removeOsReviewEntry(index) {
+  window.osScannedNames.splice(index, 1);
+  renderOpenSportsReview();
+}
