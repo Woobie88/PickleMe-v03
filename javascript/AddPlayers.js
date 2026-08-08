@@ -238,3 +238,57 @@ function removeOsReviewEntry(index) {
   window.osScannedNames.splice(index, 1);
   renderOpenSportsReview();
 }
+
+async function commitOpenSportsImport() {
+  if (window.osScannedNames.length === 0) {
+    alert("No players to import.");
+    return;
+  }
+
+  const payload = window.cachedUserUniverse;
+  const activeEventId = payload.activeEventId;
+  const activeEvent = payload.events.find(e => String(e.EventID) === String(activeEventId));
+  const currentPlayerVersion = parseInt(activeEvent.CurrentPlayerVersion) || 0;
+
+  const newPlayers = window.osScannedNames.map(entry => {
+    const nameParts = entry.name.trim().split(/\s+/);
+    const firstName = nameParts[0] || '';
+
+    return {
+      PlayerID: generatePlayerId(),
+      EventID: activeEventId,
+      PlayerVersion: currentPlayerVersion,
+      Name: entry.name,
+      FirstName: firstName,
+      DUPRId: entry.DUPRId,
+      DUPR: entry.DUPR,
+      Seed: 0,
+      RandomNumber: Math.random(),
+      Team: null,
+      playerExclude: 'No',
+      byeOrder: null
+    };
+  });
+
+  try {
+    await window.saveGeneratedPlayersToFirestore(newPlayers);
+    window.cachedUserUniverse.players = [...(payload.players || []), ...newPlayers];
+
+    alert(`Imported ${newPlayers.length} player(s) successfully.`);
+    window.osScannedNames = [];
+    window.osPhotoCount = 0;
+    navigateToScreen('players');
+  } catch (err) {
+    console.error("Failed to import players:", err);
+    alert("Import failed — check the console for details.");
+  }
+}
+
+function generatePlayerId() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let id = '';
+  for (let i = 0; i < 8; i++) {
+    id += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return id;
+}
