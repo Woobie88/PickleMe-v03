@@ -293,3 +293,17 @@ function generatePlayerId() {
   }
   return id;
 }
+
+function resetOpenSportsImportUI() {
+  const statusEl = document.getElementById('os-scan-status');
+  const summaryEl = document.getElementById('os-scanned-summary');
+  const reviewBar = document.getElementById('os-review-bar');
+
+  statusEl.style.display = '';
+  statusEl.innerHTML = `<h3>No Photos Scanned Yet</h3><p>Tap below to scan your first screenshot</p>`;
+
+  summaryEl.style.display = 'none';
+  summaryEl.innerHTML = '';
+
+  reviewBar.style.display = 'none';
+}
