@@ -143,7 +143,7 @@ function findBestDuprMatch(scannedName, duprDatabase) {
   }
 
   if (candidates.length === 1) {
-    return { DUPRId: candidates[0].DUPRId, DUPR: parseFloat(candidates[0].DUPR) || 2.0 };
+    return { DUPRId: candidates[0].DUPRId, DUPR: parseFloat(candidates[0]["DUPR Rating"]) || 2.0 };
   }
 
   // Multiple matches — pick the one with the highest DUPR Reliability
@@ -153,7 +153,7 @@ function findBestDuprMatch(scannedName, duprDatabase) {
     return currentReliability > highestReliability ? current : highest;
   });
 
-  return { DUPRId: best.DUPRId, DUPR: parseFloat(best.DUPR) || 2.0 };
+  return { DUPRId: best.DUPRId, DUPR: parseFloat(best["DUPR Rating"]) || 2.0 };
 }
 
 function parseAttendeeNames(rawText) {
