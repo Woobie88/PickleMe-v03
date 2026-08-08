@@ -278,6 +278,7 @@ async function commitOpenSportsImport() {
     alert(`Imported ${newPlayers.length} player(s) successfully.`);
     window.osScannedNames = [];
     window.osPhotoCount = 0;
+    resetOpenSportsImportUI();
     navigateToScreen('players');
   } catch (err) {
     console.error("Failed to import players:", err);
