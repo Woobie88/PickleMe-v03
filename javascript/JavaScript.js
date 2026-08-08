@@ -87,6 +87,9 @@ function navigateToScreen(screenId) {
       enableGameDragToActivate();
       renderActiveGameHighlight();
       break;
+    case 'opensports-review':
+      renderOpenSportsReview();
+      break;
   }
 }
 
