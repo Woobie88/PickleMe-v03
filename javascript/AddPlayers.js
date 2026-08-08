@@ -20,6 +20,7 @@ function handleAddPlayersAction(action) {
       window.osScannedNames = [];
       window.osPhotoCount = 0;
       navigateToScreen('opensports-import');
+      resetOpenSportsImportUI(); // NEW
       break;
     case 'individual':
       console.log('Individual add selected');
