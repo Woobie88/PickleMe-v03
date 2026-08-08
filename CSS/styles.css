@@ -1072,3 +1072,43 @@ body {
   min-width: 60px;
   text-align: center;
 }
+
+.os-review-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--nav-border);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.os-review-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.os-review-input {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: #1E222B;
+  border: 1px solid #2A303C;
+  color: #FFFFFF;
+  font-size: 0.9rem;
+}
+
+.os-review-input.not-found {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.os-remove-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.3rem;
+  cursor: pointer;
+  padding: 4px 8px;
+}
