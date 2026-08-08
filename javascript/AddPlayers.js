@@ -164,12 +164,14 @@ function parseAttendeeNames(rawText) {
   ]);
 
   function extractName(line) {
+    if (/checked-?in by/i.test(line)) return null;
+
     const words = line.split(/\s+/);
     const nameWords = [];
 
     for (let i = words.length - 1; i >= 0; i--) {
       const clean = words[i].replace(/[.,;:]/g, '');
-      if (/^[A-Za-z][a-zA-Z'-]{1,}$/.test(clean)) {
+      if (/^[A-Z][a-zA-Z'-]{1,}$/.test(clean)) {
         nameWords.unshift(clean);
       } else {
         break;
@@ -180,7 +182,6 @@ function parseAttendeeNames(rawText) {
 
     const candidate = nameWords.join(' ');
     if (candidate === candidate.toUpperCase()) return null;
-    if (!nameWords.every(w => /[A-Z]/.test(w[0]))) return null;
     if (STOPLIST.has(candidate.toLowerCase())) return null;
 
     return candidate;
