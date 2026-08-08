@@ -1112,3 +1112,25 @@ body {
   cursor: pointer;
   padding: 4px 8px;
 }
+
+.os-review-input {
+  flex: 1;
+  min-width: 0; /* allows flex items to shrink below their content size — the key overflow fix */
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: #1E222B;
+  border: 1px solid #2A303C;
+  color: #FFFFFF;
+  font-size: 0.9rem;
+  box-sizing: border-box; /* ensures padding doesn't add to the element's total width */
+}
+
+.os-review-input[type="number"] {
+  -moz-appearance: textfield; /* removes Firefox's spinner arrows */
+}
+
+.os-review-input[type="number"]::-webkit-outer-spin-button,
+.os-review-input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none; /* removes Chrome/Safari's spinner arrows */
+  margin: 0;
+}
