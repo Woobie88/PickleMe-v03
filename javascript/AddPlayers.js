@@ -155,3 +155,47 @@ function findBestDuprMatch(scannedName, duprDatabase) {
 
   return { DUPRId: best.DUPRId, DUPR: parseFloat(best.DUPR) || 2.0 };
 }
+
+function parseAttendeeNames(rawText) {
+  const STOPLIST = new Set([
+    "display settings", "check in", "check-in", "no shows",
+    "search by name or registration option", "attendees", "waitlist"
+  ]);
+
+  function extractName(line) {
+    const words = line.split(/\s+/);
+    const nameWords = [];
+
+    for (let i = words.length - 1; i >= 0; i--) {
+      const clean = words[i].replace(/[.,;:]/g, '');
+      if (/^[A-Za-z][a-zA-Z'-]{1,}$/.test(clean)) {
+        nameWords.unshift(clean);
+      } else {
+        break;
+      }
+    }
+
+    if (nameWords.length < 2) return null;
+
+    const candidate = nameWords.join(' ');
+    if (candidate === candidate.toUpperCase()) return null;
+    if (!nameWords.every(w => /[A-Z]/.test(w[0]))) return null;
+    if (STOPLIST.has(candidate.toLowerCase())) return null;
+
+    return candidate;
+  }
+
+  return rawText
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.length > 1)
+    .map(line => extractName(line))
+    .filter(name => name !== null);
+}
+
+function normalizeNameForDedup(name) {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ');
+}
