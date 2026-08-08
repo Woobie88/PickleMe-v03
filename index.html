@@ -257,6 +257,20 @@
           </div>
         </div>
       </section>
+      
+      <section id="screen-opensports-review" class="app-screen">
+        <div class="welcome-banner">
+          <h2>Review Players</h2>
+          <p>Confirm names and DUPR matches before importing</p>
+        </div>
+
+        <div id="os-review-list" class="card-grid"></div>
+
+        <div class="form-action-bar">
+          <button class="btn-secondary" onclick="navigateToScreen('opensports-import')">Back</button>
+          <button class="btn-primary" onclick="commitOpenSportsImport()">Import (<span id="os-import-count">0</span>)</button>
+        </div>
+      </section>
 
       <!-- SCREEN 4: Draw For Active Event -->
       <section id="screen-draw" class="app-screen">
