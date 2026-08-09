@@ -90,6 +90,10 @@ function navigateToScreen(screenId) {
     case 'opensports-review':
       renderOpenSportsReview();
       break;
+    case 'individual':
+      resetIndividualAddForm();
+      navigateToScreen('individual-add');
+      break;
   }
 }
 
