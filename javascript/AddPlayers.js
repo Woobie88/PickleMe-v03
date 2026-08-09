@@ -259,7 +259,7 @@ async function commitOpenSportsImport() {
 
   const newPlayers = window.osScannedNames.map(entry => {
     const nameParts = entry.name.trim().split(/\s+/);
-    const firstName = nameParts[0] || '';
+    const firstName = entry.firstNameOverride || nameParts[0] || '';
 
     return {
       PlayerID: generatePlayerId(),
