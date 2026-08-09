@@ -213,11 +213,16 @@ function renderOpenSportsReview() {
 
   container.innerHTML = window.osScannedNames.map((entry, idx) => {
     const isNotFound = entry.DUPRId === 'Not Found';
+    const firstName = entry.name.trim().split(/\s+/)[0] || '';
+
     return `
       <div class="os-review-card">
         <div class="os-review-row">
           <input type="text" class="os-review-input" value="${entry.name}" oninput="updateOsReviewField(${idx}, 'name', this.value)">
           <button class="os-remove-btn" onclick="removeOsReviewEntry(${idx})">✕</button>
+        </div>
+        <div class="os-review-row">
+          <input type="text" class="os-review-input" value="${firstName}" oninput="updateOsReviewField(${idx}, 'firstNameOverride', this.value)" placeholder="First Name">
         </div>
         <div class="os-review-row">
           <input type="text" class="os-review-input ${isNotFound ? 'not-found' : ''}" value="${entry.DUPRId}" oninput="updateOsReviewField(${idx}, 'DUPRId', this.value)" placeholder="DUPR ID">
