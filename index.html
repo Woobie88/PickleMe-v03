@@ -257,7 +257,8 @@
           </div>
         </div>
       </section>
-      
+
+      <!-- OpenSports Image Load & Review Screen  -->
       <section id="screen-opensports-review" class="app-screen">
         <div class="welcome-banner">
           <h2>Review Players</h2>
@@ -269,6 +270,43 @@
         <div class="form-action-bar">
           <button class="btn-secondary" onclick="navigateToScreen('opensports-import')">Back</button>
           <button class="btn-primary" onclick="commitOpenSportsImport()">Import (<span id="os-import-count">0</span>)</button>
+        </div>
+      </section>
+
+      <!-- Individual Player Add Screen -->
+      <section id="screen-individual-add" class="app-screen">
+        <div class="welcome-banner">
+          <h2>Add Player</h2>
+          <p>Enter player details manually</p>
+        </div>
+      
+        <div class="detail-view-container">
+          <div class="detail-form-group">
+            <label for="ind-name">Name</label>
+            <input type="text" id="ind-name" class="detail-input" oninput="handleIndNameInput(this.value)" placeholder="Full Name">
+          </div>
+      
+          <div class="detail-form-group">
+            <label for="ind-firstname">First Name</label>
+            <input type="text" id="ind-firstname" class="detail-input" placeholder="First Name">
+          </div>
+      
+          <div class="detail-form-group">
+            <label for="ind-duprid">DUPR ID</label>
+            <input type="text" id="ind-duprid" class="detail-input" placeholder="DUPR ID">
+          </div>
+      
+          <div class="detail-form-group">
+            <label for="ind-dupr">DUPR Rating</label>
+            <input type="number" step="0.01" id="ind-dupr" class="detail-input" placeholder="DUPR Rating">
+          </div>
+      
+          <div id="ind-match-status" class="card-meta-line" style="margin-top: -10px; margin-bottom: 10px;"></div>
+      
+          <div class="form-action-bar">
+            <button class="btn-secondary" onclick="navigateToScreen('players')">Cancel</button>
+            <button class="btn-primary" onclick="commitIndividualAdd()">Add Player</button>
+          </div>
         </div>
       </section>
 
