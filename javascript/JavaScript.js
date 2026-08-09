@@ -545,7 +545,6 @@ function enableCardPressFeedback(selector) {
 // Global initialization event listener running on app startup
 window.addEventListener("DOMContentLoaded", async (event) => {
   console.log("App loaded. Pre-fetching database universes...");
-
   try {
     await preFetchUserUniverseData();
     startDrawListener();
@@ -557,10 +556,13 @@ window.addEventListener("DOMContentLoaded", async (event) => {
       loader.style.display = "none";
     }
   }
-
   initMatchSwipeHandlers();
   initCurrentRoundSwipeHandlers();
   enableCardPressFeedback('#screen-dashboard .app-card');
+
+  document.getElementById('ind-firstname').addEventListener('input', () => {
+    indFirstNameManuallyEdited = true;
+  }); // ADD THIS
 });
 
 document.addEventListener('click', (e) => {
