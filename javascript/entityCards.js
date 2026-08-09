@@ -322,14 +322,6 @@ async function renderPlayerCards(payload) {
     `,
     getOnClick: (player) => `viewPlayerDetail('${player.PlayerID}')`
   });
-
-  enableDragReorder('active-players-list', (newOrderIds) => {
-    newOrderIds.forEach((pid, idx) => {
-      const player = players.find(p => p.PlayerID === pid);
-      if (player) player.Seed = idx + 1;
-    });
-    saveNewSeedOrder(newOrderIds, payload.activeEventId);
-  });
 }
 
 function switchPlayersTab(tabId) {
@@ -344,72 +336,6 @@ function switchPlayersTab(tabId) {
   } else if (tabId === 'availability') {
     renderAvailabilityView(window.cachedUserUniverse); // uses defaults: 'unavailable-list', 'available-list'
   }
-}
-
-function enableDragReorder(containerId, onReorderComplete) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-
-  let draggedEl = null, isDragging = false, startY = 0;
-
-  container.addEventListener('click', (e) => {
-    if (window.suppressNextCardClick) {
-      e.stopImmediatePropagation();
-      e.preventDefault();
-      window.suppressNextCardClick = false;
-    }
-  }, true);
-
-  container.querySelectorAll('.app-card').forEach(card => {
-    card.addEventListener('touchstart', (e) => {
-      startY = e.touches[0].clientY;
-    }, { passive: true });
-
-    let longPressTimer = null;
-
-    card.addEventListener('touchstart', (e) => {
-      longPressTimer = setTimeout(() => {
-        isDragging = true;
-        draggedEl = card;
-        card.classList.add('dragging');
-        if (navigator.vibrate) navigator.vibrate(30);
-      }, 350);
-    }, { passive: true });
-
-    card.addEventListener('touchmove', (e) => {
-      if (!isDragging) { clearTimeout(longPressTimer); return; }
-      e.preventDefault();
-      const touchY = e.touches[0].clientY;
-      draggedEl.style.transform = `translateY(${touchY - startY}px)`;
-
-      const siblings = Array.from(container.querySelectorAll('.app-card:not(.dragging)'));
-      for (const sib of siblings) {
-        const box = sib.getBoundingClientRect();
-        const mid = box.top + box.height / 2;
-        if (touchY < mid && sib.previousElementSibling === draggedEl) {
-          container.insertBefore(draggedEl, sib);
-          draggedEl.style.transform = ''; startY = touchY; break;
-        }
-        if (touchY > mid && sib.nextElementSibling === draggedEl) {
-          container.insertBefore(draggedEl, sib.nextElementSibling);
-          draggedEl.style.transform = ''; startY = touchY; break;
-        }
-      }
-    }, { passive: false });
-
-    card.addEventListener('touchend', () => {
-      clearTimeout(longPressTimer);
-      if (!isDragging) return;
-      isDragging = false;
-      draggedEl.classList.remove('dragging');
-      draggedEl.style.transform = '';
-      window.suppressNextCardClick = true;
-
-      const newOrder = Array.from(container.querySelectorAll('.app-card')).map(c => c.dataset.cardId);
-      onReorderComplete(newOrder);
-      draggedEl = null;
-    });
-  });
 }
 
 function renderAvailabilityView(payload, unavailableContainerId = 'unavailable-list', availableContainerId = 'available-list') {
