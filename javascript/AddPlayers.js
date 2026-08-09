@@ -13,18 +13,22 @@ function toggleAddPlayersFabMenu() {
 }
 
 function handleAddPlayersAction(action) {
-  toggleAddPlayersFabMenu(); // close the menu after a selection
+  toggleAddPlayersFabMenu();
 
   switch (action) {
     case 'opensports':
       window.osScannedNames = [];
       window.osPhotoCount = 0;
       navigateToScreen('opensports-import');
-      resetOpenSportsImportUI(); // NEW
       break;
     case 'individual':
-      console.log('Individual add selected');
-      // next: navigate to the manual single-player form screen
+      resetIndividualAddForm();
+      navigateToScreen('individual-add'); // navigates TO the individual-add screen
+      if (!window.cachedUserUniverse.dupr || window.cachedUserUniverse.dupr.length === 0) {
+        window.fetchDuprDatabaseFromFirestore().then(db => {
+          window.cachedUserUniverse.dupr = db;
+        });
+      }
       break;
   }
 }
