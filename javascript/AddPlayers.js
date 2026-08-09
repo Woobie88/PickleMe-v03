@@ -291,6 +291,7 @@ async function commitOpenSportsImport() {
   }
 }
 
+// Utility for building PlayerID
 function generatePlayerId() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let id = '';
@@ -312,4 +313,46 @@ function resetOpenSportsImportUI() {
   summaryEl.innerHTML = '';
 
   reviewBar.style.display = 'none';
+}
+
+// Individual Player Add
+let indFirstNameManuallyEdited = false;
+
+function handleIndNameInput(value) {
+  const firstNameField = document.getElementById('ind-firstname');
+
+  // Auto-fill First Name only if the user hasn't manually typed into it themselves
+  if (!indFirstNameManuallyEdited) {
+    const firstWord = value.trim().split(/\s+/)[0] || '';
+    firstNameField.value = firstWord;
+  }
+
+  // Live DUPR lookup as they type the name
+  runIndDuprLookup(value);
+}
+
+function runIndDuprLookup(name) {
+  const statusEl = document.getElementById('ind-match-status');
+  const duprIdField = document.getElementById('ind-duprid');
+  const duprField = document.getElementById('ind-dupr');
+
+  const trimmed = name.trim();
+  if (trimmed.split(/\s+/).length < 2) {
+    // Not enough of a name typed yet to attempt a match
+    statusEl.innerText = '';
+    return;
+  }
+
+  const duprDatabase = window.cachedUserUniverse.dupr || [];
+  const match = findBestDuprMatch(trimmed, duprDatabase);
+
+  if (match.DUPRId === 'Not Found') {
+    statusEl.innerText = 'No DUPR match found — enter manually';
+    statusEl.style.color = 'var(--text-muted)';
+  } else {
+    duprIdField.value = match.DUPRId;
+    duprField.value = match.DUPR;
+    statusEl.innerText = `Matched: ${match.DUPRId} (DUPR ${match.DUPR})`;
+    statusEl.style.color = 'var(--accent)';
+  }
 }
