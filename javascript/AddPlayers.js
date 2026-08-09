@@ -269,7 +269,6 @@ async function commitOpenSportsImport() {
       FirstName: firstName,
       DUPRId: entry.DUPRId,
       DUPR: entry.DUPR,
-      Seed: 0,
       RandomNumber: Math.random(),
       Team: null,
       playerExclude: 'No',
