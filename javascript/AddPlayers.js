@@ -356,3 +356,13 @@ function runIndDuprLookup(name) {
     statusEl.style.color = 'var(--accent)';
   }
 }
+
+// Reset Individual Player Screen Load
+function resetIndividualAddForm() {
+  document.getElementById('ind-name').value = '';
+  document.getElementById('ind-firstname').value = '';
+  document.getElementById('ind-duprid').value = '';
+  document.getElementById('ind-dupr').value = '';
+  document.getElementById('ind-match-status').innerText = '';
+  indFirstNameManuallyEdited = false;
+}
