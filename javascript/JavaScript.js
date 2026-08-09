@@ -35,7 +35,6 @@ function navigateToScreen(screenId) {
   } else {
     console.error("Could not find view panel framework container:", 'screen-' + screenId);
   }
-
   const navMap = {
     dashboard: 'nav-dashboard',
     events: 'nav-dashboard',
@@ -52,16 +51,13 @@ function navigateToScreen(screenId) {
     analytics: 'nav-analytics',
     profile: 'nav-profile'
   };
-
   document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
   const activeNavId = navMap[screenId];
   if (activeNavId) {
     const activeNavEl = document.getElementById(activeNavId);
     if (activeNavEl) activeNavEl.classList.add('active');
   }
-
   const payload = window.cachedUserUniverse;
-
   switch (screenId) {
     case 'players':
       renderPlayerCards(payload);
@@ -89,10 +85,6 @@ function navigateToScreen(screenId) {
       break;
     case 'opensports-review':
       renderOpenSportsReview();
-      break;
-    case 'individual':
-      resetIndividualAddForm();
-      navigateToScreen('individual-add');
       break;
   }
 }
