@@ -1,93 +1,26 @@
 /**
- * DOM ROUTING ENGINE
- * Handles app-wide section transitions
+ * ============================================================
+ * EVENT CARDS
+ * Covers: the My Events screen (card rendering, day-of-week
+ * icons), tap-vs-drag handling to view detail or set the
+ * active event, the Event Detail edit form (courts/DUPR limit
+ * steppers), and the data-loading pipeline that fetches events
+ * from Firestore on app startup and re-fetches player/draw
+ * data whenever the active event changes.
+ *
+ * Depends on functions defined elsewhere:
+ * - navigateToScreen() — core router, in JavaScript.js
+ * - renderPlayerCards(), renderGenerateDrawDetails() — playerCards.js
+ * - renderDrawCards(), renderCurrentRoundView(), renderStandingsView() — drawCards.js
+ * - window.fetchEventsFromFirestore(), window.setActiveEventInFirestore(),
+ *   window.updateEventInFirestore(), window.listenToDrawChanges() — fireStone.js
+ *
+ * window.cachedUserUniverse (the global in-memory cache) is
+ * declared here since it's first populated by this file's
+ * preFetchUserUniverseData(), but it's read/written from
+ * every other screen file too.
+ * ============================================================
  */
-function switchScreen(screenId, navButton) {
-  document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  
-  const targetView = document.getElementById('screen-' + screenId);
-  if (targetView) {
-    targetView.classList.add('active');
-  }
-  
-  if (navButton) {
-    navButton.classList.add('active');
-    document.getElementById('app-header').innerText = navButton.querySelector('.nav-text').innerText;
-  }
-}
-
-/**
- * CORE DISPATCH ROUTER
- * Enhanced to automatically trigger dashboard data loads for the My Events screen
- */
-function navigateToScreen(screenId) {
-  console.log("Routing viewport layout to:", screenId);
-  
-  const screens = document.querySelectorAll('.app-screen');
-  screens.forEach(screen => {
-    screen.style.display = 'none';
-  });
-  
-  const activeScreen = document.getElementById('screen-' + screenId);
-  if (activeScreen) {
-    activeScreen.style.display = 'block';
-  } else {
-    console.error("Could not find view panel framework container:", 'screen-' + screenId);
-  }
-  const navMap = {
-    dashboard: 'nav-dashboard',
-    events: 'nav-dashboard',
-    'event-detail': 'nav-dashboard',
-    games: 'nav-dashboard',
-    dupr: 'nav-dashboard',
-    cleanup: 'nav-dashboard',
-    players: 'nav-players',
-    'add-players': 'nav-players',
-    'generate-draw': 'nav-dashboard',
-    draw: 'nav-draw',
-    'match-detail': 'nav-draw',
-    ladder: 'nav-ladder',
-    analytics: 'nav-analytics',
-    profile: 'nav-profile'
-  };
-  document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-  const activeNavId = navMap[screenId];
-  if (activeNavId) {
-    const activeNavEl = document.getElementById(activeNavId);
-    if (activeNavEl) activeNavEl.classList.add('active');
-  }
-  const payload = window.cachedUserUniverse;
-  switch (screenId) {
-    case 'players':
-      renderPlayerCards(payload);
-      break;
-    case 'generate-draw':
-      renderGenerateDrawDetails(window.cachedUserUniverse);
-      break;  
-    case 'draw':
-      renderDrawCards(payload);
-      renderCurrentRoundView(payload);
-      renderStandingsView(payload);
-      break;
-    case 'ladder':
-      renderLadderCards(payload);
-      break;
-    case 'analytics':
-      renderAnalyticsCards(payload);
-      break;
-    case 'profile':
-      renderProfileCards(payload);
-      break;
-    case 'games':
-      enableGameDragToActivate();
-      renderActiveGameHighlight();
-      break;
-    case 'opensports-review':
-      renderOpenSportsReview();
-      break;
-  }
-}
 
 // GLOBAL BROWSER CACHE
 window.cachedUserUniverse = {
@@ -98,6 +31,8 @@ window.cachedUserUniverse = {
   draw: [],
   userAccess: []
 };
+
+// ---------- MY EVENTS SCREEN RENDERING ----------
 
 /**
  * Builds the event elements out of client-side cache
@@ -225,6 +160,8 @@ function getDayIconUrl(dateString) {
   }
 }
 
+// ---------- TAP-VS-DRAG: VIEW DETAIL OR SET ACTIVE EVENT ----------
+
 /**
  * Single source of truth for tap-vs-drag handling on event cards.
  * Tap opens the detail view; dragging up sets the event active.
@@ -272,6 +209,7 @@ function enableDragToActivate(containerId, userEmail) {
           await window.setActiveEventInFirestore(eventId, userEmail);
           window.cachedUserUniverse.activeEventId = eventId;
 
+          // Clear stale event-specific data so every screen fetches fresh
           window.cachedUserUniverse.players = [];
           window.cachedUserUniverse.draw = [];
 
@@ -292,6 +230,12 @@ function enableDragToActivate(containerId, userEmail) {
   });
 }
 
+/**
+ * Re-fetches and re-renders whatever event-scoped screens are currently
+ * visible, and restarts the real-time draw listener — called right after
+ * the active event changes, since Players/Draw/Standings/the listener are
+ * all scoped to a specific EventID and would otherwise show stale data.
+ */
 async function refreshAllEventScopedViews() {
   const payload = window.cachedUserUniverse;
 
@@ -315,6 +259,8 @@ async function refreshAllEventScopedViews() {
   // Also restart the real-time listener, since it's scoped to a specific EventID/DrawVersion
   startDrawListener();
 }
+
+// ---------- EVENT DETAIL EDIT FORM ----------
 
 /**
  * ACTION ROUTINE: Instantly targets a tournament, filters its data locally, and syncs the sheet in background
@@ -470,6 +416,8 @@ async function updateActiveEventDetails() {
   navigateToScreen('events');
 }
 
+// ---------- ACTIVE-EVENT DATA LOADING (app startup + event switching) ----------
+
 function preFetchUserUniverseData() {
   const userEmail = "brett.collins028@gmail.com";
 
@@ -487,6 +435,12 @@ function preFetchUserUniverseData() {
     });
 }
 
+/**
+ * Starts a real-time Firestore listener scoped to the current active
+ * event's draw. Called on app startup and again every time the active
+ * event changes (via refreshAllEventScopedViews), tearing down any
+ * previous listener first so only one is ever running at a time.
+ */
 function startDrawListener() {
   // Stop any previously running listener before starting a new one
   if (window.currentDrawUnsubscribe) {
@@ -517,50 +471,3 @@ function startDrawListener() {
     }
   });
 }
-
-function enableCardPressFeedback(selector) {
-  document.querySelectorAll(selector).forEach(card => {
-    card.addEventListener('touchstart', () => {
-      card.classList.add('pressed');
-    }, { passive: true });
-
-    card.addEventListener('touchend', () => {
-      card.classList.remove('pressed');
-    });
-
-    card.addEventListener('touchcancel', () => {
-      card.classList.remove('pressed');
-    });
-  });
-}
-
-// Global initialization event listener running on app startup
-window.addEventListener("DOMContentLoaded", async (event) => {
-  console.log("App loaded. Pre-fetching database universes...");
-  try {
-    await preFetchUserUniverseData();
-    startDrawListener();
-  } catch (error) {
-    console.error("Failed to load universe data:", error);
-  } finally {
-    const loader = document.getElementById("app-splash-preloader");
-    if (loader) {
-      loader.style.display = "none";
-    }
-  }
-  initMatchSwipeHandlers();
-  initCurrentRoundSwipeHandlers();
-  enableCardPressFeedback('#screen-dashboard .app-card');
-
-  document.getElementById('ind-firstname').addEventListener('input', () => {
-    indFirstNameManuallyEdited = true;
-  }); // ADD THIS
-});
-
-document.addEventListener('click', (e) => {
-  if (window.suppressNextCardClick) {
-    e.stopImmediatePropagation();
-    e.preventDefault();
-    window.suppressNextCardClick = false;
-  }
-}, true);
