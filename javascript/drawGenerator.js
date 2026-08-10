@@ -449,13 +449,11 @@ async function generateNRoundsAndPreview(numberOfRounds) {
   const payload = window.cachedUserUniverse;
   const activeEventId = payload.activeEventId;
   const activeEvent = payload.events.find(e => String(e.EventID) === String(activeEventId));
-
   const allPlayers = payload.players && payload.players.length > 0
     ? payload.players
     : await window.fetchPlayersFromFirestore(activeEventId, activeEvent.CurrentPlayerVersion);
   window.cachedUserUniverse.players = allPlayers;
 
-  // NEW — exclude any player marked unavailable before anything else runs
   const players = allPlayers.filter(p => p.playerExclude !== 'Yes');
 
   const courtsCount = Math.min(parseInt(activeEvent.NumberofCourts) || 1, Math.floor(players.length / 4) || 1);
@@ -477,7 +475,6 @@ async function generateNRoundsAndPreview(numberOfRounds) {
     const startRound = 1;
     const clusteredGames = ['divisions', 'ladder-scramble', 'pools', 'pool-fusion'];
     const isClustered = clusteredGames.includes(gameId);
-
     let byesByRound;
     if (isClustered) {
       const courtsPerTeam = courtsCount / numberOfTeams;
@@ -489,14 +486,11 @@ async function generateNRoundsAndPreview(numberOfRounds) {
         byesByRound[startRound + parseInt(i)] = byeSchedule[i];
       });
     }
-
     newMatches = generateMultipleRounds(
       players, [], byesByRound, startRound, numberOfRounds, courtsCount,
       activeEventId, newDrawVersion, gameId, numberOfTeams, userEmail
     );
-
     console.log(`Generated ${newMatches.length} matches across ${numberOfRounds} round(s) for game type "${gameId}" (DrawVersion ${newDrawVersion}):`, newMatches);
-
     const flatByesByRound = {};
     for (let i = 0; i < numberOfRounds; i++) {
       flatByesByRound[startRound + i] = isClustered
@@ -511,11 +505,4 @@ async function generateNRoundsAndPreview(numberOfRounds) {
 
   return newMatches;
 }
-
   // ---- END BRANCH ----
-
-  await window.saveGeneratedDrawToFirestore(newMatches);
-  window.cachedUserUniverse.draw = newMatches;
-
-  return newMatches;
-}
