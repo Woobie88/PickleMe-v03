@@ -698,8 +698,52 @@
 
           <div class="form-action-bar">
             <button class="btn-secondary" onclick="navigateToScreen('dashboard')">Cancel</button>
-            <button class="btn-primary" onclick="handleBuildDraw()">Build Draw</button>
+            <button class="btn-primary" onclick="handleDetailsNext()">Next</button>
           </div>
+        </div>
+      </section>
+
+      <!-- Draw Teams / Divisions Screen -->
+      <section id="screen-generate-draw-teams" class="app-screen">
+        <div class="welcome-banner">
+          <h2 id="gd-teams-screen-heading">Teams</h2>
+          <p>Players grouped by DUPR ranking</p>
+        </div>
+
+        <div class="scoring-toggle-block" id="gd-draft-toggle-block" style="display: none;">
+          <span class="scoring-toggle-label">Draft Method</span>
+          <div class="scoring-toggle" id="gd-draft-toggle">
+            <button class="scoring-option" data-value="3rr" onclick="setGdDraftType('3rr')">3rd Round Rev</button>
+            <button class="scoring-option" data-value="snake" onclick="setGdDraftType('snake')">Snake</button>
+          </div>
+        </div>
+
+        <div id="gd-teams-groups-list"></div>
+
+        <div class="form-action-bar">
+          <button class="btn-secondary" onclick="navigateToScreen('generate-draw')">Back</button>
+          <button class="btn-primary" onclick="handleTeamsNext()">Next</button>
+        </div>
+      </section>
+
+      <!-- Available screen -->
+       <section id="screen-generate-draw-available" class="app-screen">
+        <div class="welcome-banner">
+          <h2>Player Availability</h2>
+          <p>Confirm who's available before building the draw</p>
+        </div>
+
+        <div class="event-section-title current">Player Unavailable</div>
+        <div id="gd-unavailable-list" class="card-grid">
+          <div class="no-data-placeholder"><h3>Nil</h3></div>
+        </div>
+
+        <div class="event-section-title other">Available</div>
+        <div id="gd-available-list" class="card-grid"></div>
+
+        <div class="form-action-bar">
+          <button class="btn-secondary" onclick="navigateToScreen('generate-draw')">Back</button>
+          <button class="btn-primary" onclick="handleBuildDraw()">Build Draw</button>
         </div>
       </section>
 

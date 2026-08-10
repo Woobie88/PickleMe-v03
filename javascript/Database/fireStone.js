@@ -232,3 +232,9 @@ window.saveGeneratedPlayersToFirestore = async function(players) {
   await Promise.all(writes);
   console.log(`Saved ${players.length} player document(s) to Firestore.`);
 };
+
+window.updatePlayerTeamInFirestore = async function(playerId, teamNumber) {
+  const db = window.db;
+  const playerDocRef = doc(db, "players", String(playerId));
+  await updateDoc(playerDocRef, { Team: teamNumber });
+};

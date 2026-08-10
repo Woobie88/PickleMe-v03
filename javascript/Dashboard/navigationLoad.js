@@ -82,7 +82,13 @@ function navigateToScreen(screenId) {
       break;
     case 'generate-draw':
       renderGenerateDrawDetails(window.cachedUserUniverse);
-      break;  
+      break; 
+    case 'generate-draw-teams':
+      renderGenerateDrawTeams(window.cachedUserUniverse);
+      break;
+    case 'generate-draw-available':
+      renderAvailabilityView(window.cachedUserUniverse, 'gd-unavailable-list', 'gd-available-list');
+      break;
     case 'draw':
       renderDrawCards(payload);
       renderCurrentRoundView(payload);
