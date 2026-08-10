@@ -654,15 +654,52 @@
           <h2>Generate Draw</h2>
           <p>Configure and run draw generation for the active event</p>
         </div>
-        
-        <div class="detail-form-group" id="gd-teams-group" style="display: none;">
-          <label id="gd-teams-label">Number Of Teams</label>
-          <div class="score-control">
-            <button class="score-btn" onclick="adjustGdTeams(-1)">−</button>
-            <span id="gd-teams-value" class="score-value">2</span>
-            <button class="score-btn" onclick="adjustGdTeams(1)">+</button>
+
+        <div class="detail-view-container">
+          <div class="detail-form-group">
+            <label>Selected Game</label>
+            <div class="detail-readonly" id="gd-selected-game-title">—</div>
           </div>
-          <input type="hidden" id="gd-teams-hidden" value="2">
+
+          <div class="detail-form-group">
+            <label>Game Type</label>
+            <div class="detail-readonly" id="gd-game-type">—</div>
+          </div>
+
+          <div class="detail-form-group" id="gd-rounds-group">
+            <label>Number Of Rounds</label>
+            <div class="score-control">
+              <button class="score-btn" onclick="adjustGdRounds(-1)">−</button>
+              <span id="gd-rounds-value" class="score-value">1</span>
+              <button class="score-btn" onclick="adjustGdRounds(1)">+</button>
+            </div>
+            <input type="hidden" id="gd-rounds-hidden" value="1">
+          </div>
+
+          <div class="detail-form-group" id="gd-lives-group" style="display: none;">
+            <label>Number Of Lives</label>
+            <div class="score-control">
+              <button class="score-btn" onclick="adjustGdLives(-1)">−</button>
+              <span id="gd-lives-value" class="score-value">1</span>
+              <button class="score-btn" onclick="adjustGdLives(1)">+</button>
+            </div>
+            <input type="hidden" id="gd-lives-hidden" value="1">
+          </div>
+
+          <div class="detail-form-group" id="gd-teams-group" style="display: none;">
+            <label id="gd-teams-label">Number Of Teams</label>
+            <div class="score-control">
+              <button class="score-btn" onclick="adjustGdTeams(-1)">−</button>
+              <span id="gd-teams-value" class="score-value">2</span>
+              <button class="score-btn" onclick="adjustGdTeams(1)">+</button>
+            </div>
+            <input type="hidden" id="gd-teams-hidden" value="2">
+          </div>
+
+          <div class="form-action-bar">
+            <button class="btn-secondary" onclick="navigateToScreen('dashboard')">Cancel</button>
+            <button class="btn-primary" onclick="handleBuildDraw()">Build Draw</button>
+          </div>
         </div>
       </section>
 
