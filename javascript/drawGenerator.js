@@ -61,7 +61,7 @@ function generateByeSchedule(players, numberOfRounds, courtsCount) {
     return byesByRound;
   }
 
-  const baseOrder = shuffle(players.map(p => p.PlayerID));
+  const baseOrder = buildByeBaseOrder(players); // CHANGED — was: shuffle(players.map(p => p.PlayerID))
   let pointer = 0;
 
   for (let round = 0; round < numberOfRounds; round++) {
@@ -76,6 +76,22 @@ function generateByeSchedule(players, numberOfRounds, courtsCount) {
   return byesByRound;
 }
 
+// ---------- BYE BASE ORDER (manual sequence first, then shuffled remainder) ----------
+
+function buildByeBaseOrder(players) {
+  const manual = players.filter(p =>
+    p.byeOrder !== undefined && p.byeOrder !== null && p.byeOrder !== '' && !isNaN(parseInt(p.byeOrder))
+  );
+  manual.sort((a, b) => parseInt(a.byeOrder) - parseInt(b.byeOrder));
+
+  const manualIds = new Set(manual.map(p => p.PlayerID));
+  const random = players.filter(p => !manualIds.has(p.PlayerID));
+  const shuffledRandomIds = shuffle(random.map(p => p.PlayerID));
+
+  const manualIds_ordered = manual.map(p => p.PlayerID);
+  return [...manualIds_ordered, ...shuffledRandomIds];
+}
+
 function generateByeScheduleByTeam(players, numberOfRounds, courtsPerTeam) {
   const teams = {};
   players.forEach(p => {
@@ -88,7 +104,7 @@ function generateByeScheduleByTeam(players, numberOfRounds, courtsPerTeam) {
   const byeSchedulesByTeam = {};
 
   teamKeys.forEach(teamKey => {
-    byeSchedulesByTeam[teamKey] = generateByeSchedule(teams[teamKey], numberOfRounds, courtsPerTeam);
+    byeSchedulesByTeam[teamKey] = generateByeSchedule(teams[teamKey], numberOfRounds, courtsPerTeam); // already uses the fixed base-order logic internally now
   });
 
   return byeSchedulesByTeam;
@@ -434,10 +450,13 @@ async function generateNRoundsAndPreview(numberOfRounds) {
   const activeEventId = payload.activeEventId;
   const activeEvent = payload.events.find(e => String(e.EventID) === String(activeEventId));
 
-  const players = payload.players && payload.players.length > 0
+  const allPlayers = payload.players && payload.players.length > 0
     ? payload.players
     : await window.fetchPlayersFromFirestore(activeEventId, activeEvent.CurrentPlayerVersion);
-  window.cachedUserUniverse.players = players;
+  window.cachedUserUniverse.players = allPlayers;
+
+  // NEW — exclude any player marked unavailable before anything else runs
+  const players = allPlayers.filter(p => p.playerExclude !== 'Yes');
 
   const courtsCount = Math.min(parseInt(activeEvent.NumberofCourts) || 1, Math.floor(players.length / 4) || 1);
   const gameId = activeEvent.GameID;
@@ -448,11 +467,10 @@ async function generateNRoundsAndPreview(numberOfRounds) {
   activeEvent.CurrentDrawVersion = newDrawVersion;
   activeEvent.CurrentRound = 1;
 
-  let newMatches; // declared here, assigned inside whichever branch runs
+  let newMatches;
 
-  // ---- BRANCH GOES HERE ----
   if (gameId === 'doubles-pro' || gameId === 'rx-sports') {
-    newMatches = generateDoublesProDraw(players, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfRounds); // ADD numberOfRounds
+    newMatches = generateDoublesProDraw(players, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfRounds);
     console.log(`Generated Doubles Pro draw: ${newMatches.length} matches across ${numberOfRounds} round(s).`);
   } else {
     const numberOfTeams = parseInt(activeEvent.NumberOfTeams) || 1;
@@ -487,6 +505,12 @@ async function generateNRoundsAndPreview(numberOfRounds) {
     }
     logPlayerSummary(players, newMatches, flatByesByRound);
   }
+
+  await window.saveGeneratedDrawToFirestore(newMatches);
+  window.cachedUserUniverse.draw = newMatches;
+
+  return newMatches;
+}
 
   // ---- END BRANCH ----
 
