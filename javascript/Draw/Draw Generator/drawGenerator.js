@@ -150,7 +150,7 @@ function buildDrawHistory(matches) {
 function scorePairing(p1, p2, partnerCounts) {
   const repeats = (partnerCounts[p1.PlayerID]?.[p2.PlayerID]) || 0;
   const duprGap = Math.abs((parseFloat(p1.DUPR) || 0) - (parseFloat(p2.DUPR) || 0));
-  return repeats * 500 + duprGap * 10;      // Increase partner penalty from 100 to 500
+  return repeats * 100 + duprGap * 10;      // Increase partner penalty from 100 to 500
 }
 
 function attemptPartnerships(eligiblePlayers, partnerCounts) {
