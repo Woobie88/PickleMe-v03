@@ -654,73 +654,15 @@
           <h2>Generate Draw</h2>
           <p>Configure and run draw generation for the active event</p>
         </div>
-      
-        <div class="top-tab-bar">
-          <div class="tab-item active" id="tab-gd-details" onclick="switchGenerateDrawTab('gd-details')">Details</div>
-          <div class="tab-item" id="tab-gd-teams" onclick="switchGenerateDrawTab('gd-teams')">Teams</div>
-          <div class="tab-item" id="tab-gd-available" onclick="switchGenerateDrawTab('gd-available')">Available</div>
-        </div>
-      
-        <div class="tab-viewport">
-      
-          <!-- TAB 1: Details -->
-          <div id="view-gd-details" class="tab-view active">
-            <div class="detail-view-container">
-              <div class="detail-form-group">
-                <label>Selected Game</label>
-                <div class="detail-readonly" id="gd-selected-game-title">—</div>
-              </div>
-          
-              <div class="detail-form-group">
-                <label>Game Type</label>
-                <div class="detail-readonly" id="gd-game-type">—</div>
-              </div>
-          
-              <div class="detail-form-group" id="gd-rounds-group">
-                <label>Number Of Rounds</label>
-                <div class="score-control">
-                  <button class="score-btn" onclick="adjustGdRounds(-1)">−</button>
-                  <span id="gd-rounds-value" class="score-value">1</span>
-                  <button class="score-btn" onclick="adjustGdRounds(1)">+</button>
-                </div>
-                <input type="hidden" id="gd-rounds-hidden" value="1">
-              </div>
-          
-              <div class="detail-form-group" id="gd-lives-group" style="display: none;">
-                <label>Number Of Lives</label>
-                <div class="score-control">
-                  <button class="score-btn" onclick="adjustGdLives(-1)">−</button>
-                  <span id="gd-lives-value" class="score-value">1</span>
-                  <button class="score-btn" onclick="adjustGdLives(1)">+</button>
-                </div>
-                <input type="hidden" id="gd-lives-hidden" value="1">
-              </div>
-          
-              <div class="form-action-bar">
-                <button class="btn-secondary" onclick="navigateToScreen('dashboard')">Cancel</button>
-                <button class="btn-primary" onclick="handleBuildDraw()">Build Draw</button>
-              </div>
-            </div>
+        
+        <div class="detail-form-group" id="gd-teams-group" style="display: none;">
+          <label id="gd-teams-label">Number Of Teams</label>
+          <div class="score-control">
+            <button class="score-btn" onclick="adjustGdTeams(-1)">−</button>
+            <span id="gd-teams-value" class="score-value">2</span>
+            <button class="score-btn" onclick="adjustGdTeams(1)">+</button>
           </div>
-      
-          <!-- TAB 2: Teams -->
-          <div id="view-gd-teams" class="tab-view">
-            <!-- team grouping view will go here -->
-          </div>
-      
-          <!-- TAB 3: Available (mirrors Players' Availability tab) -->
-          <div id="view-gd-available" class="tab-view">
-            <div class="event-section-title current">Player Unavailable</div>
-            <div id="gd-unavailable-list" class="card-grid">
-              <div class="no-data-placeholder" id="gd-unavailable-empty">
-                <h3>Nil</h3>
-              </div>
-            </div>
-      
-            <div class="event-section-title other">Available</div>
-            <div id="gd-available-list" class="card-grid"></div>
-          </div>
-      
+          <input type="hidden" id="gd-teams-hidden" value="2">
         </div>
       </section>
 
@@ -836,6 +778,7 @@
     <script src="javascript/Games/gamesProfile.js"></script>
     <script src="javascript/Draw/Draw Cards/ladder.js"></script>
     <script src="javascript/Dashboard/duprCSVOutput.js"></script>
+    <script src="javascript/Draw/Draw Generator/drawInitiator.js"></script>
     <script src="javascript/Draw/Draw Generator/drawGenerator.js"></script>
     <script src="javascript/Draw/Draw Generator/drawGeneratorCircle.js"></script>
     <script src="javascript/Dashboard/cleanUp.js"></script>
