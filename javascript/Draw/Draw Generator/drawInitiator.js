@@ -301,7 +301,10 @@ function renderGenerateDrawTeams(payload) {
 
   container.innerHTML = html || `<div class="no-data-placeholder"><h3>No Players Found</h3></div>`;
 
-  enableTeamsDragDrop(numberOfGroups); // NEW — attach drag listeners after rendering
+  enableTeamsDragDrop(numberOfGroups);
+
+  // NEW — persist the computed assignment immediately, so Team is saved even if the organizer never drags a card
+  commitTeamsAssignment(numberOfGroups);
 }
 
 // Persist assignment + move to the final Available screen
