@@ -282,9 +282,10 @@ function renderGenerateDrawTeams(payload) {
   let html = '';
 
   groups.forEach((groupPlayers, idx) => {
-    html += `<div class="event-section-title current">${groupLabel} ${idx + 1}</div>`;
+    const groupNumber = idx + 1;
+    html += `<div class="event-section-title current">${groupLabel} ${groupNumber}</div>`;
+    html += `<div class="card-grid" id="gd-group-${groupNumber}" data-group-number="${groupNumber}">`;
     groupPlayers.forEach(player => {
-      // Find this player's overall seed rank (DUPR position across ALL players, not just within their group)
       const seedNumber = duprSorted.findIndex(p => p.PlayerID === player.PlayerID) + 1;
       const seedUrl = playerSeeds[0]['seed-' + seedNumber];
       const iconAsset = seedUrl || '🎾';
@@ -295,23 +296,140 @@ function renderGenerateDrawTeams(payload) {
       `;
       html += buildCardMarkup({ iconAsset, contentHtml, cardId: player.PlayerID });
     });
+    html += `</div>`;
   });
 
   container.innerHTML = html || `<div class="no-data-placeholder"><h3>No Players Found</h3></div>`;
+
+  enableTeamsDragDrop(numberOfGroups); // NEW — attach drag listeners after rendering
 }
 
 // Persist assignment + move to the final Available screen
-async function handleTeamsNext() {
-  const groups = window.gdGroupAssignment || [];
-  const updates = [];
+function handleTeamsNext() {
+  navigateToScreen('generate-draw-available');
+}
 
-  groups.forEach((groupPlayers, idx) => {
-    const teamNumber = idx + 1;
-    groupPlayers.forEach(player => {
-      player.Team = teamNumber; // update local cache immediately
-      updates.push(window.updatePlayerTeamInFirestore(player.PlayerID, teamNumber));
+// Generalized N-group drag engine
+function enableTeamsDragDrop(numberOfGroups) {
+  const groupContainers = [];
+  for (let i = 1; i <= numberOfGroups; i++) {
+    const el = document.getElementById(`gd-group-${i}`);
+    if (el) groupContainers.push(el);
+  }
+
+  const containerSelector = groupContainers.map(c => `#${c.id}`).join(', ');
+
+  groupContainers.forEach(container => {
+    container.querySelectorAll('.app-card[data-card-id]').forEach(card => {
+      let isDragging = false, longPressTimer = null;
+      let placeholder = null;
+
+      card.addEventListener('touchstart', () => {
+        longPressTimer = setTimeout(() => {
+          isDragging = true;
+          card.classList.add('dragging');
+          if (navigator.vibrate) navigator.vibrate(30);
+
+          const rect = card.getBoundingClientRect();
+
+          placeholder = document.createElement('div');
+          placeholder.className = 'app-card';
+          placeholder.style.opacity = '0.2';
+          placeholder.style.height = card.offsetHeight + 'px';
+          card.parentNode.insertBefore(placeholder, card.nextSibling);
+
+          document.body.appendChild(card);
+          card.style.position = 'fixed';
+          card.style.width = rect.width + 'px';
+          card.style.left = rect.left + 'px';
+          card.style.top = rect.top + 'px';
+          card.style.zIndex = 1000;
+        }, 350);
+      }, { passive: true });
+
+      card.addEventListener('touchmove', (e) => {
+        if (!isDragging) { clearTimeout(longPressTimer); return; }
+        e.preventDefault();
+        const touch = e.touches[0];
+        card.style.left = (touch.clientX - card.offsetWidth / 2) + 'px';
+        card.style.top = (touch.clientY - card.offsetHeight / 2) + 'px';
+
+        const scrollContainer = document.querySelector('.app-container');
+        const edgeThreshold = 80;
+        const scrollSpeed = 12;
+
+        if (scrollContainer) {
+          if (touch.clientY < edgeThreshold) {
+            scrollContainer.scrollTop -= scrollSpeed;
+          } else if (touch.clientY > window.innerHeight - edgeThreshold) {
+            scrollContainer.scrollTop += scrollSpeed;
+          }
+        }
+
+        card.style.display = 'none';
+        const elBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+        card.style.display = '';
+
+        const targetContainer = elBelow?.closest(containerSelector);
+        if (!targetContainer) return;
+
+        const targetCard = elBelow.closest('.app-card[data-card-id]');
+
+        if (targetCard && targetCard !== placeholder) {
+          const box = targetCard.getBoundingClientRect();
+          const midY = box.top + box.height / 2;
+          if (touch.clientY < midY) {
+            targetContainer.insertBefore(placeholder, targetCard);
+          } else {
+            targetContainer.insertBefore(placeholder, targetCard.nextSibling);
+          }
+        } else if (!targetContainer.querySelector('.app-card[data-card-id]')) {
+          targetContainer.innerHTML = '';
+          targetContainer.appendChild(placeholder);
+        }
+      }, { passive: false });
+
+      card.addEventListener('touchend', () => {
+        clearTimeout(longPressTimer);
+        if (!isDragging) return;
+        isDragging = false;
+
+        card.classList.remove('dragging');
+        card.style.position = '';
+        card.style.left = '';
+        card.style.top = '';
+        card.style.width = '';
+        card.style.zIndex = '';
+
+        if (placeholder && placeholder.parentNode) {
+          placeholder.parentNode.insertBefore(card, placeholder);
+          placeholder.remove();
+        }
+
+        window.suppressNextCardClick = true;
+        commitTeamsAssignment(numberOfGroups);
+      });
     });
   });
+}
+
+// Commit — reads final DOM order across all groups, updates in-memory + Firestore
+async function commitTeamsAssignment(numberOfGroups) {
+  const payload = window.cachedUserUniverse;
+  const updates = [];
+
+  for (let i = 1; i <= numberOfGroups; i++) {
+    const container = document.getElementById(`gd-group-${i}`);
+    if (!container) continue;
+
+    const cardIds = Array.from(container.querySelectorAll('.app-card[data-card-id]')).map(c => c.dataset.cardId);
+
+    cardIds.forEach(pid => {
+      const player = payload.players.find(p => p.PlayerID === pid);
+      if (player) player.Team = i;
+      updates.push(window.updatePlayerTeamInFirestore(pid, i));
+    });
+  }
 
   try {
     await Promise.all(updates);
@@ -319,8 +437,6 @@ async function handleTeamsNext() {
   } catch (err) {
     console.error("Failed to save team assignments:", err);
   }
-
-  navigateToScreen('generate-draw-available');
 }
 
 // ---------- BUTTON CALL: kicks off draw generation (defined in drawGenerator.js) ----------
