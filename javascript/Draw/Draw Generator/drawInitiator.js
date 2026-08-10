@@ -284,11 +284,16 @@ function renderGenerateDrawTeams(payload) {
   groups.forEach((groupPlayers, idx) => {
     html += `<div class="event-section-title current">${groupLabel} ${idx + 1}</div>`;
     groupPlayers.forEach(player => {
+      // Find this player's overall seed rank (DUPR position across ALL players, not just within their group)
+      const seedNumber = duprSorted.findIndex(p => p.PlayerID === player.PlayerID) + 1;
+      const seedUrl = playerSeeds[0]['seed-' + seedNumber];
+      const iconAsset = seedUrl || '🎾';
+
       const contentHtml = `
         <h3>${player.Name || 'Unnamed Player'}</h3>
         <p class="card-meta-line">${player.DUPRId || 'N/A'} ${player.DUPR ? ' || DUPR ' + player.DUPR : '0'}</p>
       `;
-      html += buildCardMarkup({ iconAsset: '🎾', contentHtml, cardId: player.PlayerID });
+      html += buildCardMarkup({ iconAsset, contentHtml, cardId: player.PlayerID });
     });
   });
 
