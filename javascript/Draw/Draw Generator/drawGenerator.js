@@ -290,7 +290,7 @@ function buildMatchRecord(m, idx, roundNumber, eventId, drawVersion, userEmail) 
     Team1WinLoss: '',
     Team2WinLoss: '',
     Active: 'Active', // NEW
-    UserEmail: userEmail, // NEW
+    UserEmail: userEmail || 'unknown', // NEW
     Timestamp: new Date().toISOString()
   };
 }
