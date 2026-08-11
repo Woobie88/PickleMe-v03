@@ -86,7 +86,7 @@ async function renderStandingsView(payload) {
   // Sort: points descending, tiebreaker seed ascending
   standings.sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points;
-    return (parseFloat(a.player.Seed) || 999) - (parseFloat(b.player.Seed) || 999);
+    return (parseFloat(b.player.DUPR) || 0) - (parseFloat(a.player.DUPR) || 0);
   });
 
   const container = document.getElementById('standings-list');
@@ -104,8 +104,8 @@ async function renderStandingsView(payload) {
     const iconMarkup = `<img src="${iconAsset}" alt="Rank ${rank}" class="card-icon-images" loading="lazy">`;
 
     const contentHtml = `
-      <h3>${entry.player.FirstName || 'Unnamed'} (Seed: ${entry.player.Seed || '?'})</h3>
-      <p class="card-meta-line">Gm: ${entry.stats.games} || Wins: ${entry.stats.wins} || Loss: ${entry.stats.losses}</p>
+      <h3>${entry.player.FirstName || 'Unnamed'} (DUPR: ${entry.player.DUPR || 'N/A'})</h3>
+      <p class="card-meta-line">${entry.stats.games} Games || ${entry.stats.wins} Wins || ${entry.stats.losses} Losses</p>
     `;
 
     html += `
