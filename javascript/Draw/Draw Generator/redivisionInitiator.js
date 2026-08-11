@@ -127,3 +127,7 @@ async function handleRedivisionConfirm() {
     alert("Redivision failed — check the console for details.");
   }
 }
+
+function handleNewDivisions() {
+  console.log('New Divisions tapped — routing not yet wired up');
+}
