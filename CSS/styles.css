@@ -1134,3 +1134,38 @@ body {
   -webkit-appearance: none; /* removes Chrome/Safari's spinner arrows */
   margin: 0;
 }
+
+/* Styling for Redivision Generator screen */
+#screen-redivision .score-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 8px;
+}
+
+#screen-redivision .score-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 1.4rem;
+  border: 1px solid var(--nav-border);
+  background-color: var(--card-bg);
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+#screen-redivision .score-btn:active {
+  background-color: #243249;
+}
+
+#screen-redivision .score-btn:disabled {
+  cursor: not-allowed;
+}
+
+#screen-redivision .score-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+  min-width: 60px;
+  text-align: center;
+}
