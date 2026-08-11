@@ -231,7 +231,7 @@ const gamesProfile = [
     CycleRounds: "No",
     Lives: "No",
     Redivisioning: "Yes",
-    PlayOff: "Yes"
+    PlayOff: "No"
   },
   {
     GameID: "rx-sports",
