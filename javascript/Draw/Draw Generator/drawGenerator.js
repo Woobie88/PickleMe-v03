@@ -317,14 +317,14 @@ function generateRoundDraw(players, matches, byePlayerIds, roundNumber, courtsCo
 
 // ---------- CLUSTERED ROUND GENERATION (Divisions, Ladder Scramble, Pools, Pool Fusion) ----------
 
-function generateClusteredRoundDraw(players, matches, byesByTeamForThisRound, roundNumber, courtsCount, eventId, drawVersion, numberOfTeams, userEmail) {
+function generateClusteredRoundDraw(players, matches, byesByTeamForThisRound, roundNumber, courtsCount, eventId, drawVersion, numberOfTeams, userEmail, gameProfile) {
   if (courtsCount % numberOfTeams !== 0) {
     console.error(`Cannot generate draw: courtsCount (${courtsCount}) is not evenly divisible by NumberOfTeams (${numberOfTeams}).`);
     return [];
   }
 
   const courtsPerTeam = courtsCount / numberOfTeams;
-  const { partnerCounts, opponentCounts, courtCounts } = buildDrawHistory(matches);
+  const { opponentCounts, courtCounts } = buildDrawHistory(matches);
 
   const teams = {};
   players.forEach(p => {
@@ -338,9 +338,10 @@ function generateClusteredRoundDraw(players, matches, byesByTeamForThisRound, ro
   let allMatches = [];
   let courtCursor = 1;
 
+  const isRedivision = gameProfile?.Redivisioning === 'Yes'; // NEW — the branch
+
   teamKeys.forEach(teamKey => {
-    const teamByes = byesByTeamForThisRound[teamKey] || [];
-    const teamPlayers = teams[teamKey].filter(p => !teamByes.includes(p.PlayerID));
+    const allPoolPlayers = teams[teamKey];
 
     const courtNumbers = [];
     for (let i = 0; i < courtsPerTeam; i++) {
@@ -348,11 +349,36 @@ function generateClusteredRoundDraw(players, matches, byesByTeamForThisRound, ro
       courtCursor++;
     }
 
-    if (teamPlayers.length !== courtsPerTeam * 4) {
-      console.warn(`Team ${teamKey} has ${teamPlayers.length} eligible players but ${courtsPerTeam} courts expect ${courtsPerTeam * 4}. Proceeding anyway.`);
+    let teamMatches;
+
+    if (isRedivision) {
+      // ---- NEW BRANCH: guaranteed unique-partnership scheduling ----
+      // Cache this pool's full schedule so it's only computed once per
+      // draw generation, not recomputed every single round.
+      window.gdRedivisionCache = window.gdRedivisionCache || {};
+      const cacheKey = `${eventId}_${teamKey}`;
+
+      if (!window.gdRedivisionCache[cacheKey]) {
+        // numberOfRounds needs to be known here — passed through from generateNRoundsAndPreview
+        window.gdRedivisionCache[cacheKey] = buildRedivisionPartnerships(allPoolPlayers, window.gdCurrentNumberOfRounds);
+      }
+
+      const roundPlan = window.gdRedivisionCache[cacheKey][roundNumber - 1];
+      const partnerships = roundPlan.pairs;
+
+      const matchups = generateBestMatchups(partnerships, opponentCounts);
+      const courted = assignCourts(matchups, courtNumbers, courtCounts);
+      teamMatches = courted.map((m, idx) => buildMatchRecord(m, idx, roundNumber, eventId, drawVersion, userEmail));
+
+    } else {
+      // ---- EXISTING PATH: old greedy method for non-redivision games ----
+      const teamByes = byesByTeamForThisRound[teamKey] || [];
+      const teamPlayers = allPoolPlayers.filter(p => !teamByes.includes(p.PlayerID));
+
+      const { partnerCounts } = buildDrawHistory(matches);
+      teamMatches = generateGroupMatches(teamPlayers, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion);
     }
 
-    const teamMatches = generateGroupMatches(teamPlayers, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion, userEmail);
     allMatches.push(...teamMatches);
   });
 
