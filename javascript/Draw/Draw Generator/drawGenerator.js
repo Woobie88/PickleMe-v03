@@ -376,7 +376,7 @@ function generateClusteredRoundDraw(players, matches, byesByTeamForThisRound, ro
       const teamPlayers = allPoolPlayers.filter(p => !teamByes.includes(p.PlayerID));
 
       const { partnerCounts } = buildDrawHistory(matches);
-      teamMatches = generateGroupMatches(teamPlayers, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion);
+      teamMatches = generateGroupMatches(teamPlayers, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion, userEmail); // ADDED userEmail
     }
 
     allMatches.push(...teamMatches);
@@ -387,7 +387,7 @@ function generateClusteredRoundDraw(players, matches, byesByTeamForThisRound, ro
 
 // ---------- MULTI-ROUND GENERATION ----------
 
-function generateMultipleRounds(players, existingMatches, byesByRound, startRound, numberOfRounds, courtsCount, eventId, drawVersion, gameId, numberOfTeams, userEmail) {
+function generateMultipleRounds(players, existingMatches, byesByRound, startRound, numberOfRounds, courtsCount, eventId, drawVersion, gameId, numberOfTeams, userEmail, gameProfile) {
   let allMatches = [...existingMatches];
   const generatedRounds = [];
 
@@ -403,7 +403,7 @@ function generateMultipleRounds(players, existingMatches, byesByRound, startRoun
       Object.keys(byesByRound).forEach(teamKey => {
         byesByTeamForThisRound[teamKey] = byesByRound[teamKey][i] || [];
       });
-      roundMatches = generateClusteredRoundDraw(players, allMatches, byesByTeamForThisRound, roundNumber, courtsCount, eventId, drawVersion, numberOfTeams, userEmail);
+      roundMatches = generateClusteredRoundDraw(players, allMatches, byesByTeamForThisRound, roundNumber, courtsCount, eventId, drawVersion, numberOfTeams, userEmail, gameProfile); // ADDED gameProfile
     } else {
       const byesForThisRound = byesByRound[roundNumber] || [];
       roundMatches = generateRoundDraw(players, allMatches, byesForThisRound, roundNumber, courtsCount, eventId, drawVersion, userEmail);
@@ -484,7 +484,11 @@ async function generateNRoundsAndPreview(numberOfRounds) {
 
   const courtsCount = Math.min(parseInt(activeEvent.NumberofCourts) || 1, Math.floor(players.length / 4) || 1);
   const gameId = activeEvent.GameID;
+  const gameProfile = gamesProfile.find(g => g.GameID === gameId); // NEW
   const userEmail = "brett.collins028@gmail.com";
+
+  window.gdRedivisionCache = {}; // NEW — clear cache at the start of every new generation
+  window.gdCurrentNumberOfRounds = numberOfRounds; // NEW
 
   const newDrawVersion = (parseInt(activeEvent.CurrentDrawVersion) || 0) + 1;
   await window.updateEventDrawVersionAndRoundInFirestore(activeEventId, newDrawVersion);
@@ -514,7 +518,7 @@ async function generateNRoundsAndPreview(numberOfRounds) {
     }
     newMatches = generateMultipleRounds(
       players, [], byesByRound, startRound, numberOfRounds, courtsCount,
-      activeEventId, newDrawVersion, gameId, numberOfTeams, userEmail
+      activeEventId, newDrawVersion, gameId, numberOfTeams, userEmail, gameProfile // ADDED gameProfile
     );
     console.log(`Generated ${newMatches.length} matches across ${numberOfRounds} round(s) for game type "${gameId}" (DrawVersion ${newDrawVersion}):`, newMatches);
     const flatByesByRound = {};
