@@ -442,12 +442,11 @@ function toggleFabMenu() {
 }
 
 function handleFabAction(action) {
-  toggleFabMenu(); // close the menu after a selection
+  toggleFabMenu();
 
   switch (action) {
     case 'redivision':
-      console.log('Redivision tapped');
-      // wire up your actual logic here
+      navigateToScreen('redivision'); // CHANGED
       break;
     case 'add-match':
       console.log('Add Match tapped');

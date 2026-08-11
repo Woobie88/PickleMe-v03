@@ -747,6 +747,71 @@
         </div>
       </section>
 
+      <!-- Redivision Draw Generator Screen -->
+      <section id="screen-redivision" class="app-screen">
+        <div class="welcome-banner">
+          <h2>Redivision</h2>
+          <p>Reshuffle players into a new round grouping</p>
+        </div>
+
+        <div class="detail-view-container">
+          <div class="detail-form-group">
+            <label>Selected Game</label>
+            <div class="detail-readonly" id="rd-selected-game-title">—</div>
+          </div>
+
+          <div class="detail-form-group">
+            <label>Game Type</label>
+            <div class="detail-readonly" id="rd-game-type">—</div>
+          </div>
+
+          <div class="detail-form-group" id="rd-rounds-group">
+            <label>Number Of Rounds</label>
+            <div class="score-control">
+              <button class="score-btn" onclick="adjustRdRounds(-1)">−</button>
+              <span id="rd-rounds-value" class="score-value">1</span>
+              <button class="score-btn" onclick="adjustRdRounds(1)">+</button>
+            </div>
+            <input type="hidden" id="rd-rounds-hidden" value="1">
+          </div>
+
+          <div class="detail-form-group" id="rd-lives-group" style="display: none;">
+            <label>Number Of Lives</label>
+            <div class="score-control">
+              <button class="score-btn" onclick="adjustRdLives(-1)">−</button>
+              <span id="rd-lives-value" class="score-value">1</span>
+              <button class="score-btn" onclick="adjustRdLives(1)">+</button>
+            </div>
+            <input type="hidden" id="rd-lives-hidden" value="1">
+          </div>
+
+          <div class="detail-form-group" id="rd-promote-group" style="display: none;">
+            <label>Players Promoted / Relegated</label>
+            <div class="score-control">
+              <button class="score-btn" onclick="adjustRdPromoteCount(-1)">−</button>
+              <span id="rd-promote-value" class="score-value">2</span>
+              <button class="score-btn" onclick="adjustRdPromoteCount(1)">+</button>
+            </div>
+            <input type="hidden" id="rd-promote-hidden" value="2">
+          </div>
+
+          <div class="detail-form-group">
+            <label>Redivision Starts From Round</label>
+            <div class="score-control">
+              <button class="score-btn" onclick="adjustRdStartRound(-1)">−</button>
+              <span id="rd-start-round-value" class="score-value">2</span>
+              <button class="score-btn" onclick="adjustRdStartRound(1)">+</button>
+            </div>
+            <input type="hidden" id="rd-start-round-hidden" value="2">
+          </div>
+
+          <div class="form-action-bar">
+            <button class="btn-secondary" onclick="navigateToScreen('draw')">Cancel</button>
+            <button class="btn-primary" onclick="handleRedivisionConfirm()">Confirm</button>
+          </div>
+        </div>
+      </section> 
+
       <!-- CSV file download -->
       <section id="screen-dupr" class="app-screen">
         <div class="placeholder-view">

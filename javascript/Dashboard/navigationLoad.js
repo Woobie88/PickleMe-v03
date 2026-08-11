@@ -111,6 +111,9 @@ function navigateToScreen(screenId) {
     case 'opensports-review':
       renderOpenSportsReview();
       break;
+    case 'redivision':
+      renderRedivisionScreen(window.cachedUserUniverse);
+      break;
   }
 }
 

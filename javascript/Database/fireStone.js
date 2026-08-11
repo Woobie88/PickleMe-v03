@@ -238,3 +238,9 @@ window.updatePlayerTeamInFirestore = async function(playerId, teamNumber) {
   const playerDocRef = doc(db, "players", String(playerId));
   await updateDoc(playerDocRef, { Team: teamNumber });
 };
+
+window.updatePlayerVersionInFirestore = async function(playerId, newVersion) {
+  const db = window.db;
+  const playerDocRef = doc(db, "players", String(playerId));
+  await updateDoc(playerDocRef, { PlayerVersion: newVersion });
+};
