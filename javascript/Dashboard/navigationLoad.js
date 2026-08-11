@@ -93,6 +93,7 @@ function navigateToScreen(screenId) {
       renderDrawCards(payload);
       renderCurrentRoundView(payload);
       renderStandingsView(payload);
+      updateDrawFabMenuVisibility();
       break;
     case 'ladder':
       renderLadderCards(payload);

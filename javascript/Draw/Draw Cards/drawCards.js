@@ -458,6 +458,27 @@ function handleFabAction(action) {
   }
 }
 
+function updateDrawFabMenuVisibility() {
+  const activeEventId = window.cachedUserUniverse.activeEventId;
+  const activeEvent = window.cachedUserUniverse.events.find(
+    e => String(e.EventID || e.eventId) === String(activeEventId)
+  );
+  const gameProfile = gamesProfile.find(g => g.GameID === activeEvent?.GameID);
+
+  const redivisionSupported = gameProfile?.Redivisioning === 'Yes';
+  const playoffSupported = gameProfile?.PlayOff === 'Yes';
+
+  const redivisionItem = document.getElementById('fab-redivision-item');
+  if (redivisionItem) {
+    redivisionItem.style.display = redivisionSupported ? 'flex' : 'none';
+  }
+
+  const playoffsItem = document.getElementById('fab-playoffs-item');
+  if (playoffsItem) {
+    playoffsItem.style.display = playoffSupported ? 'flex' : 'none';
+  }
+}
+
 // ---------- DRAW SCREEN TABS ----------
 
 function switchDrawTab(tabId) {
