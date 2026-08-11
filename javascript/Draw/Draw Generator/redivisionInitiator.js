@@ -131,3 +131,7 @@ async function handleRedivisionConfirm() {
 function handleNewDivisions() {
   console.log('New Divisions tapped — routing not yet wired up');
 }
+
+function handlePlayerAvailability() {
+  console.log('Player Availability tapped — routing not yet wired up');
+}
