@@ -626,7 +626,10 @@ function renderPlayerEditView() {
   if (!player) { container.innerHTML = `<div class="no-data-placeholder"><h3>Player Not Found</h3></div>`; return; }
 
   container.innerHTML = `
-    <div class="welcome-banner"><h2>Edit Player</h2></div>
+    <div class="welcome-banner">
+      <h2>Player Details</h2></p>
+      <p>Update player details
+    </div>
     <div class="detail-view-container">
       <div class="detail-form-group">
         <label>Name</label>
@@ -692,7 +695,9 @@ function renderPlayerSummaryView() {
   const maxSameOpponent = Math.max(0, ...Object.values(opponents));
 
   container.innerHTML = `
-    <div class="welcome-banner"><h2>${player.Name || 'Unnamed'} — Summary</h2></div>
+    <div class="welcome-banner">
+      <h2>${player.Name || 'Unnamed'} Draw Summary</h2>
+    </div>
     <div class="detail-view-container">
       <div class="detail-form-group"><label>Games</label><div class="detail-readonly">${games}</div></div>
       <div class="detail-form-group"><label>Byes</label><div class="detail-readonly">${byes}</div></div>
@@ -721,7 +726,7 @@ function renderPlayerMatchesView() {
 
   const allRounds = [...new Set(matches.map(m => parseInt(m.Round) || 0))].sort((a, b) => a - b);
 
-  let html = `<div class="welcome-banner"><h2>${player.Name || 'Unnamed'} — Draw</h2></div><div class="card-grid">`;
+  let html = `<div class="welcome-banner"><h2>${player.Name || 'Unnamed'} Match Details</h2></div><div class="card-grid">`;
 
   allRounds.forEach(round => {
     html += `<div class="event-section-title">Round ${round}</div>`;
