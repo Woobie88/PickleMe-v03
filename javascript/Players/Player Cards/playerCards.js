@@ -667,7 +667,7 @@ function renderPlayerSummaryView() {
   const container = document.getElementById('player-detail-content');
   if (!player) return;
 
-  let games = 0, byes = 0;
+  let games = 0;
   const partners = {}, opponents = {};
   const allRounds = new Set(matches.map(m => m.Round));
   const roundsPlayed = new Set();
@@ -687,7 +687,11 @@ function renderPlayerSummaryView() {
     oppTeam.forEach(pid => { opponents[pid] = (opponents[pid] || 0) + 1; });
   });
 
-  allRounds.forEach(r => { if (!roundsPlayed.has(r)) byes++; });
+  // Determine which specific rounds were byes, sorted ascending
+  const byeRounds = [...allRounds]
+    .filter(r => !roundsPlayed.has(r))
+    .map(r => parseInt(r) || 0)
+    .sort((a, b) => a - b);
 
   const uniquePartners = Object.keys(partners).length;
   const uniqueOpponents = Object.keys(opponents).length;
@@ -695,12 +699,11 @@ function renderPlayerSummaryView() {
   const maxSameOpponent = Math.max(0, ...Object.values(opponents));
 
   container.innerHTML = `
-    <div class="welcome-banner">
-      <h2>${player.Name || 'Unnamed'} Draw Summary</h2>
-    </div>
+    <div class="welcome-banner"><h2>${player.Name || 'Unnamed'} Event Summary</h2></div>
     <div class="detail-view-container">
       <div class="detail-form-group"><label>Games</label><div class="detail-readonly">${games}</div></div>
-      <div class="detail-form-group"><label>Byes</label><div class="detail-readonly">${byes}</div></div>
+      <div class="detail-form-group"><label>Byes</label><div class="detail-readonly">${byeRounds.length}</div></div>
+      <div class="detail-form-group"><label>Bye Rounds</label><div class="detail-readonly">${byeRounds.length > 0 ? byeRounds.join(', ') : 'None'}</div></div>
       <div class="detail-form-group"><label>Unique Partners</label><div class="detail-readonly">${uniquePartners}</div></div>
       <div class="detail-form-group"><label>Unique Opponents</label><div class="detail-readonly">${uniqueOpponents}</div></div>
       <div class="detail-form-group"><label>Max Same Partner</label><div class="detail-readonly">${maxSamePartner}</div></div>
