@@ -580,14 +580,22 @@ function renderPlayerDetailView() {
 }
 
 function goToNextPlayerDetailScreen() {
-  window.currentPlayerDetailIndex = window.currentPlayerDetailIndex < 2 ? window.currentPlayerDetailIndex + 1 : 0; // wraps 3→1 per spec
-  renderPlayerDetailView();
+  if (window.currentPlayerDetailIndex < 2) {
+    window.currentPlayerDetailIndex++;
+    renderPlayerDetailView();
+  } else {
+    // Already on the Draw screen (index 2) — swiping forward exits to Player Roster
+    navigateToScreen('players');
+  }
 }
 
 function goToPreviousPlayerDetailScreen() {
   if (window.currentPlayerDetailIndex > 0) {
     window.currentPlayerDetailIndex--;
     renderPlayerDetailView();
+  } else {
+    // Already on the Edit screen (index 0) — swiping back exits to Player Roster
+    navigateToScreen('players');
   }
 }
 
@@ -743,7 +751,7 @@ function renderPlayerMatchesView() {
       html += buildCardMarkup({ iconAsset, contentHtml, onClickAttr });
     } else {
       const contentHtml = `<h4>Bye</h4><p class="card-meta-line">No match this round</p>`;
-      html += buildCardMarkup({ iconAsset: '🛋️', contentHtml });
+      html += buildCardMarkup({ iconAsset: byeImage, contentHtml });
     }
   });
 

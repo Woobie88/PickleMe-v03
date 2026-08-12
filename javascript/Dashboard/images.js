@@ -17,7 +17,7 @@ const courts = [{
   "court-6": "https://i.postimg.cc/q7FwhRPL/6.png",
   "court-7": "https://i.postimg.cc/k5Hs640N/7.png",
   "court-8": "https://i.postimg.cc/Pq7ypxgM/8.png"
-}]
+}];
 
 const playerSeeds = [{
   "seed-1": "https://i.postimg.cc/jq3xWr2b/1.png",
@@ -40,7 +40,7 @@ const playerSeeds = [{
   "seed-18": "https://i.postimg.cc/PrLtYFvW/18.png",
   "seed-19": "https://i.postimg.cc/4NKJVFHv/19.png",
   "seed-20": "https://i.postimg.cc/fT3wmgSx/20.png"
-}]
+}];
 
 const ladderRankings = [{
   "rank-1": "https://i.postimg.cc/FHPQWfBQ/1.png",
@@ -63,4 +63,6 @@ const ladderRankings = [{
   "rank-18": "https://i.postimg.cc/6QyxD9k3/18.png",
   "rank-19": "https://i.postimg.cc/JhGC91f7/19.png",
   "rank-20": "https://i.postimg.cc/HLV1fpqs/20.png"
-}]
+}];
+
+const byeImage = "https://i.postimg.cc/P5XcYDjc/Bye.png";
