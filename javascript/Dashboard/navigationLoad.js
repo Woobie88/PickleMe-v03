@@ -157,6 +157,7 @@ window.addEventListener("DOMContentLoaded", async (event) => {
   }
   initMatchSwipeHandlers();
   initCurrentRoundSwipeHandlers();
+  initPlayerDetailSwipeHandlers(); // ADD THIS
   enableCardPressFeedback('#screen-dashboard .app-card');
 
   document.getElementById('ind-firstname').addEventListener('input', () => {

@@ -560,3 +560,193 @@ function switchGenerateDrawTab(tabId) {
     renderAvailabilityView(window.cachedUserUniverse, 'gd-unavailable-list', 'gd-available-list');
   }
 }
+
+// Player detail cards
+window.currentPlayerDetailId = null;
+window.currentPlayerDetailIndex = 0; // 0=edit, 1=summary, 2=matches
+
+function viewPlayerDetail(playerId) {
+  window.currentPlayerDetailId = playerId;
+  window.currentPlayerDetailIndex = 0;
+  renderPlayerDetailView();
+  navigateToScreen('player-detail');
+}
+
+function renderPlayerDetailView() {
+  const idx = window.currentPlayerDetailIndex;
+  if (idx === 0) renderPlayerEditView();
+  else if (idx === 1) renderPlayerSummaryView();
+  else renderPlayerMatchesView();
+}
+
+function goToNextPlayerDetailScreen() {
+  window.currentPlayerDetailIndex = window.currentPlayerDetailIndex < 2 ? window.currentPlayerDetailIndex + 1 : 0; // wraps 3→1 per spec
+  renderPlayerDetailView();
+}
+
+function goToPreviousPlayerDetailScreen() {
+  if (window.currentPlayerDetailIndex > 0) {
+    window.currentPlayerDetailIndex--;
+    renderPlayerDetailView();
+  }
+}
+
+function initPlayerDetailSwipeHandlers() {
+  const container = document.getElementById('screen-player-detail');
+  if (!container) return;
+  let startX = 0, startY = 0;
+
+  container.addEventListener('touchstart', (e) => {
+    startX = e.changedTouches[0].screenX;
+    startY = e.changedTouches[0].screenY;
+  });
+
+  container.addEventListener('touchend', (e) => {
+    const deltaX = e.changedTouches[0].screenX - startX;
+    const deltaY = e.changedTouches[0].screenY - startY;
+    if (Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY)) return;
+
+    if (deltaX < 0) goToNextPlayerDetailScreen(); // swipe left = next
+    else goToPreviousPlayerDetailScreen(); // swipe right = back
+  });
+}
+
+// Player details -- name, dupr, etc
+function renderPlayerEditView() {
+  const player = window.cachedUserUniverse.players.find(p => p.PlayerID === window.currentPlayerDetailId);
+  const container = document.getElementById('player-detail-content');
+  if (!player) { container.innerHTML = `<div class="no-data-placeholder"><h3>Player Not Found</h3></div>`; return; }
+
+  container.innerHTML = `
+    <div class="welcome-banner"><h2>Edit Player</h2></div>
+    <div class="detail-view-container">
+      <div class="detail-form-group">
+        <label>Name</label>
+        <input type="text" class="detail-input" value="${player.Name || ''}" oninput="handlePlayerFieldEdit('Name', this.value)">
+      </div>
+      <div class="detail-form-group">
+        <label>First Name</label>
+        <input type="text" class="detail-input" value="${player.FirstName || ''}" oninput="handlePlayerFieldEdit('FirstName', this.value)">
+      </div>
+      <div class="detail-form-group">
+        <label>DUPR ID</label>
+        <input type="text" class="detail-input" value="${player.DUPRId || ''}" oninput="handlePlayerFieldEdit('DUPRId', this.value)">
+      </div>
+      <div class="detail-form-group">
+        <label>DUPR Rating</label>
+        <input type="number" step="0.01" class="detail-input" value="${player.DUPR || ''}" oninput="handlePlayerFieldEdit('DUPR', parseFloat(this.value) || 0)">
+      </div>
+    </div>
+  `;
+}
+
+let playerFieldSaveTimer = null;
+function handlePlayerFieldEdit(field, value) {
+  const player = window.cachedUserUniverse.players.find(p => p.PlayerID === window.currentPlayerDetailId);
+  if (player) player[field] = value;
+
+  clearTimeout(playerFieldSaveTimer);
+  playerFieldSaveTimer = setTimeout(() => {
+    window.updatePlayerFieldInFirestore(window.currentPlayerDetailId, field, value)
+      .then(() => console.log(`Saved ${field}`))
+      .catch(err => console.error(`Failed to save ${field}:`, err));
+  }, 600);
+}
+
+// Player match summary
+function renderPlayerSummaryView() {
+  const player = window.cachedUserUniverse.players.find(p => p.PlayerID === window.currentPlayerDetailId);
+  const matches = window.cachedUserUniverse.draw || [];
+  const container = document.getElementById('player-detail-content');
+  if (!player) return;
+
+  let games = 0, byes = 0;
+  const partners = {}, opponents = {};
+  const allRounds = new Set(matches.map(m => m.Round));
+  const roundsPlayed = new Set();
+
+  matches.forEach(m => {
+    const t1 = [m.Team1Player1, m.Team1Player2, m.Team1Player3, m.Team1Player4].filter(Boolean);
+    const t2 = [m.Team2Player1, m.Team2Player2, m.Team2Player3, m.Team2Player4].filter(Boolean);
+    const onT1 = t1.includes(player.PlayerID);
+    const onT2 = t2.includes(player.PlayerID);
+    if (!onT1 && !onT2) return;
+
+    games++;
+    roundsPlayed.add(m.Round);
+    const myTeam = onT1 ? t1 : t2;
+    const oppTeam = onT1 ? t2 : t1;
+    myTeam.forEach(pid => { if (pid !== player.PlayerID) partners[pid] = (partners[pid] || 0) + 1; });
+    oppTeam.forEach(pid => { opponents[pid] = (opponents[pid] || 0) + 1; });
+  });
+
+  allRounds.forEach(r => { if (!roundsPlayed.has(r)) byes++; });
+
+  const uniquePartners = Object.keys(partners).length;
+  const uniqueOpponents = Object.keys(opponents).length;
+  const maxSamePartner = Math.max(0, ...Object.values(partners));
+  const maxSameOpponent = Math.max(0, ...Object.values(opponents));
+
+  container.innerHTML = `
+    <div class="welcome-banner"><h2>${player.Name || 'Unnamed'} — Summary</h2></div>
+    <div class="detail-view-container">
+      <div class="detail-form-group"><label>Games</label><div class="detail-readonly">${games}</div></div>
+      <div class="detail-form-group"><label>Byes</label><div class="detail-readonly">${byes}</div></div>
+      <div class="detail-form-group"><label>Unique Partners</label><div class="detail-readonly">${uniquePartners}</div></div>
+      <div class="detail-form-group"><label>Unique Opponents</label><div class="detail-readonly">${uniqueOpponents}</div></div>
+      <div class="detail-form-group"><label>Max Same Partner</label><div class="detail-readonly">${maxSamePartner}</div></div>
+      <div class="detail-form-group"><label>Max Same Opponent</label><div class="detail-readonly">${maxSameOpponent}</div></div>
+    </div>
+  `;
+}
+
+// Player matches
+function renderPlayerMatchesView() {
+  const player = window.cachedUserUniverse.players.find(p => p.PlayerID === window.currentPlayerDetailId);
+  const matches = window.cachedUserUniverse.draw || [];
+  const container = document.getElementById('player-detail-content');
+  if (!player) return;
+
+  const playerMap = {};
+  (window.cachedUserUniverse.players || []).forEach(p => { playerMap[p.PlayerID] = p.FirstName; });
+
+  const playerMatches = matches.filter(m => {
+    const all = [m.Team1Player1, m.Team1Player2, m.Team1Player3, m.Team1Player4, m.Team2Player1, m.Team2Player2, m.Team2Player3, m.Team2Player4];
+    return all.includes(player.PlayerID);
+  });
+
+  const allRounds = [...new Set(matches.map(m => parseInt(m.Round) || 0))].sort((a, b) => a - b);
+
+  let html = `<div class="welcome-banner"><h2>${player.Name || 'Unnamed'} — Draw</h2></div><div class="card-grid">`;
+
+  allRounds.forEach(round => {
+    html += `<div class="event-section-title">Round ${round}</div>`;
+    const match = playerMatches.find(m => parseInt(m.Round) === round);
+
+    if (match) {
+      const iconAsset = courts[0]['court-' + match.Court] || '🏟️';
+      const allTeam1 = [match.Team1Player1, match.Team1Player2, match.Team1Player3, match.Team1Player4];
+      const onTeam1 = allTeam1.includes(player.PlayerID);
+      const myTeamIds = onTeam1 ? allTeam1 : [match.Team2Player1, match.Team2Player2, match.Team2Player3, match.Team2Player4];
+      const oppTeamIds = onTeam1 ? [match.Team2Player1, match.Team2Player2, match.Team2Player3, match.Team2Player4] : allTeam1;
+
+      const myTeamNames = formatTeamNames(myTeamIds.map(id => playerMap[id]));
+      const oppTeamNames = formatTeamNames(oppTeamIds.map(id => playerMap[id]));
+
+      const isComplete = match.Team1WinLoss && match.Team2WinLoss;
+      const myScore = onTeam1 ? match.Team1Score : match.Team2Score;
+      const oppScore = onTeam1 ? match.Team2Score : match.Team1Score;
+      const metaLine = isComplete ? `Score ${myScore} - ${oppScore}` : `Court ${match.Court}`;
+
+      const contentHtml = `<h4>${myTeamNames} vs. ${oppTeamNames}</h4><p class="card-meta-line">${metaLine}</p>`;
+      const onClickAttr = `onclick="openMatchScoreView('${match.MatchID}')"`;
+      html += buildCardMarkup({ iconAsset, contentHtml, onClickAttr });
+    } else {
+      const contentHtml = `<h4>Bye</h4><p class="card-meta-line">No match this round</p>`;
+      html += buildCardMarkup({ iconAsset: '🛋️', contentHtml });
+    }
+  });
+
+  html += `</div>`;
+  container.innerHTML = html;
+}

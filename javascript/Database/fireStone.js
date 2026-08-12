@@ -244,3 +244,9 @@ window.updatePlayerVersionInFirestore = async function(playerId, newVersion) {
   const playerDocRef = doc(db, "players", String(playerId));
   await updateDoc(playerDocRef, { PlayerVersion: newVersion });
 };
+
+window.updatePlayerFieldInFirestore = async function(playerId, fieldName, value) {
+  const db = window.db;
+  const playerDocRef = doc(db, "players", String(playerId));
+  await updateDoc(playerDocRef, { [fieldName]: value });
+};
