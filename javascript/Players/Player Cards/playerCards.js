@@ -738,9 +738,14 @@ function renderPlayerMatchesView() {
       const oppTeamNames = formatTeamNames(oppTeamIds.map(id => playerMap[id]));
 
       const isComplete = match.Team1WinLoss && match.Team2WinLoss;
-      const myScore = onTeam1 ? match.Team1Score : match.Team2Score;
-      const oppScore = onTeam1 ? match.Team2Score : match.Team1Score;
-      const metaLine = isComplete ? `Score ${myScore} - ${oppScore}` : `Court ${match.Court}`;
+
+      let metaLine;
+      if (isComplete) {
+        metaLine = `Score ${match.Team1Score} - ${match.Team2Score} || Exp Res. ${match.ExpectedTeam1Score} - ${match.ExpectedTeam2Score}`;
+      } else {
+        const duprDelta = Math.abs((parseFloat(match.Team1AvgDUPR) || 0) - (parseFloat(match.Team2AvgDUPR) || 0)).toFixed(2);
+        metaLine = `DUPR Diff ${duprDelta} || Exp Res. ${match.ExpectedTeam1Score} - ${match.ExpectedTeam2Score}`;
+      }
 
       const contentHtml = `<h4>${myTeamNames} vs. ${oppTeamNames}</h4><p class="card-meta-line">${metaLine}</p>`;
       const onClickAttr = `onclick="openMatchScoreView('${match.MatchID}')"`;
