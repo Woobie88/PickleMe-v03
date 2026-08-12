@@ -789,3 +789,7 @@ async function handleDeletePlayer() {
     alert("Failed to delete player — check the console for details.");
   }
 }
+
+function handleMatchDetailAction() {
+  navigateToScreen('player-substitution');
+}

@@ -1169,3 +1169,12 @@ body {
   min-width: 60px;
   text-align: center;
 }
+
+/* Player substitution */
+.app-card.sub-out {
+  border-left-color: #ef4444 !important;
+}
+
+.app-card.sub-in {
+  border-left-color: #00E676 !important;
+}

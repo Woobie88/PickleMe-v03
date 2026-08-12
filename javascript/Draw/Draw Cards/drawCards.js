@@ -638,3 +638,179 @@ function initCurrentRoundSwipeHandlers() {
     }
   });
 }
+
+// Player substitution
+function renderPlayerSubstitutionScreen(payload) {
+  const activeEventId = payload.activeEventId;
+  const activeEvent = payload.events.find(e => String(e.EventID) === String(activeEventId));
+  const roundNumber = window.currentRoundNumber || parseInt(activeEvent?.CurrentRound) || 1;
+
+  document.getElementById('sub-round-heading').innerText = `Round ${roundNumber} Substitution`;
+
+  const matches = (payload.draw || []).filter(m => parseInt(m.Round) === roundNumber);
+  const currentPlayerVersion = activeEvent.CurrentPlayerVersion;
+  const activePlayers = (payload.players || [])
+    .filter(p => String(p.PlayerVersion) === String(currentPlayerVersion))
+    .filter(p => p.playerExclude !== 'Yes');
+
+  const playerLookup = {};
+  activePlayers.forEach(p => { playerLookup[p.PlayerID] = p; });
+
+  // Build seed rank map (matches your existing pattern elsewhere)
+  const duprRanked = [...activePlayers].sort((a, b) => {
+    const duprDiff = (parseFloat(b.DUPR) || 0) - (parseFloat(a.DUPR) || 0);
+    if (duprDiff !== 0) return duprDiff;
+    return (parseFloat(a.RandomNumber) || 0) - (parseFloat(b.RandomNumber) || 0);
+  });
+  const seedRankMap = {};
+  duprRanked.forEach((p, idx) => { seedRankMap[p.PlayerID] = idx + 1; });
+
+  function buildSubCard(player, extraAttrs = '') {
+    const seedNumber = seedRankMap[player.PlayerID];
+    const seedUrl = playerSeeds[0]['seed-' + seedNumber];
+    const iconAsset = seedUrl || '🎾';
+
+    const contentHtml = `
+      <h3>${player.Name || 'Unnamed Player'} ${player.FirstName ? '(' + player.FirstName + ')' : ''}</h3>
+      <p class="card-meta-line">${player.DUPRId || 'N/A'} ${player.DUPR ? ' || DUPR ' + player.DUPR : '0'}</p>
+    `;
+
+    const iconMarkup = iconAsset.startsWith('http')
+      ? `<img src="${iconAsset}" alt="Icon" class="card-icon-images" loading="lazy">`
+      : `<span class="card-icon">${iconAsset}</span>`;
+
+    return `
+      <div class="app-card" data-card-id="${player.PlayerID}" ${extraAttrs}>
+        <div class="card-icon-wrapper">${iconMarkup}</div>
+        <div class="card-content">${contentHtml}</div>
+        <span class="card-arrow">→</span>
+      </div>
+    `;
+  }
+
+  // Match players — track which match/field slot each occupies
+  const matchPlayersHtml = [];
+  const inMatchIds = new Set();
+
+  matches.sort((a, b) => (parseInt(a.Court) || 0) - (parseInt(b.Court) || 0));
+
+  matches.forEach(m => {
+    const slots = [
+      ['Team1Player1', m.Team1Player1], ['Team1Player2', m.Team1Player2],
+      ['Team1Player3', m.Team1Player3], ['Team1Player4', m.Team1Player4],
+      ['Team2Player1', m.Team2Player1], ['Team2Player2', m.Team2Player2],
+      ['Team2Player3', m.Team2Player3], ['Team2Player4', m.Team2Player4]
+    ];
+    slots.forEach(([field, pid]) => {
+      if (!pid) return;
+      const player = playerLookup[pid];
+      if (!player) return;
+      inMatchIds.add(pid);
+      matchPlayersHtml.push(buildSubCard(player, `data-match-id="${m.MatchID}" data-field="${field}"`));
+    });
+  });
+
+  document.getElementById('sub-match-players-list').innerHTML = matchPlayersHtml.length > 0
+    ? matchPlayersHtml.join('')
+    : `<div class="no-data-placeholder"><h3>No Matches This Round</h3></div>`;
+
+  // Bye players — anyone active but not in any match this round
+  const byePlayers = activePlayers.filter(p => !inMatchIds.has(p.PlayerID));
+  document.getElementById('sub-bye-players-list').innerHTML = byePlayers.length > 0
+    ? byePlayers.map(p => buildSubCard(p)).join('')
+    : `<div class="no-data-placeholder"><h3>No Byes This Round</h3></div>`;
+
+  enableSubstitutionLongPress();
+}
+
+window.subOutSelection = null; // { playerId, matchId, field }
+window.subInSelection = null;  // { playerId }
+
+function enableSubstitutionLongPress() {
+  document.querySelectorAll('#sub-match-players-list .app-card[data-card-id]').forEach(card => {
+    attachSubLongPress(card, 'out');
+  });
+  document.querySelectorAll('#sub-bye-players-list .app-card[data-card-id]').forEach(card => {
+    attachSubLongPress(card, 'in');
+  });
+}
+
+function attachSubLongPress(card, type) {
+  let longPressTimer = null;
+
+  card.addEventListener('touchstart', () => {
+    longPressTimer = setTimeout(() => {
+      if (navigator.vibrate) navigator.vibrate(30);
+      toggleSubSelection(card, type);
+    }, 350);
+  }, { passive: true });
+
+  card.addEventListener('touchmove', () => {
+    clearTimeout(longPressTimer);
+  }, { passive: true });
+
+  card.addEventListener('touchend', () => {
+    clearTimeout(longPressTimer);
+    window.suppressNextCardClick = true;
+  });
+}
+
+function toggleSubSelection(card, type) {
+  const playerId = card.dataset.cardId;
+
+  if (type === 'out') {
+    // Deselect if tapping the same card again
+    if (window.subOutSelection?.playerId === playerId) {
+      card.classList.remove('sub-out');
+      window.subOutSelection = null;
+      return;
+    }
+    // Clear any previous sub-out selection
+    document.querySelectorAll('#sub-match-players-list .app-card.sub-out').forEach(c => c.classList.remove('sub-out'));
+    card.classList.add('sub-out');
+    window.subOutSelection = {
+      playerId,
+      matchId: card.dataset.matchId,
+      field: card.dataset.field
+    };
+  } else {
+    if (window.subInSelection?.playerId === playerId) {
+      card.classList.remove('sub-in');
+      window.subInSelection = null;
+      return;
+    }
+    document.querySelectorAll('#sub-bye-players-list .app-card.sub-in').forEach(c => c.classList.remove('sub-in'));
+    card.classList.add('sub-in');
+    window.subInSelection = { playerId };
+  }
+
+  // Once both are selected, perform the swap
+  if (window.subOutSelection && window.subInSelection) {
+    performSubstitution();
+  }
+}
+
+async function performSubstitution() {
+  const { matchId, field, playerId: outPlayerId } = window.subOutSelection;
+  const inPlayerId = window.subInSelection.playerId;
+
+  try {
+    await window.updateMatchPlayerFieldInFirestore(matchId, field, inPlayerId);
+
+    // Update local cache
+    const match = window.cachedUserUniverse.draw.find(m => m.MatchID === matchId);
+    if (match) match[field] = inPlayerId;
+
+    console.log(`Substituted ${outPlayerId} out, ${inPlayerId} in (match ${matchId}, ${field})`);
+
+    window.subOutSelection = null;
+    window.subInSelection = null;
+
+    renderPlayerSubstitutionScreen(window.cachedUserUniverse); // re-render to reflect the swap
+  } catch (err) {
+    console.error("Substitution failed:", err);
+    alert("Substitution failed — check the console for details.");
+    window.subOutSelection = null;
+    window.subInSelection = null;
+  }
+}

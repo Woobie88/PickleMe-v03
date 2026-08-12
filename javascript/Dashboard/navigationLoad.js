@@ -95,6 +95,9 @@ function navigateToScreen(screenId) {
       renderStandingsView(payload);
       updateDrawFabMenuVisibility();
       break;
+    case 'player-substitution':
+      renderPlayerSubstitutionScreen(window.cachedUserUniverse);
+      break;
     case 'ladder':
       renderLadderCards(payload);
       break;
