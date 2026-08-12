@@ -250,3 +250,9 @@ window.updatePlayerFieldInFirestore = async function(playerId, fieldName, value)
   const playerDocRef = doc(db, "players", String(playerId));
   await updateDoc(playerDocRef, { [fieldName]: value });
 };
+
+window.deletePlayerInFirestore = async function(playerId) {
+  const db = window.db;
+  const playerDocRef = doc(db, "players", String(playerId));
+  await deleteDoc(playerDocRef);
+};

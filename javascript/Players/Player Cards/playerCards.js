@@ -645,20 +645,16 @@ function renderPlayerEditView() {
         <input type="number" step="0.01" class="detail-input" value="${player.DUPR || ''}" oninput="handlePlayerFieldEdit('DUPR', parseFloat(this.value) || 0)">
       </div>
     </div>
+
+    <div class="fab-wrapper">
+      <div class="fab-container" onclick="handleDeletePlayer()">
+        <div class="fab-circle" style="background-color: #ef4444;">
+          <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1024" zoomAndPan="magnify" viewBox="0 0 768 767.999994" height="1024" preserveAspectRatio="xMidYMid meet" version="1.0"><path fill="currentColor" d="M 565.921875 92.082031 L 498.382812 92.082031 L 498.382812 84.855469 C 498.382812 63.867188 493.980469 44.421875 486.875 30 C 477.886719 11.753906 464.085938 0.421875 447.648438 0.421875 L 319.5625 0.421875 C 303.125 0.421875 289.316406 11.746094 280.335938 30 C 273.242188 44.421875 268.828125 63.867188 268.828125 84.855469 L 268.828125 92.082031 L 99.867188 92.082031 C 74.800781 92.082031 54.273438 115.316406 54.273438 143.707031 L 54.273438 195.316406 L 712.945312 195.316406 L 712.945312 143.707031 C 712.945312 115.316406 692.433594 92.082031 667.351562 92.082031 Z M 104.992188 231.398438 L 143.476562 715.917969 C 144.121094 745.179688 161.660156 762.726562 196.121094 768.535156 C 321.117188 768.535156 383.621094 768.535156 383.621094 768.535156 C 383.621094 768.535156 446.121094 768.535156 571.117188 768.535156 C 605.570312 762.71875 623.109375 745.179688 623.753906 715.917969 L 662.25 231.398438 Z M 365.5625 352.386719 C 365.5625 342.425781 373.636719 334.34375 383.609375 334.34375 C 393.574219 334.34375 401.660156 342.417969 401.660156 352.386719 L 401.660156 647.554688 C 401.660156 657.515625 393.585938 665.601562 383.609375 665.601562 C 373.644531 665.601562 365.5625 657.527344 365.5625 647.554688 Z M 505.507812 350.980469 C 506.285156 341.054688 514.964844 333.644531 524.890625 334.421875 C 534.816406 335.195312 542.242188 343.875 541.464844 353.796875 L 518.015625 648.957031 C 517.238281 658.878906 508.558594 666.300781 498.632812 665.515625 C 488.707031 664.738281 481.292969 656.058594 482.058594 646.136719 Z M 225.757812 353.796875 C 224.980469 343.875 232.402344 335.195312 242.328125 334.421875 C 252.257812 333.644531 260.9375 341.054688 261.710938 350.980469 L 285.160156 646.144531 C 285.9375 656.070312 278.523438 664.746094 268.597656 665.523438 C 258.671875 666.300781 249.992188 658.886719 249.214844 648.964844 Z M 462.292969 92.082031 L 304.929688 92.082031 L 304.929688 84.855469 C 304.929688 69.332031 307.882812 55.570312 312.628906 45.925781 C 315.488281 40.117188 318.039062 36.5 319.574219 36.5 L 447.65625 36.5 C 449.191406 36.5 451.734375 40.105469 454.601562 45.925781 C 459.347656 55.570312 462.300781 69.332031 462.300781 84.855469 L 462.300781 92.082031 Z M 462.292969 92.082031 " fill-opacity="1" fill-rule="evenodd"/></svg>
+        </div>
+        <span class="fab-label">DELETE PLAYER</span>
+      </div>
+    </div>
   `;
-}
-
-let playerFieldSaveTimer = null;
-function handlePlayerFieldEdit(field, value) {
-  const player = window.cachedUserUniverse.players.find(p => p.PlayerID === window.currentPlayerDetailId);
-  if (player) player[field] = value;
-
-  clearTimeout(playerFieldSaveTimer);
-  playerFieldSaveTimer = setTimeout(() => {
-    window.updatePlayerFieldInFirestore(window.currentPlayerDetailId, field, value)
-      .then(() => console.log(`Saved ${field}`))
-      .catch(err => console.error(`Failed to save ${field}:`, err));
-  }, 600);
 }
 
 // Player match summary
@@ -757,4 +753,26 @@ function renderPlayerMatchesView() {
 
   html += `</div>`;
   container.innerHTML = html;
+}
+
+// Delete player
+async function handleDeletePlayer() {
+  const player = window.cachedUserUniverse.players.find(p => p.PlayerID === window.currentPlayerDetailId);
+  if (!player) return;
+
+  const confirmed = confirm(`Permanently delete ${player.Name || 'this player'}? This cannot be undone.`);
+  if (!confirmed) return;
+
+  try {
+    await window.deletePlayerInFirestore(player.PlayerID);
+
+    // Remove from local cache
+    window.cachedUserUniverse.players = window.cachedUserUniverse.players.filter(p => p.PlayerID !== player.PlayerID);
+
+    alert("Player deleted successfully.");
+    navigateToScreen('players');
+  } catch (err) {
+    console.error("Failed to delete player:", err);
+    alert("Failed to delete player — check the console for details.");
+  }
 }
