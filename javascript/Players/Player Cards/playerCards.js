@@ -683,8 +683,11 @@ function renderPlayerEditView() {
         <label>Player Unavailable</label>
         <div class="scoring-toggle" id="player-unavailable-toggle">
           <button class="scoring-option ${!isUnavailable ? 'active' : ''}" data-value="No" onclick="handlePlayerUnavailableToggle('No')">No</button>
-          <button class="scoring-option ${isUnavailable ? 'active' : ''}" data-value="Yes" onclick="handlePlayerUnavailableToggle('Yes')">Yes</button>
+          <button class="scoring-option unavailable-yes-btn ${isUnavailable ? 'active' : ''}" data-value="Yes" onclick="handlePlayerUnavailableToggle('Yes')">Yes</button>
         </div>
+        <p class="card-meta-line" id="player-unavailable-message" style="color: #ef4444; ${isUnavailable ? '' : 'display: none;'}">
+          This player will not be available to play in the draw.
+        </p>
       </div>
     </div>
 
@@ -706,6 +709,9 @@ function handlePlayerUnavailableToggle(value) {
   document.querySelectorAll('#player-unavailable-toggle .scoring-option').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.value === value);
   });
+
+  const messageEl = document.getElementById('player-unavailable-message');
+  if (messageEl) messageEl.style.display = value === 'Yes' ? '' : 'none';
 
   window.updatePlayerFieldInFirestore(window.currentPlayerDetailId, 'playerExclude', value)
     .then(() => console.log("playerExclude saved:", value))

@@ -1196,3 +1196,8 @@ body {
   flex: 1;
   text-align: center;
 }
+
+.scoring-option.unavailable-yes-btn.active {
+  background-color: #ef4444 !important;
+  color: #ffffff !important;
+}
