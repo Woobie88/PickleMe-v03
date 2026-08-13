@@ -484,11 +484,11 @@ async function generateNRoundsAndPreview(numberOfRounds) {
 
   const courtsCount = Math.min(parseInt(activeEvent.NumberofCourts) || 1, Math.floor(players.length / 4) || 1);
   const gameId = activeEvent.GameID;
-  const gameProfile = gamesProfile.find(g => g.GameID === gameId); // NEW
+  const gameProfile = gamesProfile.find(g => g.GameID === gameId);
   const userEmail = window.currentUserEmail;
 
-  window.gdRedivisionCache = {}; // NEW — clear cache at the start of every new generation
-  window.gdCurrentNumberOfRounds = numberOfRounds; // NEW
+  window.gdRedivisionCache = {};
+  window.gdCurrentNumberOfRounds = numberOfRounds;
 
   const newDrawVersion = (parseInt(activeEvent.CurrentDrawVersion) || 0) + 1;
   await window.updateEventDrawVersionAndRoundInFirestore(activeEventId, newDrawVersion);
@@ -501,6 +501,7 @@ async function generateNRoundsAndPreview(numberOfRounds) {
   if (gameId === 'doubles-pro' || gameId === 'rx-sports') {
     newMatches = generateDoublesProDraw(players, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfRounds);
     console.log(`Generated Doubles Pro draw: ${newMatches.length} matches across ${numberOfRounds} round(s).`);
+
   } else if (gameId === 'teams') {
     const numberOfTeams = parseInt(activeEvent.NumberOfTeams) || 2;
     let allMatches = [];
@@ -511,6 +512,7 @@ async function generateNRoundsAndPreview(numberOfRounds) {
     }
     newMatches = allMatches;
     console.log(`Generated Teams draw: ${newMatches.length} matches across ${numberOfRounds} round(s).`);
+
   } else {
     const numberOfTeams = parseInt(activeEvent.NumberOfTeams) || 1;
     const clusteredGames = ['divisions', 'ladder-scramble', 'pools', 'pool-fusion'];
@@ -528,17 +530,31 @@ async function generateNRoundsAndPreview(numberOfRounds) {
     }
     newMatches = generateMultipleRounds(
       players, [], byesByRound, startRound, numberOfRounds, courtsCount,
-      activeEventId, newDrawVersion, gameId, numberOfTeams, userEmail, gameProfile // ADDED gameProfile
+      activeEventId, newDrawVersion, gameId, numberOfTeams, userEmail, gameProfile
     );
     console.log(`Generated ${newMatches.length} matches across ${numberOfRounds} round(s) for game type "${gameId}" (DrawVersion ${newDrawVersion}):`, newMatches);
-    const flatByesByRound = {};
-    for (let i = 0; i < numberOfRounds; i++) {
-      flatByesByRound[startRound + i] = isClustered
-        ? Object.values(byesByRound).flatMap(teamSchedule => teamSchedule[i] || [])
-        : byesByRound[startRound + i] || [];
-    }
-    logPlayerSummary(players, newMatches, flatByesByRound);
   }
+
+  // NEW — always log a player summary, derived directly from the generated matches
+  // (works for every branch, since "who had a bye" can be reconstructed from
+  // whichever players don't appear in a given round's matches, without needing
+  // each branch's own bye-tracking structure)
+  const flatByesByRound = {};
+  for (let i = 0; i < numberOfRounds; i++) {
+    const roundNumber = startRound + i;
+    const roundMatches = newMatches.filter(m => parseInt(m.Round) === roundNumber);
+    const playingIds = new Set();
+    roundMatches.forEach(m => {
+      [m.Team1Player1, m.Team1Player2, m.Team1Player3, m.Team1Player4,
+       m.Team2Player1, m.Team2Player2, m.Team2Player3, m.Team2Player4]
+        .filter(Boolean)
+        .forEach(pid => playingIds.add(pid));
+    });
+    flatByesByRound[roundNumber] = players
+      .filter(p => !playingIds.has(p.PlayerID))
+      .map(p => p.PlayerID);
+  }
+  logPlayerSummary(players, newMatches, flatByesByRound);
 
   await window.saveGeneratedDrawToFirestore(newMatches);
   window.cachedUserUniverse.draw = newMatches;
