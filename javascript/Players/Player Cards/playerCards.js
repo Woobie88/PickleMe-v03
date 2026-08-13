@@ -569,6 +569,12 @@ async function commitAvailabilityStatus(unavailableContainerId = 'unavailable-li
   }
 
   renderAvailabilityView(payload, unavailableContainerId, availableContainerId);
+
+  // NEW — also refresh the main Players roster, since its red/amber accents
+  // depend on playerExclude, and it may currently be stale/cached in memory
+  if (document.getElementById('screen-players')) {
+    await renderPlayerCards(payload);
+  }
 }
 
 // ---------- GENERATE DRAW SCREEN: Details + Available tabs ----------
