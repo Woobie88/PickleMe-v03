@@ -379,8 +379,6 @@ function switchPlayersTab(tabId) {
 
   if (tabId === 'checkin') {
     renderCheckInView(window.cachedUserUniverse);
-  } else if (tabId === 'availability') {
-    renderAvailabilityView(window.cachedUserUniverse); // uses defaults: 'unavailable-list', 'available-list'
   }
 }
 
@@ -659,11 +657,10 @@ function renderPlayerEditView() {
   const container = document.getElementById('player-detail-content');
   if (!player) { container.innerHTML = `<div class="no-data-placeholder"><h3>Player Not Found</h3></div>`; return; }
 
+  const isUnavailable = player.playerExclude === 'Yes';
+
   container.innerHTML = `
-    <div class="welcome-banner">
-      <h2>Player Details</h2></p>
-      <p>Update player details
-    </div>
+    <div class="welcome-banner"><h2>Edit Player</h2></div>
     <div class="detail-view-container">
       <div class="detail-form-group">
         <label>Name</label>
@@ -681,6 +678,14 @@ function renderPlayerEditView() {
         <label>DUPR Rating</label>
         <input type="number" step="0.01" class="detail-input" value="${player.DUPR || ''}" oninput="handlePlayerFieldEdit('DUPR', parseFloat(this.value) || 0)">
       </div>
+
+      <div class="detail-form-group">
+        <label>Player Unavailable</label>
+        <div class="scoring-toggle" id="player-unavailable-toggle">
+          <button class="scoring-option ${!isUnavailable ? 'active' : ''}" data-value="No" onclick="handlePlayerUnavailableToggle('No')">No</button>
+          <button class="scoring-option ${isUnavailable ? 'active' : ''}" data-value="Yes" onclick="handlePlayerUnavailableToggle('Yes')">Yes</button>
+        </div>
+      </div>
     </div>
 
     <div class="fab-wrapper">
@@ -692,6 +697,19 @@ function renderPlayerEditView() {
       </div>
     </div>
   `;
+}
+
+function handlePlayerUnavailableToggle(value) {
+  const player = window.cachedUserUniverse.players.find(p => p.PlayerID === window.currentPlayerDetailId);
+  if (player) player.playerExclude = value;
+
+  document.querySelectorAll('#player-unavailable-toggle .scoring-option').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.value === value);
+  });
+
+  window.updatePlayerFieldInFirestore(window.currentPlayerDetailId, 'playerExclude', value)
+    .then(() => console.log("playerExclude saved:", value))
+    .catch(err => console.error("Failed to save playerExclude:", err));
 }
 
 // Player match summary
