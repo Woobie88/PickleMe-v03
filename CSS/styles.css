@@ -1187,3 +1187,12 @@ body {
 .app-card.player-unavailable {
   border-left-color: #ef4444 !important;
 }
+
+#player-unavailable-toggle {
+  display: flex;
+}
+
+#player-unavailable-toggle .scoring-option {
+  flex: 1;
+  text-align: center;
+}
