@@ -500,6 +500,16 @@ async function generateNRoundsAndPreview(numberOfRounds) {
   if (gameId === 'doubles-pro' || gameId === 'rx-sports') {
     newMatches = generateDoublesProDraw(players, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfRounds);
     console.log(`Generated Doubles Pro draw: ${newMatches.length} matches across ${numberOfRounds} round(s).`);
+  } else if (gameId === 'teams') {
+    const numberOfTeams = parseInt(activeEvent.NumberOfTeams) || 2;
+    let allMatches = [];
+    for (let i = 0; i < numberOfRounds; i++) {
+      const roundNumber = startRound + i;
+      const roundMatches = generateTeamsRoundDraw(players, allMatches, roundNumber, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfTeams);
+      allMatches.push(...roundMatches);
+    }
+    newMatches = allMatches;
+    console.log(`Generated Teams draw: ${newMatches.length} matches across ${numberOfRounds} round(s).`);
   } else {
     const numberOfTeams = parseInt(activeEvent.NumberOfTeams) || 1;
     const startRound = 1;
