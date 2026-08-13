@@ -489,6 +489,8 @@ async function generateNRoundsAndPreview(numberOfRounds) {
   const userEmail = window.currentUserEmail;
 
   window.gdRedivisionCache = {};
+  window.gdTeamByeCache = {};    // NEW
+  window.gdIndivByeCache = {};   // NEW
   window.gdCurrentNumberOfRounds = numberOfRounds;
 
   const newDrawVersion = (parseInt(activeEvent.CurrentDrawVersion) || 0) + 1;

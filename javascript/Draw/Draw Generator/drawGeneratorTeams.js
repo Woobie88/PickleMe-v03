@@ -217,18 +217,23 @@ function generateTeamsRoundDraw(players, matches, roundNumber, courtsCount, even
     teamPoolCursor[teamAKey] += cpp;
     teamPoolCursor[teamBKey] += cpp;
 
+    if (teamAChunk.length === 0 || teamBChunk.length === 0) {
+        console.warn(`Skipping pairing ${teamAKey} vs ${teamBKey} — pair pool exhausted (likely a stale bye cache or structure mismatch).`);
+        return; // NEW — don't reserve court numbers for a pairing that can't produce a match
+    }
+
     const matchups = assignBipartitePairings(teamAChunk, teamBChunk, opponentCounts);
 
     const courtNumbers = [];
     for (let i = 0; i < cpp; i++) {
-      courtNumbers.push(courtCursor);
-      courtCursor++;
+        courtNumbers.push(courtCursor);
+        courtCursor++;
     }
 
     const courted = assignCourts(matchups, courtNumbers, courtCounts);
     const records = courted.map((m, idx) => buildMatchRecord(m, idx, roundNumber, eventId, drawVersion, userEmail));
     allMatches.push(...records);
-  });
+    });
 
   return allMatches;
 }
