@@ -485,7 +485,7 @@ async function generateNRoundsAndPreview(numberOfRounds) {
   const courtsCount = Math.min(parseInt(activeEvent.NumberofCourts) || 1, Math.floor(players.length / 4) || 1);
   const gameId = activeEvent.GameID;
   const gameProfile = gamesProfile.find(g => g.GameID === gameId); // NEW
-  const userEmail = "brett.collins028@gmail.com";
+  const userEmail = window.currentUserEmail;
 
   window.gdRedivisionCache = {}; // NEW — clear cache at the start of every new generation
   window.gdCurrentNumberOfRounds = numberOfRounds; // NEW

@@ -419,7 +419,7 @@ async function updateActiveEventDetails() {
 // ---------- ACTIVE-EVENT DATA LOADING (app startup + event switching) ----------
 
 function preFetchUserUniverseData() {
-  const userEmail = "brett.collins028@gmail.com";
+  const userEmail = window.currentUserEmail;
 
   return window.fetchEventsFromFirestore(userEmail)
     .then(payload => {

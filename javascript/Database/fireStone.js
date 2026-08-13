@@ -1,5 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, query, where, getDocs, doc, updateDoc, addDoc, onSnapshot, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence, updatePassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";ort { getFirestore, collection, query, where, getDocs, doc, updateDoc, addDoc, onSnapshot, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAVmJJ-uHf366tdd4T0BcceKkEEP16WIbE",
@@ -12,6 +13,10 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 window.db = getFirestore(app);
+
+const auth = getAuth(app);
+window.auth = auth;
+setPersistence(auth, browserLocalPersistence);
 
 window.fetchEventsFromFirestore = async function(userEmail) {
   const db = window.db;
@@ -267,4 +272,37 @@ window.updateMatchFieldsInFirestore = async function(matchId, fields) {
   const db = window.db;
   const matchDocRef = doc(db, "draw", String(matchId));
   await updateDoc(matchDocRef, fields);
+};
+
+window.signUpUser = async function(name, email, password) {
+  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+  const uid = userCredential.user.uid;
+
+  await setDoc(doc(window.db, "users", uid), { Name: name, Email: email });
+
+  return userCredential.user;
+};
+
+window.logInUser = async function(email, password) {
+  const userCredential = await signInWithEmailAndPassword(auth, email, password);
+  return userCredential.user;
+};
+
+window.logOutUser = async function() {
+  await signOut(auth);
+};
+
+window.fetchUserProfile = async function(uid) {
+  const snapshot = await getDocs(query(collection(window.db, "users"), where("__name__", "==", uid)));
+  if (snapshot.empty) return null;
+  return snapshot.docs[0].data();
+};
+
+window.changeUserPassword = async function(newPassword) {
+  if (!auth.currentUser) throw new Error("No user logged in");
+  await updatePassword(auth.currentUser, newPassword);
+};
+
+window.onAuthStateChangedListener = function(callback) {
+  onAuthStateChanged(auth, callback);
 };

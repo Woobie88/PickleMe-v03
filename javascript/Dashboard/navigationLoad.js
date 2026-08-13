@@ -142,30 +142,114 @@ function enableCardPressFeedback(selector) {
   });
 }
 
+// ---------- PROFILE --------------
+window.isSignUpMode = false;
+
+function toggleLoginMode() {
+  window.isSignUpMode = !window.isSignUpMode;
+  document.getElementById('login-name-group').style.display = window.isSignUpMode ? '' : 'none';
+  document.getElementById('login-mode-label').innerText = window.isSignUpMode ? 'Create your account' : 'Log in to continue';
+  document.getElementById('login-submit-btn').innerText = window.isSignUpMode ? 'Sign Up' : 'Log In';
+  document.getElementById('login-toggle-text').innerText = window.isSignUpMode ? 'Already have an account? Log In' : "Don't have an account? Sign Up";
+  document.getElementById('login-error').innerText = '';
+}
+
+async function handleLoginOrSignUp() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errorEl = document.getElementById('login-error');
+  errorEl.innerText = '';
+
+  if (!email || !password) {
+    errorEl.innerText = 'Please enter both email and password.';
+    return;
+  }
+
+  try {
+    if (window.isSignUpMode) {
+      const name = document.getElementById('login-name').value.trim();
+      if (!name) {
+        errorEl.innerText = 'Please enter your name.';
+        return;
+      }
+      await window.signUpUser(name, email, password);
+    } else {
+      await window.logInUser(email, password);
+    }
+    // onAuthStateChanged (below) handles what happens next automatically
+  } catch (err) {
+    console.error("Auth error:", err);
+    errorEl.innerText = err.message || 'Something went wrong.';
+  }
+}
+
+// --------- RENDER PROFILE CARD ---------
+function renderProfileCards(payload) {
+  document.getElementById('profile-name').innerText = window.currentUserName || '—';
+  document.getElementById('profile-email').innerText = window.currentUserEmail || '—';
+}
+
+async function handleUpdatePassword() {
+  const newPassword = document.getElementById('profile-new-password').value;
+  if (!newPassword) {
+    alert("Enter a new password first.");
+    return;
+  }
+  try {
+    await window.changeUserPassword(newPassword);
+    alert("Password updated successfully.");
+    document.getElementById('profile-new-password').value = '';
+  } catch (err) {
+    console.error("Failed to update password:", err);
+    alert("Failed to update password — you may need to log in again first, then retry.");
+  }
+}
+
+async function handleLogOut() {
+  await window.logOutUser();
+  navigateToScreen('login');
+}
+
 // ---------- APP STARTUP ----------
 
 // Global initialization event listener running on app startup
-window.addEventListener("DOMContentLoaded", async (event) => {
-  console.log("App loaded. Pre-fetching database universes...");
-  try {
-    await preFetchUserUniverseData();
-    startDrawListener();
-  } catch (error) {
-    console.error("Failed to load universe data:", error);
-  } finally {
-    const loader = document.getElementById("app-splash-preloader");
-    if (loader) {
-      loader.style.display = "none";
-    }
-  }
-  initMatchSwipeHandlers();
-  initCurrentRoundSwipeHandlers();
-  initPlayerDetailSwipeHandlers(); // ADD THIS
-  enableCardPressFeedback('#screen-dashboard .app-card');
-  initPlayerSubstitutionSwipeHandlers();
+window.addEventListener("DOMContentLoaded", () => {
+  window.onAuthStateChangedListener(async (user) => {
+    if (user) {
+      // Logged in — fetch profile, store globally, then load the app as normal
+      const profile = await window.fetchUserProfile(user.uid);
+      window.currentUserEmail = user.email;
+      window.currentUserName = profile?.Name || '';
+      window.currentUserId = user.uid;
 
-  document.getElementById('ind-firstname').addEventListener('input', () => {
-    indFirstNameManuallyEdited = true;
+      navigateToScreen('dashboard');
+
+      try {
+        await preFetchUserUniverseData();
+        startDrawListener();
+      } catch (error) {
+        console.error("Failed to load universe data:", error);
+      } finally {
+        const loader = document.getElementById("app-splash-preloader");
+        if (loader) loader.style.display = "none";
+      }
+
+      initMatchSwipeHandlers();
+      initCurrentRoundSwipeHandlers();
+      initPlayerDetailSwipeHandlers();
+      initPlayerSubstitutionSwipeHandlers();
+      enableCardPressFeedback('#screen-dashboard .app-card');
+
+      document.getElementById('ind-firstname')?.addEventListener('input', () => {
+        indFirstNameManuallyEdited = true;
+      });
+
+    } else {
+      // Not logged in — show the login screen, hide the splash
+      navigateToScreen('login');
+      const loader = document.getElementById("app-splash-preloader");
+      if (loader) loader.style.display = "none";
+    }
   });
 });
 

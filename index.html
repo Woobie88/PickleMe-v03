@@ -900,6 +900,73 @@
         </div>
       </section>
 
+      <!-- Login / Profile screen -->
+      <section id="screen-login" class="app-screen">
+        <div class="welcome-banner">
+          <h2>PickleMe</h2>
+          <p id="login-mode-label">Log in to continue</p>
+        </div>
+
+        <div class="detail-view-container">
+          <div class="detail-form-group" id="login-name-group" style="display: none;">
+            <label>Name</label>
+            <input type="text" id="login-name" class="detail-input" placeholder="Your name">
+          </div>
+
+          <div class="detail-form-group">
+            <label>Email</label>
+            <input type="email" id="login-email" class="detail-input" placeholder="you@example.com">
+          </div>
+
+          <div class="detail-form-group">
+            <label>Password</label>
+            <input type="password" id="login-password" class="detail-input" placeholder="Password">
+          </div>
+
+          <div id="login-error" class="card-meta-line" style="color: #ef4444;"></div>
+
+          <div class="form-action-bar">
+            <button class="btn-primary" style="width: 100%;" onclick="handleLoginOrSignUp()" id="login-submit-btn">Log In</button>
+          </div>
+
+          <p style="text-align: center; margin-top: 16px; color: var(--text-muted); cursor: pointer;" onclick="toggleLoginMode()" id="login-toggle-text">
+            Don't have an account? Sign Up
+          </p>
+        </div>
+      </section>
+
+      <!-- Profile screen — display Name/Email, change password, log out -->
+      <section id="screen-profile" class="app-screen">
+        <div class="welcome-banner">
+          <h2>Profile</h2>
+        </div>
+
+        <div class="detail-view-container">
+          <div class="detail-form-group">
+            <label>Name</label>
+            <div class="detail-readonly" id="profile-name">—</div>
+          </div>
+
+          <div class="detail-form-group">
+            <label>Email</label>
+            <div class="detail-readonly" id="profile-email">—</div>
+          </div>
+
+          <div class="detail-form-group">
+            <label>New Password</label>
+            <input type="password" id="profile-new-password" class="detail-input" placeholder="Leave blank to keep current password">
+          </div>
+
+          <div class="form-action-bar">
+            <button class="btn-primary" style="width: 100%;" onclick="handleUpdatePassword()">Update Password</button>
+          </div>
+
+          <div class="form-action-bar">
+            <button class="btn-secondary" style="width: 100%; background: #ef4444; color: white;" onclick="handleLogOut()">Log Out</button>
+          </div>
+        </div>
+      </section> 
+
     </main>
 
     <!-- FIXED MOBILE BOTTOM NAVIGATION BAR -->
