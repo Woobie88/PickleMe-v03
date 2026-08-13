@@ -159,7 +159,6 @@ function generateTeamsRoundDraw(players, matches, roundNumber, courtsCount, even
   const { partnerCounts, opponentCounts, courtCounts } = buildDrawHistory(matches);
   const teamOpponentCounts = buildTeamOpponentHistory(matches);
 
-  // --- Determine whole-team byes for this round (only relevant when activeTeams < totalTeams) ---
   const wholeTeamByesNeeded = allTeamKeys.length - structure.activeTeams;
   window.gdTeamByeCache = window.gdTeamByeCache || {};
   const teamByeCacheKey = `${eventId}_teamByes`;
@@ -169,13 +168,20 @@ function generateTeamsRoundDraw(players, matches, roundNumber, courtsCount, even
   const wholeTeamByesThisRound = window.gdTeamByeCache[teamByeCacheKey][roundNumber - 1] || [];
   const activeTeamKeys = allTeamKeys.filter(t => !wholeTeamByesThisRound.includes(t));
 
-  // --- Determine individual within-team byes for this round (only when no whole-team bye applies) ---
+  // --- Team pairings for this round ---
+  const teamPairings = pairActiveTeamsForRound(activeTeamKeys, structure.mode, teamOpponentCounts);
+
+  // --- How many pairings (opponents) is each active team involved in this round? ---
+  const pairingCountPerTeam = {};
+  activeTeamKeys.forEach(t => pairingCountPerTeam[t] = 0);
+  teamPairings.forEach(([a, b]) => { pairingCountPerTeam[a]++; pairingCountPerTeam[b]++; });
+
+  // --- Individual within-team byes (only when no whole-team bye applies) ---
   let individualByesByTeam = {};
   if (wholeTeamByesNeeded === 0) {
     activeTeamKeys.forEach(teamKey => {
       const teamPlayers = allTeams[teamKey];
-      const pairingsPerTeam = structure.mode === 'full' ? (structure.activeTeams - 1) : 1;
-      const playersNeeded = 2 * structure.courtsPerPairing * pairingsPerTeam;
+      const playersNeeded = 2 * structure.courtsPerPairing * pairingCountPerTeam[teamKey];
       const byesNeeded = Math.max(0, teamPlayers.length - playersNeeded);
 
       window.gdIndivByeCache = window.gdIndivByeCache || {};
@@ -189,25 +195,32 @@ function generateTeamsRoundDraw(players, matches, roundNumber, courtsCount, even
     });
   }
 
-  // --- Pair active teams for this round ---
-  const teamPairings = pairActiveTeamsForRound(activeTeamKeys, structure.mode, teamOpponentCounts);
+  // --- FIX: build each active team's FULL pair-pool ONCE, then slice it across its opponents ---
+  const teamPairPools = {};
+  activeTeamKeys.forEach(teamKey => {
+    const activePlayers = allTeams[teamKey].filter(p => !(individualByesByTeam[teamKey] || []).includes(p.PlayerID));
+    teamPairPools[teamKey] = generateBestPartnerships(activePlayers, partnerCounts); // built ONCE per team per round
+  });
 
-  // --- For each team pairing, build the actual court matches ---
+  // Track how many pairs of each team's pool have already been handed out to an opponent
+  const teamPoolCursor = {};
+  activeTeamKeys.forEach(t => teamPoolCursor[t] = 0);
+
   const allMatches = [];
   let courtCursor = 1;
 
   teamPairings.forEach(([teamAKey, teamBKey]) => {
-    const teamAActivePlayers = allTeams[teamAKey].filter(p => !(individualByesByTeam[teamAKey] || []).includes(p.PlayerID));
-    const teamBActivePlayers = allTeams[teamBKey].filter(p => !(individualByesByTeam[teamBKey] || []).includes(p.PlayerID));
+    const cpp = structure.courtsPerPairing;
 
-    // Build this many pairs per team, one per court in this pairing
-    const teamAPairings = generateBestPartnerships(teamAActivePlayers, partnerCounts);
-    const teamBPairings = generateBestPartnerships(teamBActivePlayers, partnerCounts);
+    const teamAChunk = teamPairPools[teamAKey].slice(teamPoolCursor[teamAKey], teamPoolCursor[teamAKey] + cpp);
+    const teamBChunk = teamPairPools[teamBKey].slice(teamPoolCursor[teamBKey], teamPoolCursor[teamBKey] + cpp);
+    teamPoolCursor[teamAKey] += cpp;
+    teamPoolCursor[teamBKey] += cpp;
 
-    const matchups = assignBipartitePairings(teamAPairings, teamBPairings, opponentCounts);
+    const matchups = assignBipartitePairings(teamAChunk, teamBChunk, opponentCounts);
 
     const courtNumbers = [];
-    for (let i = 0; i < structure.courtsPerPairing; i++) {
+    for (let i = 0; i < cpp; i++) {
       courtNumbers.push(courtCursor);
       courtCursor++;
     }
