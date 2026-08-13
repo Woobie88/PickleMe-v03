@@ -423,6 +423,7 @@ function logPlayerSummary(players, matches, byesByRound) {
 
   players.forEach(p => {
     summary[p.PlayerID] = {
+      name: p.FirstName,
       games: 0,
       byes: 0,
       partners: {},
@@ -464,7 +465,7 @@ function logPlayerSummary(players, matches, byesByRound) {
     const maxSameOpponent = Object.values(s.opponents).reduce((max, c) => Math.max(max, c), 0);
 
     console.log(
-      `${p.PlayerID} || Games ${s.games} || Byes ${s.byes} || Unique Partners ${uniquePartners} || Unique Opponents ${uniqueOpponents} || Max Same Partner ${maxSamePartner} || Max Same Opponent ${maxSameOpponent}`
+      `${p.PlayerID}  || Name ${p.FirstName} || Games ${s.games} || Byes ${s.byes} || Unique Partners ${uniquePartners} || Unique Opponents ${uniqueOpponents} || Max Same Partner ${maxSamePartner} || Max Same Opponent ${maxSameOpponent}`
     );
   });
 }
