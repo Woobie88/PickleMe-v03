@@ -496,6 +496,7 @@ async function generateNRoundsAndPreview(numberOfRounds) {
   activeEvent.CurrentRound = 1;
 
   let newMatches;
+  const startRound = 1;
 
   if (gameId === 'doubles-pro' || gameId === 'rx-sports') {
     newMatches = generateDoublesProDraw(players, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfRounds);
@@ -512,7 +513,6 @@ async function generateNRoundsAndPreview(numberOfRounds) {
     console.log(`Generated Teams draw: ${newMatches.length} matches across ${numberOfRounds} round(s).`);
   } else {
     const numberOfTeams = parseInt(activeEvent.NumberOfTeams) || 1;
-    const startRound = 1;
     const clusteredGames = ['divisions', 'ladder-scramble', 'pools', 'pool-fusion'];
     const isClustered = clusteredGames.includes(gameId);
     let byesByRound;
