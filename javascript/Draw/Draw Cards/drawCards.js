@@ -446,13 +446,16 @@ function handleFabAction(action) {
 
   switch (action) {
     case 'redivision':
-      navigateToScreen('redivision'); // CHANGED
+      navigateToScreen('redivision');
       break;
     case 'add-match':
       console.log('Add Match tapped');
       break;
     case 'redraw':
       console.log('Redraw tapped');
+      break;
+    case 'substitution': // NEW
+      navigateToScreen('player-substitution');
       break;
   }
 }
@@ -795,22 +798,83 @@ async function performSubstitution() {
   const inPlayerId = window.subInSelection.playerId;
 
   try {
-    await window.updateMatchPlayerFieldInFirestore(matchId, field, inPlayerId);
-
-    // Update local cache
     const match = window.cachedUserUniverse.draw.find(m => m.MatchID === matchId);
-    if (match) match[field] = inPlayerId;
+    if (!match) throw new Error("Match not found");
 
-    console.log(`Substituted ${outPlayerId} out, ${inPlayerId} in (match ${matchId}, ${field})`);
+    match[field] = inPlayerId;
+    recalculateMatchScoreFields(match); // NEW
+
+    await window.updateMatchFieldsInFirestore(matchId, {
+      [field]: inPlayerId,
+      Team1AvgDUPR: match.Team1AvgDUPR,
+      Team2AvgDUPR: match.Team2AvgDUPR,
+      DUPRMatchDelta: match.DUPRMatchDelta,
+      Team1WinProb: match.Team1WinProb,
+      Team2WinProb: match.Team2WinProb,
+      ExpectedTeam1Score: match.ExpectedTeam1Score,
+      ExpectedTeam2Score: match.ExpectedTeam2Score
+    });
+
+    console.log(`Substituted ${outPlayerId} out, ${inPlayerId} in — DUPR and expected scores recalculated.`);
 
     window.subOutSelection = null;
     window.subInSelection = null;
-
-    renderPlayerSubstitutionScreen(window.cachedUserUniverse); // re-render to reflect the swap
+    renderPlayerSubstitutionScreen(window.cachedUserUniverse);
   } catch (err) {
     console.error("Substitution failed:", err);
     alert("Substitution failed — check the console for details.");
     window.subOutSelection = null;
     window.subInSelection = null;
   }
+}
+
+function initPlayerSubstitutionSwipeHandlers() {
+  const container = document.getElementById('screen-player-substitution');
+  if (!container) return;
+  let startX = 0, startY = 0;
+
+  container.addEventListener('touchstart', (e) => {
+    startX = e.changedTouches[0].screenX;
+    startY = e.changedTouches[0].screenY;
+  });
+
+  container.addEventListener('touchend', (e) => {
+    const deltaX = e.changedTouches[0].screenX - startX;
+    const deltaY = e.changedTouches[0].screenY - startY;
+    if (Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY)) return;
+
+    // Only one exit destination — any decisive horizontal swipe takes you back
+    navigateToScreen('draw');
+    switchDrawTab('current-round');
+  });
+}
+
+function getPlayersFromIds(ids) {
+  return ids
+    .filter(Boolean)
+    .map(id => window.cachedUserUniverse.players.find(p => p.PlayerID === id))
+    .filter(Boolean);
+}
+
+function recalculateMatchScoreFields(match) {
+  const team1Players = getPlayersFromIds([match.Team1Player1, match.Team1Player2, match.Team1Player3, match.Team1Player4]);
+  const team2Players = getPlayersFromIds([match.Team2Player1, match.Team2Player2, match.Team2Player3, match.Team2Player4]);
+
+  const avg1 = teamAvgDupr(team1Players);
+  const avg2 = teamAvgDupr(team2Players);
+  const winProb1 = calculateWinProbability(avg1, avg2);
+
+  match.Team1AvgDUPR = avg1;
+  match.Team2AvgDUPR = avg2;
+  match.DUPRMatchDelta = Math.abs(avg1 - avg2);
+  match.Team1WinProb = winProb1;
+  match.Team2WinProb = 1 - winProb1;
+  match.ExpectedTeam1Score = winProb1 >= 0.5 ? 11 : Math.round(winProb1 * 11 / (1 - winProb1));
+  match.ExpectedTeam2Score = winProb1 >= 0.5 ? Math.round((1 - winProb1) * 11 / winProb1) : 11;
+
+  return match;
+}
+
+function handleMatchDetailAction() {
+  console.log("Match detail action tapped — placeholder, no longer routes to substitution");
 }

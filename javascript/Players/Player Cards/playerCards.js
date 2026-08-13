@@ -790,6 +790,4 @@ async function handleDeletePlayer() {
   }
 }
 
-function handleMatchDetailAction() {
-  navigateToScreen('player-substitution');
-}
+

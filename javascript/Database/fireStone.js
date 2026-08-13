@@ -262,3 +262,9 @@ window.updateMatchPlayerFieldInFirestore = async function(matchId, field, newPla
   const matchDocRef = doc(db, "draw", String(matchId));
   await updateDoc(matchDocRef, { [field]: newPlayerId });
 };
+
+window.updateMatchFieldsInFirestore = async function(matchId, fields) {
+  const db = window.db;
+  const matchDocRef = doc(db, "draw", String(matchId));
+  await updateDoc(matchDocRef, fields);
+};

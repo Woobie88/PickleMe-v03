@@ -162,6 +162,7 @@ window.addEventListener("DOMContentLoaded", async (event) => {
   initCurrentRoundSwipeHandlers();
   initPlayerDetailSwipeHandlers(); // ADD THIS
   enableCardPressFeedback('#screen-dashboard .app-card');
+  initPlayerSubstitutionSwipeHandlers();
 
   document.getElementById('ind-firstname').addEventListener('input', () => {
     indFirstNameManuallyEdited = true;
