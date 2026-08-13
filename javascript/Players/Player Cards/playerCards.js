@@ -23,7 +23,7 @@ function showLoadingState(containerId, message = 'Loading...') {
   `;
 }
 
-function buildCardMarkup({ iconAsset, contentHtml, onClickAttr = '', cardId = null }) {
+function buildCardMarkup({ iconAsset, contentHtml, onClickAttr = '', cardId = null, extraClass = '' }) {
   const iconMarkup = iconAsset.startsWith('http')
     ? `<img src="${iconAsset}" alt="Icon" class="card-icon-images" loading="lazy">`
     : `<span class="card-icon">${iconAsset}</span>`;
@@ -31,7 +31,7 @@ function buildCardMarkup({ iconAsset, contentHtml, onClickAttr = '', cardId = nu
   const idAttr = cardId ? `data-card-id="${cardId}"` : '';
 
   return `
-    <div class="app-card" ${idAttr} ${onClickAttr}>
+    <div class="app-card ${extraClass}" ${idAttr} ${onClickAttr}>
       <div class="card-icon-wrapper">${iconMarkup}</div>
       <div class="card-content">${contentHtml}</div>
       <span class="card-arrow">→</span>
@@ -42,7 +42,7 @@ function buildCardMarkup({ iconAsset, contentHtml, onClickAttr = '', cardId = nu
 function renderEntityCards(options) {
   const {
     containerId,
-    entityName, // e.g. 'players', 'draw', 'byes'
+    entityName,
     records,
     activeEventId,
     eventIdField = 'EventID',
@@ -50,6 +50,7 @@ function renderEntityCards(options) {
     getIcon,
     getContentHtml,
     getOnClick,
+    getExtraClass = () => '', // NEW
     extraFilter = () => true,
     sortFn = null
   } = options;
@@ -96,7 +97,8 @@ function renderEntityCards(options) {
     const iconAsset = getIcon(record, index);
     const contentHtml = getContentHtml(record);
     const onClickAttr = getOnClick ? `onclick="${getOnClick(record)}"` : '';
-    cardsHtml += buildCardMarkup({ iconAsset, contentHtml, onClickAttr });
+    const extraClass = getExtraClass(record); // NEW
+    cardsHtml += buildCardMarkup({ iconAsset, contentHtml, onClickAttr, extraClass });
   });
 
   container.innerHTML = cardsHtml;
@@ -312,9 +314,23 @@ async function renderPlayerCards(payload) {
   }
 
   const currentVersion = activeEvent.CurrentPlayerVersion;
+  const duprLimit = parseFloat(activeEvent["DUPR Limit"]) || 0;
 
   const players = await window.fetchPlayersFromFirestore(payload.activeEventId, currentVersion);
-  window.cachedUserUniverse.players = players; // keep local cache in sync
+  window.cachedUserUniverse.players = players;
+
+  function getPlayerIssue(player) {
+    if (player.playerExclude === 'Yes') {
+      return { type: 'unavailable', message: 'Player Unavailable' };
+    }
+    if (!player.DUPRId || player.DUPRId === 'Not Found') {
+      return { type: 'warning', message: 'DUPR ID Not Found' };
+    }
+    if (duprLimit > 0 && (parseFloat(player.DUPR) || 0) < duprLimit) {
+      return { type: 'warning', message: `Below Event DUPR Limit (${duprLimit})` };
+    }
+    return null;
+  }
 
   renderEntityCards({
     containerId: 'active-players-list',
@@ -322,7 +338,7 @@ async function renderPlayerCards(payload) {
     records: players,
     activeEventId: payload.activeEventId,
     emptyMessage: 'No Players Found',
-    extraFilter: () => true, // filtering by event/version already done in the Firestore query
+    extraFilter: () => true,
     sortFn: (a, b) => {
       const duprDiff = (parseFloat(b.DUPR) || 0) - (parseFloat(a.DUPR) || 0);
       if (duprDiff !== 0) return duprDiff;
@@ -334,10 +350,22 @@ async function renderPlayerCards(payload) {
       return seedUrl || '🎾';
     },
     getCardId: (player) => player.PlayerID,
-    getContentHtml: (player) => `
-      <h3>${player.Name || 'Unnamed Player'}</h3>
-      <p class="card-meta-line">${player.DUPRId || 'N/A'} ${player.DUPR ? ' || DUPR ' + player.DUPR : '0'}</p>
-    `,
+    getExtraClass: (player) => { // NEW
+      const issue = getPlayerIssue(player);
+      if (!issue) return '';
+      return issue.type === 'unavailable' ? 'player-unavailable' : 'dupr-warning';
+    },
+    getContentHtml: (player) => {
+      const issue = getPlayerIssue(player);
+      const secondLine = issue
+        ? issue.message
+        : `${player.DUPRId || 'N/A'} ${player.DUPR ? ' || DUPR ' + player.DUPR : '0'}`;
+
+      return `
+        <h3>${player.Name || 'Unnamed Player'}</h3>
+        <p class="card-meta-line">${secondLine}</p>
+      `;
+    },
     getOnClick: (player) => `viewPlayerDetail('${player.PlayerID}')`
   });
 }

@@ -1178,3 +1178,12 @@ body {
 .app-card.sub-in {
   border-left-color: #00E676 !important;
 }
+
+/* Player Card Warrning Message Accenets */
+.app-card.dupr-warning {
+  border-left-color: #f59e0b !important;
+}
+
+.app-card.player-unavailable {
+  border-left-color: #ef4444 !important;
+}
