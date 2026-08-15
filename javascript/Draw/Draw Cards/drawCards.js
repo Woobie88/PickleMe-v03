@@ -952,8 +952,9 @@ function recalculateMatchScoreFields(match) {
   match.DUPRMatchDelta = Math.abs(avg1 - avg2);
   match.Team1WinProb = winProb1;
   match.Team2WinProb = 1 - winProb1;
-  match.ExpectedTeam1Score = winProb1 >= 0.5 ? 11 : Math.round(winProb1 * 11 / (1 - winProb1));
-  match.ExpectedTeam2Score = winProb1 >= 0.5 ? Math.round((1 - winProb1) * 11 / winProb1) : 11;
+  ExpectedTeam1Score: winProb1 >= 0.5 ? 11 : Math.max(Math.round(winProb1 * 11 / (1 - winProb1)),9),
+  ExpectedTeam2Score: winProb1 >= 0.5 ? Math.max(Math.round((1 - winProb1) * 11 / winProb1),9) : 11
+
 
   return match;
 }
