@@ -195,9 +195,20 @@ function calculateTeamAvgDupr(playerMap, pid1, pid2) {
 // ---------- SCORING MODE TOGGLE (Points / Wins / None) ----------
 
 function renderScoringToggle(currentValue) {
-  document.querySelectorAll('.scoring-option').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.value === currentValue);
-  });
+  const activeEventId = window.cachedUserUniverse.activeEventId;
+  const activeEvent = window.cachedUserUniverse.events.find(
+    e => String(e.EventID || e.eventId) === String(activeEventId)
+  );
+  const gameProfile = gamesProfile.find(g => g.GameID === activeEvent?.GameID);
+
+  const options = gameProfile?.Scoring || ['Points', 'Wins', 'None']; // fallback if a game has no Scoring array defined
+
+  const container = document.getElementById('scoring-toggle');
+  if (!container) return;
+
+  container.innerHTML = options.map(opt =>
+    `<button class="scoring-option ${opt === currentValue ? 'active' : ''}" data-value="${opt}" onclick="setScoringMode('${opt}')">${opt}</button>`
+  ).join('');
 }
 
 function setScoringMode(newValue) {

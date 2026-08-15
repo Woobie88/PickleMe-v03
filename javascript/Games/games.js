@@ -565,6 +565,13 @@ function enableGameDragToActivate() {
         try {
           await window.updateActiveGameInFirestore(activeEventId, gameId);
           if (activeEvent) activeEvent.GameID = gameId;
+
+          // Apply this game's default scoring method
+          const gameProfile = gamesProfile.find(g => g.GameID === gameId);
+          const scoringDefault = gameProfile?.ScoringDefault || 'Points';
+          await window.updateScoringModeInFirestore(activeEventId, scoringDefault);
+          if (activeEvent) activeEvent.Scoring = scoringDefault;
+
           renderActiveGameHighlight();
         } catch (err) {
           console.error("Failed to set active game:", err);
