@@ -12,12 +12,20 @@ function renderGenerateDrawDetails(payload) {
   document.getElementById('gd-selected-game-title').innerText = gameProfile?.GameTitle || 'No Game Selected';
   document.getElementById('gd-game-type').innerText = gameProfile?.GamesGroup || '—';
 
-  // --- Number Of Rounds ---
-  const roundsSupported = gameProfile?.Rounds === 'Yes';
+  // --- Number Of Rounds / Round Limit ---
+  const isProgressive = gameProfile?.GamesGroup === 'Progressive'; // NEW
+  const roundsSupported = gameProfile?.Rounds === 'Yes' || isProgressive; // CHANGED — Progressive games always get an editable field
+
   let roundsValue = roundsSupported ? (parseInt(activeEvent?.NumberofRound) || 1) : 1;
 
   document.getElementById('gd-rounds-value').innerText = roundsValue;
   document.getElementById('gd-rounds-hidden').value = roundsValue;
+
+  // Label changes for Progressive games, since the meaning is different (a cap, not a fixed count)
+  const roundsLabel = document.querySelector('#gd-rounds-group label');
+  if (roundsLabel) {
+    roundsLabel.innerText = isProgressive ? 'Round Limit' : 'Number Of Rounds';
+  }
 
   document.querySelectorAll('#gd-rounds-group .score-btn').forEach(btn => {
     btn.disabled = !roundsSupported;
