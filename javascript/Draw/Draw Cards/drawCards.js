@@ -124,10 +124,16 @@ async function renderDrawCards(payload) {
     ]);
 
     const isComplete = m.Team1WinLoss && m.Team2WinLoss;
+    const hasRealScore = (parseInt(m.Team1Score) || 0) > 0 || (parseInt(m.Team2Score) || 0) > 0;
 
     let metaLine;
-    if (isComplete) {
+    if (isComplete && hasRealScore) {
       metaLine = `Score ${m.Team1Score} - ${m.Team2Score} || Exp Res. ${m.ExpectedTeam1Score} - ${m.ExpectedTeam2Score}`;
+    } else if (isComplete) {
+      // Wins-mode result — no score was ever entered, just show W/L
+      const team1Result = m.Team1WinLoss === 'Win' ? 'W' : 'L';
+      const team2Result = m.Team2WinLoss === 'Win' ? 'W' : 'L';
+      metaLine = `Result ${team1Result} - ${team2Result} || Exp Res. ${m.ExpectedTeam1Score} - ${m.ExpectedTeam2Score}`;
     } else {
       const duprDelta = Math.abs((parseFloat(m.Team1AvgDUPR) || 0) - (parseFloat(m.Team2AvgDUPR) || 0)).toFixed(2);
       metaLine = `DUPR Diff ${duprDelta} || Exp Res. ${m.ExpectedTeam1Score} - ${m.ExpectedTeam2Score}`;
@@ -564,9 +570,16 @@ async function renderCurrentRoundView(payload) {
     ]);
 
     const isComplete = m.Team1WinLoss && m.Team2WinLoss;
+    const hasRealScore = (parseInt(m.Team1Score) || 0) > 0 || (parseInt(m.Team2Score) || 0) > 0;
+
     let metaLine;
-    if (isComplete) {
+    if (isComplete && hasRealScore) {
       metaLine = `Score ${m.Team1Score} - ${m.Team2Score} || Exp Res. ${m.ExpectedTeam1Score} - ${m.ExpectedTeam2Score}`;
+    } else if (isComplete) {
+      // Wins-mode result — no score was ever entered, just show W/L
+      const team1Result = m.Team1WinLoss === 'Win' ? 'W' : 'L';
+      const team2Result = m.Team2WinLoss === 'Win' ? 'W' : 'L';
+      metaLine = `Result ${team1Result} - ${team2Result} || Exp Res. ${m.ExpectedTeam1Score} - ${m.ExpectedTeam2Score}`;
     } else {
       const duprDelta = Math.abs((parseFloat(m.Team1AvgDUPR) || 0) - (parseFloat(m.Team2AvgDUPR) || 0)).toFixed(2);
       metaLine = `DUPR Diff ${duprDelta} || Exp Res. ${m.ExpectedTeam1Score} - ${m.ExpectedTeam2Score}`;
