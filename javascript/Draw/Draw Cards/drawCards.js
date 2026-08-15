@@ -32,18 +32,23 @@ async function renderDrawCards(payload) {
   const activeEvent = (payload.events || []).find(
     e => String(e.EventID || e.eventId) === String(activeEventId)
   );
-
-  if (!activeEvent) {
-    console.error("No active event found — cannot load draw.");
-    return;
-  }
+  if (!activeEvent) return;
 
   const currentDrawVersion = activeEvent.CurrentDrawVersion;
   const currentPlayerVersion = activeEvent.CurrentPlayerVersion;
 
-  // 1. Fetch this round's matches + the current player roster, both from Firestore
-  const matches = await window.fetchDrawFromFirestore(activeEventId, currentDrawVersion);
-  window.cachedUserUniverse.draw = matches; // keep local cache in sync
+  let matches = await window.fetchDrawFromFirestore(activeEventId, currentDrawVersion);
+  window.cachedUserUniverse.draw = matches;
+
+  // NEW — for Progressive games, hide any round beyond the current one (still just dummy placeholders)
+  const gameProfile = gamesProfile.find(g => g.GameID === activeEvent.GameID);
+  const isProgressive = gameProfile?.GamesGroup === 'Progressive';
+  if (isProgressive) {
+    const currentRound = parseInt(activeEvent.CurrentRound) || 1;
+    matches = matches.filter(m => parseInt(m.Round) <= currentRound);
+  }
+
+  // ...rest of the function unchanged, just uses this filtered `matches` from here on
 
   const players = window.cachedUserUniverse.players && window.cachedUserUniverse.players.length > 0
     ? window.cachedUserUniverse.players
@@ -574,16 +579,73 @@ async function renderCurrentRoundView(payload) {
   container.innerHTML = html;
 }
 
-function goToNextRound() {
+async function goToNextRound() {
   const matches = window.cachedUserUniverse.draw || [];
   const maxRound = Math.max(...matches.map(m => parseInt(m.Round) || 0), window.currentRoundNumber);
 
-  if (window.currentRoundNumber < maxRound) {
-    window.currentRoundNumber++;
-    updateLocalCurrentRoundCache(); // sync cache BEFORE render
-    renderCurrentRoundView(window.cachedUserUniverse);
-    persistCurrentRound();
+  if (window.currentRoundNumber >= maxRound) return;
+
+  const activeEventId = window.cachedUserUniverse.activeEventId;
+  const activeEvent = window.cachedUserUniverse.events.find(e => String(e.EventID) === String(activeEventId));
+  const gameProfile = gamesProfile.find(g => g.GameID === activeEvent.GameID);
+  const isProgressive = gameProfile?.GamesGroup === 'Progressive';
+
+  if (isProgressive) {
+    if (!isRoundComplete(matches, window.currentRoundNumber)) {
+      alert("Enter results for every match in this round before advancing.");
+      return;
+    }
+
+    showLoadingState('current-round-list', 'Advancing to next round...'); // NEW
+
+    const nextRoundNumber = window.currentRoundNumber + 1;
+    const nextRoundDummyMatches = matches.filter(m => parseInt(m.Round) === nextRoundNumber);
+    const players = window.cachedUserUniverse.players;
+
+    let updatedMatches;
+    if (activeEvent.GameID === 'kings-queens') {
+      updatedMatches = advanceKingsQueensRound(
+        matches, nextRoundDummyMatches, players, nextRoundNumber,
+        activeEventId, activeEvent.CurrentDrawVersion, window.currentUserEmail
+      );
+    }
+
+    if (!updatedMatches) {
+      alert("Could not generate the next round — check the console for details.");
+      renderCurrentRoundView(window.cachedUserUniverse); // NEW — clear the loading state on failure too
+      return;
+    }
+
+    try {
+      await Promise.all(updatedMatches.map(m =>
+        window.updateMatchFieldsInFirestore(m.MatchID, {
+          Team1Player1: m.Team1Player1, Team1Player2: m.Team1Player2,
+          Team2Player1: m.Team2Player1, Team2Player2: m.Team2Player2,
+          Team1AvgDUPR: m.Team1AvgDUPR, Team2AvgDUPR: m.Team2AvgDUPR,
+          DUPRMatchDelta: m.DUPRMatchDelta,
+          Team1WinProb: m.Team1WinProb, Team2WinProb: m.Team2WinProb,
+          ExpectedTeam1Score: m.ExpectedTeam1Score, ExpectedTeam2Score: m.ExpectedTeam2Score
+        })
+      ));
+
+      updatedMatches.forEach(updated => {
+        const idx = window.cachedUserUniverse.draw.findIndex(m => m.MatchID === updated.MatchID);
+        if (idx !== -1) window.cachedUserUniverse.draw[idx] = { ...window.cachedUserUniverse.draw[idx], ...updated };
+      });
+
+      console.log(`Advanced to Round ${nextRoundNumber} — next round's matches written to Firestore.`);
+    } catch (err) {
+      console.error("Failed to write advanced round to Firestore:", err);
+      alert("Failed to save the next round — check the console for details.");
+      renderCurrentRoundView(window.cachedUserUniverse); // NEW — clear loading state on failure
+      return;
+    }
   }
+
+  window.currentRoundNumber++;
+  updateLocalCurrentRoundCache();
+  renderCurrentRoundView(window.cachedUserUniverse); // this call naturally replaces the loading state with the new round
+  persistCurrentRound();
 }
 
 function goToPreviousRound() {
