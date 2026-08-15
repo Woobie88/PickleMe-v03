@@ -600,23 +600,24 @@ async function goToNextRound() {
       return;
     }
 
-    showLoadingState('current-round-list', 'Advancing to next round...'); // NEW
+    showLoadingState('current-round-list', 'Advancing to next round...');
 
     const nextRoundNumber = window.currentRoundNumber + 1;
     const nextRoundDummyMatches = matches.filter(m => parseInt(m.Round) === nextRoundNumber);
     const players = window.cachedUserUniverse.players;
 
+    const progressiveGames = ['kings-queens', 'survivor', 'snakes-ladders']; // CHANGED
     let updatedMatches;
-    if (activeEvent.GameID === 'kings-queens') {
-      updatedMatches = advanceKingsQueensRound(
-        matches, nextRoundDummyMatches, players, nextRoundNumber,
+    if (progressiveGames.includes(activeEvent.GameID)) { // CHANGED
+      updatedMatches = advanceProgressiveRound( // CHANGED — was advanceKingsQueensRound
+        activeEvent.GameID, matches, nextRoundDummyMatches, players, nextRoundNumber,
         activeEventId, activeEvent.CurrentDrawVersion, window.currentUserEmail
       );
     }
 
     if (!updatedMatches) {
       alert("Could not generate the next round — check the console for details.");
-      renderCurrentRoundView(window.cachedUserUniverse); // NEW — clear the loading state on failure too
+      renderCurrentRoundView(window.cachedUserUniverse);
       return;
     }
 
@@ -641,14 +642,14 @@ async function goToNextRound() {
     } catch (err) {
       console.error("Failed to write advanced round to Firestore:", err);
       alert("Failed to save the next round — check the console for details.");
-      renderCurrentRoundView(window.cachedUserUniverse); // NEW — clear loading state on failure
+      renderCurrentRoundView(window.cachedUserUniverse);
       return;
     }
   }
 
   window.currentRoundNumber++;
   updateLocalCurrentRoundCache();
-  renderCurrentRoundView(window.cachedUserUniverse); // this call naturally replaces the loading state with the new round
+  renderCurrentRoundView(window.cachedUserUniverse);
   persistCurrentRound();
 }
 

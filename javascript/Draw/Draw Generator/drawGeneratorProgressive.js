@@ -1,36 +1,41 @@
 /**
  * ============================================================
- * KINGS & QUEENS DRAW ENGINE
- *
- * Round 1: reverse-DUPR court assignment (top court = lowest
- * DUPR players), partners balanced purely by DUPR.
- *
- * Rounds 2+: court movement based on Round N-1 results —
- *   Court 1 = winners of Court 1 + winners of Court 2
- *   Court 2 = losers of Court 1 + winners of Court 3
- *   Court 3 = losers of Court 2 + losers of Court 3
- * Partner allocation within each court: hard rule against
- * repartnering with whoever you JUST won with; among legal
- * options, minimize partner-frequency across the whole event
- * so far, with DUPR balance as a tiebreaker.
- *
- * Byes are fixed upfront via the same proven rotation used
- * elsewhere in the app (generateByeSchedule), embedded into a
- * full dummy schedule generated at draw-creation time. Rounds
- * 2+ start as Rotating-Partners placeholder matches purely to
- * lock in a fair bye roster; advanceKingsQueensRound() later
- * overwrites that round's real match records once results
- * exist, deriving that round's byes from who's simply absent
- * from the placeholder matches.
+ * PROGRESSIVE GAMES ENGINE
+ * Shared engine for Kings & Queens, Survivor, Snakes & Ladders
+ * (and any future Progressive game type). Round 1 setup, dummy
+ * schedule generation, bye handling, and the core pairing
+ * scorer are all shared — per-game differences are isolated to
+ * two config points per entry in PROGRESSIVE_GAME_RULES:
+ *   - fixedTeamCourts: which courts (if any) keep the previous
+ *     round's winning pair together as a team, rather than
+ *     reshuffling partners
+ *   - buildGroups: the court-movement rule that decides which
+ *     4 players land on each court next round, based on the
+ *     just-completed round's results
  *
  * Depends on shared functions already defined elsewhere in the
- * app: teamAvgDupr, calculateWinProbability, shuffle,
- * buildDrawHistory, generateMatchId, generateByeSchedule,
- * generateGroupMatches, buildMatchRecord.
+ * app: teamAvgDupr, calculateWinProbability, generateMatchId,
+ * buildDrawHistory, generateByeSchedule, generateGroupMatches,
+ * buildMatchRecord.
  * ============================================================
  */
 
-// ---------- ROUND 1: reverse-DUPR courts, balanced partners ----------
+const PROGRESSIVE_GAME_RULES = {
+  'kings-queens': {
+    fixedTeamCourts: [],
+    buildGroups: buildStandardGroups
+  },
+  'survivor': {
+    fixedTeamCourts: [1], // Court 1's winning pair stays together as a team
+    buildGroups: buildStandardGroups
+  },
+  'snakes-ladders': {
+    fixedTeamCourts: [],
+    buildGroups: buildSnakesLaddersGroups
+  }
+};
+
+// ---------- ROUND 1 SETUP (shared by all Progressive games) ----------
 
 function bestBalancedPairing(fourPlayers) {
   const [a, b, c, d] = fourPlayers;
@@ -47,7 +52,7 @@ function bestBalancedPairing(fourPlayers) {
   return best;
 }
 
-function buildKingsQueensRound1(activePlayers, courtsCount, eventId, drawVersion, userEmail) {
+function buildProgressiveRound1(activePlayers, courtsCount, eventId, drawVersion, userEmail) {
   // Sort ascending — lowest DUPR first, since top court (Court 1) gets the LOWEST DUPR players
   const sortedAsc = [...activePlayers].sort((a, b) => (parseFloat(a.DUPR) || 0) - (parseFloat(b.DUPR) || 0));
 
@@ -56,23 +61,19 @@ function buildKingsQueensRound1(activePlayers, courtsCount, eventId, drawVersion
     courts.push(sortedAsc.slice(c * 4, c * 4 + 4));
   }
 
-  const matches = [];
-  courts.forEach((courtPlayers, idx) => {
+  return courts.map((courtPlayers, idx) => {
     const courtNumber = idx + 1;
     const pairing = bestBalancedPairing(courtPlayers);
-    const record = buildMatchRecord(
+    return buildMatchRecord(
       { teamA: pairing.teamA, teamB: pairing.teamB, court: courtNumber },
       0, 1, eventId, drawVersion, userEmail
     );
-    matches.push(record);
   });
-
-  return matches;
 }
 
-// ---------- DUMMY FULL-EVENT SCHEDULE (locks in bye rotation upfront) ----------
+// ---------- FULL DUMMY SCHEDULE (locks in the bye rotation upfront) ----------
 
-function buildKingsQueensDummySchedule(players, numberOfRounds, courtsCount, eventId, drawVersion, userEmail) {
+function buildProgressiveDummySchedule(players, numberOfRounds, courtsCount, eventId, drawVersion, userEmail) {
   const byeSchedule = generateByeSchedule(players, numberOfRounds, courtsCount);
 
   let allMatches = [];
@@ -80,8 +81,7 @@ function buildKingsQueensDummySchedule(players, numberOfRounds, courtsCount, eve
   // Round 1 — the real, rule-correct starting round
   const round1Byes = byeSchedule[0] || [];
   const round1ActivePlayers = players.filter(p => !round1Byes.includes(p.PlayerID));
-  const round1Matches = buildKingsQueensRound1(round1ActivePlayers, courtsCount, eventId, drawVersion, userEmail);
-  allMatches.push(...round1Matches);
+  allMatches.push(...buildProgressiveRound1(round1ActivePlayers, courtsCount, eventId, drawVersion, userEmail));
 
   // Rounds 2+ — placeholder shells, purely to lock in the bye roster for each round
   for (let i = 1; i < numberOfRounds; i++) {
@@ -104,7 +104,7 @@ function buildKingsQueensDummySchedule(players, numberOfRounds, courtsCount, eve
   return allMatches;
 }
 
-// ---------- RESULT-BASED COURT MOVEMENT ----------
+// ---------- RESULT HELPERS ----------
 
 function getMatchWinners(match) {
   if (match.Team1WinLoss === 'Win') return [match.Team1Player1, match.Team1Player2];
@@ -124,7 +124,13 @@ function isRoundComplete(matches, roundNumber) {
   return roundMatches.every(m => m.Team1WinLoss && m.Team2WinLoss);
 }
 
-function buildResultBasedGroups(previousRoundMatches) {
+// ---------- COURT MOVEMENT VARIANTS ----------
+
+// Standard movement (Kings & Queens, Survivor): winners climb —
+// Court1 = Ct1 Winners + Ct2 Winners
+// Court2 = Ct1 Losers + Ct3 Winners
+// Court3 = Ct2 Losers + Ct3 Losers
+function buildStandardGroups(previousRoundMatches) {
   const byCourt = {};
   previousRoundMatches.forEach(m => { byCourt[m.Court] = m; });
 
@@ -142,7 +148,50 @@ function buildResultBasedGroups(previousRoundMatches) {
   ];
 }
 
-// ---------- PARTNER ALLOCATION (shared by normal pairing AND bye swaps) ----------
+// Snakes & Ladders: top-court losers drop all the way to the bottom court;
+// every other court's losers stay exactly where they are (no movement);
+// winners still climb one court as normal.
+function buildSnakesLaddersGroups(previousRoundMatches) {
+  const byCourt = {};
+  previousRoundMatches.forEach(m => { byCourt[m.Court] = m; });
+  const maxCourt = Math.max(...Object.keys(byCourt).map(Number));
+
+  const ct1Winners = getMatchWinners(byCourt[1]);
+  const ct1Losers = getMatchLosers(byCourt[1]);
+  const ctMaxWinners = getMatchWinners(byCourt[maxCourt]);
+  const ctMaxLosers = getMatchLosers(byCourt[maxCourt]);
+
+  const groups = [];
+
+  // Top court: same as standard — its own winners + the court below's winners
+  groups.push({
+    court: 1,
+    playerIds: [...ct1Winners, ...getMatchWinners(byCourt[2])],
+    justWonPairs: [ct1Winners, getMatchWinners(byCourt[2])]
+  });
+
+  // Middle courts: THIS court's own losers stay (no movement), plus the court below's winners climb up
+  for (let c = 2; c < maxCourt; c++) {
+    const thisLosers = getMatchLosers(byCourt[c]);
+    const nextWinners = c === maxCourt - 1 ? ctMaxWinners : getMatchWinners(byCourt[c + 1]);
+    groups.push({
+      court: c,
+      playerIds: [...thisLosers, ...nextWinners],
+      justWonPairs: c === maxCourt - 1 ? [ctMaxWinners] : []
+    });
+  }
+
+  // Bottom court: its own losers stay, PLUS the top court's losers dropped all the way down
+  groups.push({
+    court: maxCourt,
+    playerIds: [...ctMaxLosers, ...ct1Losers],
+    justWonPairs: []
+  });
+
+  return groups;
+}
+
+// ---------- SHARED PARTNER ALLOCATION SCORER ----------
 
 function bestKingsQueensPairing(fourPlayers, justWonPairIds, partnerCounts) {
   const [a, b, c, d] = fourPlayers;
@@ -153,7 +202,7 @@ function bestKingsQueensPairing(fourPlayers, justWonPairIds, partnerCounts) {
   ];
 
   const isJustWonPair = (p1, p2) => justWonPairIds.some(pair =>
-    pair.includes(p1.PlayerID) && pair.includes(p2.PlayerID)
+    pair && pair.includes(p1.PlayerID) && pair.includes(p2.PlayerID)
   );
 
   const legalOptions = options.filter(opt =>
@@ -187,7 +236,7 @@ function getByePlayersForRound(allPlayers, roundMatches) {
   return allPlayers.filter(p => !playingIds.has(p.PlayerID)).map(p => p.PlayerID);
 }
 
-function applyByeSwaps(groups, byePlayerIdsThisRound, allPlayersById, partnerCounts) {
+function applyProgressiveByeSwaps(groups, byePlayerIdsThisRound, allPlayersById, partnerCounts, fixedTeamCourts) {
   const outgoing = [];
   groups.forEach(g => {
     g.playerIds.forEach(pid => {
@@ -204,19 +253,28 @@ function applyByeSwaps(groups, byePlayerIdsThisRound, allPlayersById, partnerCou
     const group = groups.find(g => g.court === court);
     const outgoingIndex = group.playerIds.indexOf(outgoingId);
 
-    let bestCandidate = null, bestCandidateScore = Infinity;
+    let bestCandidate = null, bestScore = Infinity;
 
-    incomingPlayers.forEach(candidateId => {
-      const testIds = [...group.playerIds];
-      testIds[outgoingIndex] = candidateId;
-      const testPlayers = testIds.map(id => allPlayersById[id]);
+    if (fixedTeamCourts.includes(court)) {
+      // Fixed-team court — just find the best DUPR-fit replacement for this specific slot,
+      // since who they're partnered with isn't a decision here (the team is locked).
+      const partnerIndex = outgoingIndex % 2 === 0 ? outgoingIndex + 1 : outgoingIndex - 1;
+      const partnerDupr = parseFloat(allPlayersById[group.playerIds[partnerIndex]].DUPR) || 0;
 
-      const result = bestKingsQueensPairing(testPlayers, group.justWonPairs, partnerCounts);
-      if (result.score < bestCandidateScore) {
-        bestCandidateScore = result.score;
-        bestCandidate = candidateId;
-      }
-    });
+      incomingPlayers.forEach(candidateId => {
+        const delta = Math.abs((parseFloat(allPlayersById[candidateId].DUPR) || 0) - partnerDupr);
+        if (delta < bestScore) { bestScore = delta; bestCandidate = candidateId; }
+      });
+    } else {
+      // Normal court — full scoring-based selection, same evaluation used for regular pairing
+      incomingPlayers.forEach(candidateId => {
+        const testIds = [...group.playerIds];
+        testIds[outgoingIndex] = candidateId;
+        const testPlayers = testIds.map(id => allPlayersById[id]);
+        const result = bestKingsQueensPairing(testPlayers, group.justWonPairs, partnerCounts);
+        if (result.score < bestScore) { bestScore = result.score; bestCandidate = candidateId; }
+      });
+    }
 
     if (bestCandidate) {
       group.playerIds[outgoingIndex] = bestCandidate;
@@ -229,7 +287,13 @@ function applyByeSwaps(groups, byePlayerIdsThisRound, allPlayersById, partnerCou
 
 // ---------- MAIN ENTRY POINT: ADVANCE ONE ROUND ----------
 
-function advanceKingsQueensRound(allMatchesSoFar, nextRoundDummyMatches, allPlayers, roundNumber, eventId, drawVersion, userEmail) {
+function advanceProgressiveRound(gameKey, allMatchesSoFar, nextRoundDummyMatches, allPlayers, roundNumber, eventId, drawVersion, userEmail) {
+  const rules = PROGRESSIVE_GAME_RULES[gameKey];
+  if (!rules) {
+    console.error(`No progressive rules defined for game "${gameKey}".`);
+    return null;
+  }
+
   if (!isRoundComplete(allMatchesSoFar, roundNumber - 1)) {
     console.error("Cannot advance — previous round has unrecorded results.");
     return null;
@@ -241,15 +305,22 @@ function advanceKingsQueensRound(allMatchesSoFar, nextRoundDummyMatches, allPlay
   allPlayers.forEach(p => { allPlayersById[p.PlayerID] = p; });
 
   const previousRoundMatches = allMatchesSoFar.filter(m => parseInt(m.Round) === roundNumber - 1);
-  const groups = buildResultBasedGroups(previousRoundMatches);
+  const groups = rules.buildGroups(previousRoundMatches);
 
   const { partnerCounts } = buildDrawHistory(allMatchesSoFar); // FULL event history, not just previous round
 
-  applyByeSwaps(groups, byePlayerIdsThisRound, allPlayersById, partnerCounts);
+  applyProgressiveByeSwaps(groups, byePlayerIdsThisRound, allPlayersById, partnerCounts, rules.fixedTeamCourts);
 
   const updatedMatches = groups.map(group => {
     const fourPlayers = group.playerIds.map(pid => allPlayersById[pid]);
-    const { pairing } = bestKingsQueensPairing(fourPlayers, group.justWonPairs, partnerCounts);
+    let pairing;
+
+    if (rules.fixedTeamCourts.includes(group.court)) {
+      // Teams already fixed by buildGroups' ordering — first 2 are one team, last 2 are the other
+      pairing = { teamA: [fourPlayers[0], fourPlayers[1]], teamB: [fourPlayers[2], fourPlayers[3]] };
+    } else {
+      pairing = bestKingsQueensPairing(fourPlayers, group.justWonPairs, partnerCounts).pairing;
+    }
 
     const dummyMatch = nextRoundDummyMatches.find(m => parseInt(m.Court) === group.court);
 
