@@ -607,52 +607,59 @@ async function goToNextRound() {
   const gameProfile = gamesProfile.find(g => g.GameID === activeEvent.GameID);
   const isProgressive = gameProfile?.GamesGroup === 'Progressive';
 
+  const nextRoundNumber = window.currentRoundNumber + 1;
+
   if (isProgressive) {
-    if (!isRoundComplete(matches, window.currentRoundNumber)) {
-      alert("Enter results for every match in this round before advancing.");
-      return;
-    }
+    const nextRoundAlreadyHasResults = isRoundComplete(matches, nextRoundNumber); // NEW
 
-    showLoadingState('current-round-list', 'Advancing to next round...');
+    if (!nextRoundAlreadyHasResults) {
+      if (!isRoundComplete(matches, window.currentRoundNumber)) {
+        alert("Enter results for every match in this round before advancing.");
+        return;
+      }
 
-    const nextRoundNumber = window.currentRoundNumber + 1;
-    const nextRoundDummyMatches = matches.filter(m => parseInt(m.Round) === nextRoundNumber);
-    const players = window.cachedUserUniverse.players;
+      showLoadingState('current-round-list', 'Advancing to next round...');
 
-    const updatedMatches = advanceProgressiveRound(
-      activeEvent.GameID, matches, nextRoundDummyMatches, players, nextRoundNumber,
-      activeEventId, activeEvent.CurrentDrawVersion, window.currentUserEmail
-    );
+      const nextRoundDummyMatches = matches.filter(m => parseInt(m.Round) === nextRoundNumber);
+      const players = window.cachedUserUniverse.players;
 
-    if (!updatedMatches) {
-      alert("Could not generate the next round — check the console for details.");
-      renderCurrentRoundView(window.cachedUserUniverse);
-      return;
-    }
+      const updatedMatches = advanceProgressiveRound(
+        activeEvent.GameID, matches, nextRoundDummyMatches, players, nextRoundNumber,
+        activeEventId, activeEvent.CurrentDrawVersion, window.currentUserEmail
+      );
 
-    try {
-      await Promise.all(updatedMatches.map(m =>
-        window.updateMatchFieldsInFirestore(m.MatchID, {
-          Team1Player1: m.Team1Player1, Team1Player2: m.Team1Player2,
-          Team2Player1: m.Team2Player1, Team2Player2: m.Team2Player2,
-          Team1AvgDUPR: m.Team1AvgDUPR, Team2AvgDUPR: m.Team2AvgDUPR,
-          DUPRMatchDelta: m.DUPRMatchDelta,
-          Team1WinProb: m.Team1WinProb, Team2WinProb: m.Team2WinProb,
-          ExpectedTeam1Score: m.ExpectedTeam1Score, ExpectedTeam2Score: m.ExpectedTeam2Score
-        })
-      ));
+      if (!updatedMatches) {
+        alert("Could not generate the next round — check the console for details.");
+        renderCurrentRoundView(window.cachedUserUniverse);
+        return;
+      }
 
-      updatedMatches.forEach(updated => {
-        const idx = window.cachedUserUniverse.draw.findIndex(m => m.MatchID === updated.MatchID);
-        if (idx !== -1) window.cachedUserUniverse.draw[idx] = { ...window.cachedUserUniverse.draw[idx], ...updated };
-      });
+      try {
+        await Promise.all(updatedMatches.map(m =>
+          window.updateMatchFieldsInFirestore(m.MatchID, {
+            Team1Player1: m.Team1Player1, Team1Player2: m.Team1Player2,
+            Team2Player1: m.Team2Player1, Team2Player2: m.Team2Player2,
+            Team1AvgDUPR: m.Team1AvgDUPR, Team2AvgDUPR: m.Team2AvgDUPR,
+            DUPRMatchDelta: m.DUPRMatchDelta,
+            Team1WinProb: m.Team1WinProb, Team2WinProb: m.Team2WinProb,
+            ExpectedTeam1Score: m.ExpectedTeam1Score, ExpectedTeam2Score: m.ExpectedTeam2Score
+          })
+        ));
 
-      console.log(`Advanced to Round ${nextRoundNumber} — next round's matches written to Firestore.`);
-    } catch (err) {
-      console.error("Failed to write advanced round to Firestore:", err);
-      alert("Failed to save the next round — check the console for details.");
-      renderCurrentRoundView(window.cachedUserUniverse);
-      return;
+        updatedMatches.forEach(updated => {
+          const idx = window.cachedUserUniverse.draw.findIndex(m => m.MatchID === updated.MatchID);
+          if (idx !== -1) window.cachedUserUniverse.draw[idx] = { ...window.cachedUserUniverse.draw[idx], ...updated };
+        });
+
+        console.log(`Advanced to Round ${nextRoundNumber} — next round's matches written to Firestore.`);
+      } catch (err) {
+        console.error("Failed to write advanced round to Firestore:", err);
+        alert("Failed to save the next round — check the console for details.");
+        renderCurrentRoundView(window.cachedUserUniverse);
+        return;
+      }
+    } else {
+      console.log(`Round ${nextRoundNumber} already has results — skipping recalculation, just navigating.`); // NEW
     }
   }
 
