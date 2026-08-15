@@ -606,14 +606,10 @@ async function goToNextRound() {
     const nextRoundDummyMatches = matches.filter(m => parseInt(m.Round) === nextRoundNumber);
     const players = window.cachedUserUniverse.players;
 
-    const progressiveGames = ['kings-queens', 'survivor', 'snakes-ladders']; // CHANGED
-    let updatedMatches;
-    if (progressiveGames.includes(activeEvent.GameID)) { // CHANGED
-      updatedMatches = advanceProgressiveRound( // CHANGED — was advanceKingsQueensRound
-        activeEvent.GameID, matches, nextRoundDummyMatches, players, nextRoundNumber,
-        activeEventId, activeEvent.CurrentDrawVersion, window.currentUserEmail
-      );
-    }
+    const updatedMatches = advanceProgressiveRound(
+      activeEvent.GameID, matches, nextRoundDummyMatches, players, nextRoundNumber,
+      activeEventId, activeEvent.CurrentDrawVersion, window.currentUserEmail
+    );
 
     if (!updatedMatches) {
       alert("Could not generate the next round — check the console for details.");
