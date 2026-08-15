@@ -948,3 +948,9 @@ function refreshStandingsIfVisible() {
     renderStandingsView(window.cachedUserUniverse);
   }
 }
+
+let winLossSaveTimer = null;
+function scheduleWinLossSave(match) {
+  clearTimeout(winLossSaveTimer);
+  winLossSaveTimer = setTimeout(() => saveMatchWinLoss(match), 600);
+}
