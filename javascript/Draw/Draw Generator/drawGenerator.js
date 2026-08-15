@@ -505,6 +505,10 @@ async function generateNRoundsAndPreview(numberOfRounds) {
     newMatches = generateDoublesProDraw(players, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfRounds);
     console.log(`Generated Doubles Pro draw: ${newMatches.length} matches across ${numberOfRounds} round(s).`);
 
+  } else if (gameId === 'kings-queens') {
+    newMatches = buildKingsQueensDummySchedule(players, numberOfRounds, courtsCount, activeEventId, newDrawVersion, userEmail);
+    console.log(`Generated Kings & Queens dummy schedule: ${newMatches.length} matches across ${numberOfRounds} round(s). Round 1 is live; rounds 2+ are placeholders until results are entered.`);
+
   } else if (gameId === 'teams') {
     const numberOfTeams = parseInt(activeEvent.NumberOfTeams) || 2;
     let allMatches = [];
