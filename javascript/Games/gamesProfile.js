@@ -10,7 +10,9 @@ const gamesProfile = [
     CycleRounds: "No",
     Lives: "No",
     Redivisioning: "No",
-    PlayOff: "No"
+    PlayOff: "No",
+    Scoring: ["Points","Wins"],
+    ScoringDefault: "Points"
   },
   {
     GameID: "survivor",
@@ -23,7 +25,9 @@ const gamesProfile = [
     CycleRounds: "No",
     Lives: "No",
     Redivisioning: "No",
-    PlayOff: "No"
+    PlayOff: "No",
+    Scoring: ["Points","Wins"],
+    ScoringDefault: "Points"
   },
   {
     GameID: "gauntlet",
@@ -36,7 +40,9 @@ const gamesProfile = [
     CycleRounds: "Yes",
     Lives: "No",
     Redivisioning: "No",
-    PlayOff: "No"
+    PlayOff: "No",
+    Scoring: ["Points","Wins"],
+    ScoringDefault: "Points"
   },
   {
     GameID: "out-of-lives",
@@ -49,7 +55,9 @@ const gamesProfile = [
     CycleRounds: "No",
     Lives: "Yes",
     Redivisioning: "No",
-    PlayOff: "No"
+    PlayOff: "No",
+    Scoring: ["Points","Wins"],
+    ScoringDefault: "Points"
   },
   {
     GameID: "my-house",
@@ -62,7 +70,9 @@ const gamesProfile = [
     CycleRounds: "No",
     Lives: "No",
     Redivisioning: "No",
-    PlayOff: "No"
+    PlayOff: "No",
+    Scoring: ["Points","Wins"],
+    ScoringDefault: "Points"
   },
   {
     GameID: "snakes-ladders",
@@ -75,7 +85,9 @@ const gamesProfile = [
     CycleRounds: "No",
     Lives: "No",
     Redivisioning: "No",
-    PlayOff: "No"
+    PlayOff: "No",
+    Scoring: ["Points","Wins"],
+    ScoringDefault: "Points"
   },
   {
     GameID: "bridge-the-gap",
@@ -88,7 +100,9 @@ const gamesProfile = [
     CycleRounds: "No",
     Lives: "No",
     Redivisioning: "No",
-    PlayOff: "No"
+    PlayOff: "No",
+    Scoring: ["Points","Wins"],
+    ScoringDefault: "Points"
   },
   {
     GameID: "eliminations",
@@ -101,7 +115,9 @@ const gamesProfile = [
     CycleRounds: "No",
     Lives: "No",
     Redivisioning: "No",
-    PlayOff: "No"
+    PlayOff: "No",
+    Scoring: ["Points","Wins"],
+    ScoringDefault: "Points"
   },
   {
     GameID: "rotating-partners",
@@ -114,7 +130,9 @@ const gamesProfile = [
     CycleRounds: "No",
     Lives: "No",
     Redivisioning: "No",
-    PlayOff: "Yes"
+    PlayOff: "Yes",
+    Scoring: ["Points","Wins","None"],
+    ScoringDefault: "Points"
   },
   {
     GameID: "doubles-pro",
@@ -127,7 +145,9 @@ const gamesProfile = [
     CycleRounds: "No",
     Lives: "No",
     Redivisioning: "Yes",
-    PlayOff: "Yes"
+    PlayOff: "Yes",
+    Scoring: ["Points","Wins","None"],
+    ScoringDefault: "Points"
   },
   {
     GameID: "keep-it-fair",
@@ -140,7 +160,9 @@ const gamesProfile = [
     CycleRounds: "No",
     Lives: "No",
     Redivisioning: "No",
-    PlayOff: "Yes"
+    PlayOff: "Yes",
+    Scoring: ["Points","Wins","None"],
+    ScoringDefault: "Points"
   },
   {
     GameID: "the-two-of-us",
@@ -153,7 +175,9 @@ const gamesProfile = [
     CycleRounds: "No",
     Lives: "No",
     Redivisioning: "No",
-    PlayOff: "No"
+    PlayOff: "No",
+    Scoring: ["Points","Wins","None"],
+    ScoringDefault: "Points"
   },
   {
     GameID: "divisions",
@@ -166,7 +190,9 @@ const gamesProfile = [
     CycleRounds: "No",
     Lives: "No",
     Redivisioning: "No",
-    PlayOff: "Yes"
+    PlayOff: "Yes",
+    Scoring: ["Points","Wins","None"],
+    ScoringDefault: "Points"
   },
   {
     GameID: "teams",
@@ -179,7 +205,9 @@ const gamesProfile = [
     CycleRounds: "No",
     Lives: "No",
     Redivisioning: "No",
-    PlayOff: "No"
+    PlayOff: "No",
+    Scoring: ["Points","Wins","None"],
+    ScoringDefault: "Points"
   },
   {
     GameID: "ladder-scramble",
@@ -192,7 +220,9 @@ const gamesProfile = [
     CycleRounds: "Yes",
     Lives: "No",
     Redivisioning: "Yes",
-    PlayOff: "No"
+    PlayOff: "No",
+    Scoring: ["Points","Wins"],
+    ScoringDefault: "Points"
   },
   {
     GameID: "pools",
@@ -205,7 +235,9 @@ const gamesProfile = [
     CycleRounds: "No",
     Lives: "No",
     Redivisioning: "Yes",
-    PlayOff: "Yes"
+    PlayOff: "Yes",
+    Scoring: ["Points","Wins","None"],
+    ScoringDefault: "Points"
   },
   {
     GameID: "mid-tier-divisions",
@@ -218,7 +250,9 @@ const gamesProfile = [
     CycleRounds: "No",
     Lives: "No",
     Redivisioning: "No",
-    PlayOff: "Yes"
+    PlayOff: "Yes",
+    Scoring: ["Points","Wins","None"],
+    ScoringDefault: "Points"
   },
   {
     GameID: "pool-fusion",
@@ -231,7 +265,9 @@ const gamesProfile = [
     CycleRounds: "No",
     Lives: "No",
     Redivisioning: "Yes",
-    PlayOff: "No"
+    PlayOff: "No",
+    Scoring: ["Points","Wins"],
+    ScoringDefault: "Points"
   },
   {
     GameID: "rx-sports",
@@ -244,6 +280,8 @@ const gamesProfile = [
     CycleRounds: "No",
     Lives: "No",
     Redivisioning: "Yes",
-    PlayOff: "Yes"
+    PlayOff: "Yes",
+    Scoring: ["Points","Wins","None"],
+    ScoringDefault: "Points"
   }
 ];
