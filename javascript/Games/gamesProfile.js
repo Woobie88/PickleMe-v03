@@ -12,7 +12,8 @@ const gamesProfile = [
     Redivisioning: "No",
     PlayOff: "No",
     Scoring: ["Points","Wins"],
-    ScoringDefault: "Points"
+    ScoringDefault: "Points",
+    DrawRefresh: "Yes"
   },
   {
     GameID: "survivor",
@@ -27,7 +28,8 @@ const gamesProfile = [
     Redivisioning: "No",
     PlayOff: "No",
     Scoring: ["Points","Wins"],
-    ScoringDefault: "Points"
+    ScoringDefault: "Points",
+    DrawRefresh: "Yes"
   },
   {
     GameID: "gauntlet",
@@ -42,7 +44,8 @@ const gamesProfile = [
     Redivisioning: "No",
     PlayOff: "No",
     Scoring: ["Points","Wins"],
-    ScoringDefault: "Points"
+    ScoringDefault: "Points",
+    DrawRefresh: "Yes"
   },
   {
     GameID: "out-of-lives",
@@ -57,7 +60,8 @@ const gamesProfile = [
     Redivisioning: "No",
     PlayOff: "No",
     Scoring: ["Points","Wins"],
-    ScoringDefault: "Points"
+    ScoringDefault: "Points",
+    DrawRefresh: "Yes"
   },
   {
     GameID: "my-house",
@@ -72,7 +76,8 @@ const gamesProfile = [
     Redivisioning: "No",
     PlayOff: "No",
     Scoring: ["Points","Wins"],
-    ScoringDefault: "Points"
+    ScoringDefault: "Points",
+    DrawRefresh: "Yes"
   },
   {
     GameID: "snakes-ladders",
@@ -87,7 +92,8 @@ const gamesProfile = [
     Redivisioning: "No",
     PlayOff: "No",
     Scoring: ["Points","Wins"],
-    ScoringDefault: "Points"
+    ScoringDefault: "Points",
+    DrawRefresh: "Yes"
   },
   {
     GameID: "bridge-the-gap",
@@ -102,7 +108,8 @@ const gamesProfile = [
     Redivisioning: "No",
     PlayOff: "No",
     Scoring: ["Points","Wins"],
-    ScoringDefault: "Points"
+    ScoringDefault: "Points",
+    DrawRefresh: "Yes"
   },
   {
     GameID: "eliminations",
@@ -117,7 +124,8 @@ const gamesProfile = [
     Redivisioning: "No",
     PlayOff: "No",
     Scoring: ["Points","Wins"],
-    ScoringDefault: "Points"
+    ScoringDefault: "Points",
+    DrawRefresh: "Yes"
   },
   {
     GameID: "rotating-partners",
@@ -132,7 +140,8 @@ const gamesProfile = [
     Redivisioning: "No",
     PlayOff: "Yes",
     Scoring: ["Points","Wins","None"],
-    ScoringDefault: "Points"
+    ScoringDefault: "Points",
+    DrawRefresh: "No"
   },
   {
     GameID: "doubles-pro",
@@ -147,7 +156,8 @@ const gamesProfile = [
     Redivisioning: "Yes",
     PlayOff: "Yes",
     Scoring: ["Points","Wins","None"],
-    ScoringDefault: "Points"
+    ScoringDefault: "Points",
+    DrawRefresh: "No"
   },
   {
     GameID: "keep-it-fair",
@@ -162,7 +172,8 @@ const gamesProfile = [
     Redivisioning: "No",
     PlayOff: "Yes",
     Scoring: ["Points","Wins","None"],
-    ScoringDefault: "Points"
+    ScoringDefault: "Points",
+    DrawRefresh: "No"
   },
   {
     GameID: "the-two-of-us",
@@ -177,7 +188,8 @@ const gamesProfile = [
     Redivisioning: "No",
     PlayOff: "No",
     Scoring: ["Points","Wins","None"],
-    ScoringDefault: "Points"
+    ScoringDefault: "Points",
+    DrawRefresh: "No"
   },
   {
     GameID: "divisions",
@@ -192,7 +204,8 @@ const gamesProfile = [
     Redivisioning: "No",
     PlayOff: "Yes",
     Scoring: ["Points","Wins","None"],
-    ScoringDefault: "Points"
+    ScoringDefault: "Points",
+    DrawRefresh: "No"
   },
   {
     GameID: "teams",
@@ -207,7 +220,8 @@ const gamesProfile = [
     Redivisioning: "No",
     PlayOff: "No",
     Scoring: ["Points","Wins","None"],
-    ScoringDefault: "Points"
+    ScoringDefault: "Points",
+    DrawRefresh: "No"
   },
   {
     GameID: "ladder-scramble",
@@ -222,7 +236,8 @@ const gamesProfile = [
     Redivisioning: "Yes",
     PlayOff: "No",
     Scoring: ["Points","Wins"],
-    ScoringDefault: "Points"
+    ScoringDefault: "Points",
+    DrawRefresh: "No"
   },
   {
     GameID: "pools",
@@ -237,7 +252,8 @@ const gamesProfile = [
     Redivisioning: "Yes",
     PlayOff: "Yes",
     Scoring: ["Points","Wins","None"],
-    ScoringDefault: "Points"
+    ScoringDefault: "Points",
+    DrawRefresh: "No"
   },
   {
     GameID: "mid-tier-divisions",
@@ -252,7 +268,8 @@ const gamesProfile = [
     Redivisioning: "No",
     PlayOff: "Yes",
     Scoring: ["Points","Wins","None"],
-    ScoringDefault: "Points"
+    ScoringDefault: "Points",
+    DrawRefresh: "No"
   },
   {
     GameID: "pool-fusion",
@@ -267,7 +284,8 @@ const gamesProfile = [
     Redivisioning: "Yes",
     PlayOff: "No",
     Scoring: ["Points","Wins"],
-    ScoringDefault: "Points"
+    ScoringDefault: "Points",
+    DrawRefresh: "No"
   },
   {
     GameID: "rx-sports",
@@ -282,6 +300,7 @@ const gamesProfile = [
     Redivisioning: "Yes",
     PlayOff: "Yes",
     Scoring: ["Points","Wins","None"],
-    ScoringDefault: "Points"
+    ScoringDefault: "Points",
+    DrawRefresh: "No"
   }
 ];
