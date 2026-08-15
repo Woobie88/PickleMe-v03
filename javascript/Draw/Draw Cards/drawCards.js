@@ -40,12 +40,16 @@ async function renderDrawCards(payload) {
   let matches = await window.fetchDrawFromFirestore(activeEventId, currentDrawVersion);
   window.cachedUserUniverse.draw = matches;
 
-  // NEW — for Progressive games, hide any round beyond the current one (still just dummy placeholders)
+  // For Progressive games, only show matches with a result, plus the current round
   const gameProfile = gamesProfile.find(g => g.GameID === activeEvent.GameID);
   const isProgressive = gameProfile?.GamesGroup === 'Progressive';
   if (isProgressive) {
     const currentRound = parseInt(activeEvent.CurrentRound) || 1;
-    matches = matches.filter(m => parseInt(m.Round) <= currentRound);
+    matches = matches.filter(m => {
+      const hasResult = m.Team1WinLoss && m.Team2WinLoss;
+      const isCurrentRound = parseInt(m.Round) === currentRound;
+      return hasResult || isCurrentRound;
+    });
   }
 
   // ...rest of the function unchanged, just uses this filtered `matches` from here on
@@ -939,4 +943,11 @@ function recalculateMatchScoreFields(match) {
 
 function handleMatchDetailAction() {
   console.log("Match detail action tapped — placeholder, no longer routes to substitution");
+}
+
+function refreshStandingsIfVisible() {
+  const standingsView = document.getElementById('view-standings');
+  if (standingsView && standingsView.classList.contains('active')) {
+    renderStandingsView(window.cachedUserUniverse);
+  }
 }
