@@ -483,27 +483,12 @@ function handleFabAction(action) {
     case 'substitution': // NEW
       navigateToScreen('player-substitution');
       break;
-  }
-}
-
-function updateDrawFabMenuVisibility() {
-  const activeEventId = window.cachedUserUniverse.activeEventId;
-  const activeEvent = window.cachedUserUniverse.events.find(
-    e => String(e.EventID || e.eventId) === String(activeEventId)
-  );
-  const gameProfile = gamesProfile.find(g => g.GameID === activeEvent?.GameID);
-
-  const redivisionSupported = gameProfile?.Redivisioning === 'Yes';
-  const playoffSupported = gameProfile?.PlayOff === 'Yes';
-
-  const redivisionItem = document.getElementById('fab-redivision-item');
-  if (redivisionItem) {
-    redivisionItem.style.display = redivisionSupported ? 'flex' : 'none';
-  }
-
-  const playoffsItem = document.getElementById('fab-playoffs-item');
-  if (playoffsItem) {
-    playoffsItem.style.display = playoffSupported ? 'flex' : 'none';
+    case 'player-available': // NEW
+      console.log('Player Available tapped — routing not yet wired up');
+      break;
+    case 'result-refresh': // NEW
+      console.log('Draw Refresh tapped — routing not yet wired up');
+      break;
   }
 }
 
@@ -985,4 +970,34 @@ let winLossSaveTimer = null;
 function scheduleWinLossSave(match) {
   clearTimeout(winLossSaveTimer);
   winLossSaveTimer = setTimeout(() => saveMatchWinLoss(match), 600);
+}
+
+// FAB menu visibility
+const DRAW_MENU_ITEM_MAP = {
+  AddMatch: 'fab-add-match-item',
+  PlayerSub: 'fab-substitution-item',
+  PlayerAvailable: 'fab-player-available-item',
+  ReDraw: 'fab-redraw-item',
+  PlayOffs: 'fab-playoffs-item',
+  Redivisioning: 'fab-redivision-item',
+  ResultRefresh: 'fab-result-refresh-item'
+};
+
+function updateDrawFabMenuVisibility() {
+  const activeEventId = window.cachedUserUniverse.activeEventId;
+  const activeEvent = window.cachedUserUniverse.events.find(
+    e => String(e.EventID || e.eventId) === String(activeEventId)
+  );
+  const gameProfile = gamesProfile.find(g => g.GameID === activeEvent?.GameID);
+  const menuOpt = gameProfile?.drawMenuOpt?.[0] || {};
+
+  Object.entries(DRAW_MENU_ITEM_MAP).forEach(([optKey, elementId]) => {
+    const item = document.getElementById(elementId);
+    if (!item) return;
+
+    const rawValue = menuOpt[optKey];
+    const valueToCheck = Array.isArray(rawValue) ? rawValue[0] : rawValue;
+    const isSupported = valueToCheck === 'Yes';
+    item.style.display = isSupported ? 'flex' : 'none';
+  });
 }
