@@ -185,9 +185,10 @@ function handleDetailsNext() {
   const activeEvent = window.cachedUserUniverse.events.find(e => String(e.EventID) === String(activeEventId));
   const gameProfile = gamesProfile.find(g => g.GameID === activeEvent?.GameID);
 
-  const needsGroups = gameProfile?.Team === 'Yes' || gameProfile?.Division === 'Yes';
+  const grouping = gameProfile?.Grouping || 'None';
+  const needsTeamsScreen = ['Teams', 'Pools', 'Pairs', 'Divisions'].includes(grouping); // CHANGED
 
-  if (needsGroups) {
+  if (needsTeamsScreen) {
     navigateToScreen('generate-draw-teams');
   } else {
     navigateToScreen('generate-draw-available');
