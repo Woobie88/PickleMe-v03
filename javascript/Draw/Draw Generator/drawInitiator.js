@@ -45,20 +45,26 @@ function renderGenerateDrawDetails(payload) {
     livesGroup.style.display = 'none';
   }
 
-  // --- Number Of Teams / Divisions (shared field: events.NumberOfTeams) ---
-  const teamSupported = gameProfile?.Team === 'Yes';
-  const divisionSupported = gameProfile?.Division === 'Yes';
+  // --- Number Of Teams / Pools / Divisions (driven by gamesProfile.Grouping) ---
+  const grouping = gameProfile?.Grouping || 'None';
+  const groupingLabels = {
+    'Teams': 'Number Of Teams',
+    'Pools': 'Number Of Pools',
+    'Divisions': 'Number Of Divisions'
+  };
+
   const teamsGroup = document.getElementById('gd-teams-group');
   const teamsLabel = document.getElementById('gd-teams-label');
 
-  if (teamSupported || divisionSupported) {
+  if (groupingLabels[grouping]) {
     teamsGroup.style.display = '';
-    teamsLabel.innerText = divisionSupported ? 'Number Of Divisions' : 'Number Of Teams';
+    teamsLabel.innerText = groupingLabels[grouping];
 
     const teamsValue = parseInt(activeEvent?.NumberOfTeams) || 2;
     document.getElementById('gd-teams-value').innerText = teamsValue;
     document.getElementById('gd-teams-hidden').value = teamsValue;
   } else {
+    // "None", "Pairs", or anything unrecognized — field hidden entirely
     teamsGroup.style.display = 'none';
   }
 
@@ -67,10 +73,10 @@ function renderGenerateDrawDetails(payload) {
 }
 
 async function ensureTeamsDefaultForGame(activeEventId, gameProfile) {
-  const teamSupported = gameProfile?.Team === 'Yes';
-  const divisionSupported = gameProfile?.Division === 'Yes';
+  const grouping = gameProfile?.Grouping || 'None';
+  const groupingRequiresField = ['Teams', 'Pools', 'Divisions'].includes(grouping);
 
-  if (!teamSupported && !divisionSupported) {
+  if (!groupingRequiresField) {
     const activeEvent = window.cachedUserUniverse.events.find(e => String(e.EventID) === String(activeEventId));
     if (activeEvent && activeEvent.NumberOfTeams !== 1) {
       activeEvent.NumberOfTeams = 1;
