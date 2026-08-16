@@ -60,9 +60,15 @@ function renderGenerateDrawDetails(payload) {
     teamsGroup.style.display = '';
     teamsLabel.innerText = groupingLabels[grouping];
 
-    const teamsValue = parseInt(activeEvent?.NumberOfTeams) || 2;
+    const teamsValue = Math.max(2, parseInt(activeEvent?.NumberOfTeams) || 2); // CHANGED — enforce minimum 2
     document.getElementById('gd-teams-value').innerText = teamsValue;
     document.getElementById('gd-teams-hidden').value = teamsValue;
+
+    // If the stored value was below 2 (e.g. leftover 1 from a "None" game), correct it in Firestore too
+    if ((parseInt(activeEvent?.NumberOfTeams) || 0) < 2) {
+      activeEvent.NumberOfTeams = teamsValue;
+      window.updateEventFieldInFirestore(activeEventId, 'NumberOfTeams', teamsValue);
+    }
   } else {
     // "None", "Pairs", or anything unrecognized — field hidden entirely
     teamsGroup.style.display = 'none';
@@ -140,7 +146,7 @@ function adjustGdTeams(direction) {
   const displaySpan = document.getElementById('gd-teams-value');
 
   let current = parseInt(hiddenInput.value) || 2;
-  current = Math.max(2, current + direction); // minimum 2
+  current = Math.max(2, current + direction); // minimum 2 — already correct
 
   hiddenInput.value = current;
   displaySpan.innerText = current;
