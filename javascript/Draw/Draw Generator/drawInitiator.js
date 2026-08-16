@@ -170,19 +170,6 @@ async function saveGdTeams(value) {
   }
 }
 
-async function ensureTeamsDefaultForGame(activeEventId, gameProfile) {
-  const teamSupported = gameProfile?.Team === 'Yes';
-  const divisionSupported = gameProfile?.Division === 'Yes';
-
-  if (!teamSupported && !divisionSupported) {
-    const activeEvent = window.cachedUserUniverse.events.find(e => String(e.EventID) === String(activeEventId));
-    if (activeEvent && activeEvent.NumberOfTeams !== 1) {
-      activeEvent.NumberOfTeams = 1;
-      await window.updateEventFieldInFirestore(activeEventId, 'NumberOfTeams', 1);
-    }
-  }
-}
-
 // DETERMINE NEXT ACTION FROM INITIAL DRAW CONDITIONS
 function handleDetailsNext() {
   const activeEventId = window.cachedUserUniverse.activeEventId;
