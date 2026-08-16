@@ -1201,3 +1201,12 @@ body {
   background-color: #ef4444 !important;
   color: #ffffff !important;
 }
+
+#gd-all-present-toggle {
+  display: flex;
+}
+
+#gd-all-present-toggle .scoring-option {
+  flex: 1;
+  text-align: center;
+}
