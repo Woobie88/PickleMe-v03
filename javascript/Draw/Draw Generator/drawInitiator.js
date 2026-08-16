@@ -60,17 +60,21 @@ function renderGenerateDrawDetails(payload) {
     teamsGroup.style.display = '';
     teamsLabel.innerText = groupingLabels[grouping];
 
-    const teamsValue = Math.max(2, parseInt(activeEvent?.NumberOfTeams) || 2); // CHANGED — enforce minimum 2
+    const teamsValue = Math.max(2, parseInt(activeEvent?.NumberOfTeams) || 2);
     document.getElementById('gd-teams-value').innerText = teamsValue;
     document.getElementById('gd-teams-hidden').value = teamsValue;
 
-    // If the stored value was below 2 (e.g. leftover 1 from a "None" game), correct it in Firestore too
+    console.log('RAW activeEvent.NumberOfTeams:', activeEvent?.NumberOfTeams, typeof activeEvent?.NumberOfTeams); // ADD
+    console.log('Condition check result:', (parseInt(activeEvent?.NumberOfTeams) || 0) < 2); // ADD
+
     if ((parseInt(activeEvent?.NumberOfTeams) || 0) < 2) {
+      console.log('CORRECTION BLOCK ENTERED'); // ADD
       activeEvent.NumberOfTeams = teamsValue;
-      window.updateEventFieldInFirestore(activeEventId, 'NumberOfTeams', teamsValue);
+      window.updateEventFieldInFirestore(activeEventId, 'NumberOfTeams', teamsValue)
+        .then(() => console.log('Firestore write SUCCEEDED'))
+        .catch(err => console.error('Firestore write FAILED:', err));
     }
   } else {
-    // "None", "Pairs", or anything unrecognized — field hidden entirely
     teamsGroup.style.display = 'none';
   }
 
