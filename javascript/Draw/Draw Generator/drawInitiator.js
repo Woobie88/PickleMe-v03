@@ -10,18 +10,17 @@ function renderGenerateDrawDetails(payload) {
   const gameProfile = gamesProfile.find(g => g.GameID === gameId);
 
   document.getElementById('gd-selected-game-title').innerText = gameProfile?.GameTitle || 'No Game Selected';
-  document.getElementById('gd-game-type').innerText = gameProfile?.GamesGroup || '—';
+  // gd-game-type row removed entirely — no longer set
 
   // --- Number Of Rounds / Round Limit ---
-  const isProgressive = gameProfile?.GamesGroup === 'Progressive'; // NEW
-  const roundsSupported = gameProfile?.Rounds === 'Yes' || isProgressive; // CHANGED — Progressive games always get an editable field
+  const isProgressive = gameProfile?.GamesGroup === 'Progressive';
+  const roundsSupported = gameProfile?.Rounds === 'Yes' || isProgressive;
 
   let roundsValue = roundsSupported ? (parseInt(activeEvent?.NumberofRound) || 1) : 1;
 
   document.getElementById('gd-rounds-value').innerText = roundsValue;
   document.getElementById('gd-rounds-hidden').value = roundsValue;
 
-  // Label changes for Progressive games, since the meaning is different (a cap, not a fixed count)
   const roundsLabel = document.querySelector('#gd-rounds-group label');
   if (roundsLabel) {
     roundsLabel.innerText = isProgressive ? 'Round Limit' : 'Number Of Rounds';
@@ -45,7 +44,7 @@ function renderGenerateDrawDetails(payload) {
     livesGroup.style.display = 'none';
   }
 
-  // --- Number Of Teams / Pools / Divisions (driven by gamesProfile.Grouping) ---
+  // --- Number Of Teams / Pools / Divisions ---
   const grouping = gameProfile?.Grouping || 'None';
   const groupingLabels = {
     'Teams': 'Number Of Teams',
@@ -64,22 +63,31 @@ function renderGenerateDrawDetails(payload) {
     document.getElementById('gd-teams-value').innerText = teamsValue;
     document.getElementById('gd-teams-hidden').value = teamsValue;
 
-    console.log('RAW activeEvent.NumberOfTeams:', activeEvent?.NumberOfTeams, typeof activeEvent?.NumberOfTeams); // ADD
-    console.log('Condition check result:', (parseInt(activeEvent?.NumberOfTeams) || 0) < 2); // ADD
-
     if ((parseInt(activeEvent?.NumberOfTeams) || 0) < 2) {
-      console.log('CORRECTION BLOCK ENTERED'); // ADD
       activeEvent.NumberOfTeams = teamsValue;
-      window.updateEventFieldInFirestore(activeEventId, 'NumberOfTeams', teamsValue)
-        .then(() => console.log('Firestore write SUCCEEDED'))
-        .catch(err => console.error('Firestore write FAILED:', err));
+      window.updateEventFieldInFirestore(activeEventId, 'NumberOfTeams', teamsValue);
     }
   } else {
     teamsGroup.style.display = 'none';
   }
 
-  // Ensure NumberOfTeams defaults to 1 whenever it's not applicable to the current game
   ensureTeamsDefaultForGame(activeEventId, gameProfile);
+
+  // --- NEW: All Players Present toggle ---
+  const currentPlayerVersion = activeEvent.CurrentPlayerVersion;
+  const players = (payload.players || []).filter(p => String(p.PlayerVersion) === String(currentPlayerVersion));
+
+  const anyExcluded = players.some(p => p.playerExclude === 'Yes');
+  const computedDefault = anyExcluded ? 'No' : 'Yes';
+
+  // Use a stored override if the organizer already explicitly set one this session; otherwise use the computed default
+  const currentValue = activeEvent.AllPlayersPresent || computedDefault;
+
+  document.querySelectorAll('#gd-all-present-toggle .scoring-option').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.value === currentValue);
+  });
+
+  window.gdAllPlayersPresentValue = currentValue; // stored for handleTeamsNext/routing decision later
 }
 
 async function ensureTeamsDefaultForGame(activeEventId, gameProfile) {
@@ -177,10 +185,18 @@ function handleDetailsNext() {
   const gameProfile = gamesProfile.find(g => g.GameID === activeEvent?.GameID);
 
   const grouping = gameProfile?.Grouping || 'None';
-  const needsTeamsScreen = ['Teams', 'Pools', 'Pairs', 'Divisions'].includes(grouping); // CHANGED
+  const needsTeamsScreen = ['Teams', 'Pools', 'Pairs', 'Divisions'].includes(grouping);
 
   if (needsTeamsScreen) {
     navigateToScreen('generate-draw-teams');
+  } else {
+    routeToAvailabilityOrBuild();
+  }
+}
+
+function routeToAvailabilityOrBuild() {
+  if (window.gdAllPlayersPresentValue === 'Yes') {
+    handleBuildDraw(); // bypass Availability entirely
   } else {
     navigateToScreen('generate-draw-available');
   }
@@ -329,7 +345,7 @@ function renderGenerateDrawTeams(payload) {
 
 // Persist assignment + move to the final Available screen
 function handleTeamsNext() {
-  navigateToScreen('generate-draw-available');
+  routeToAvailabilityOrBuild();
 }
 
 // Generalized N-group drag engine
@@ -474,4 +490,96 @@ async function handleBuildDraw() {
     console.error("Draw generation failed:", err);
     alert("Draw generation failed — check the console for details.");
   }
+}
+
+async function handleAllPlayersPresentToggle(value) {
+  const activeEventId = window.cachedUserUniverse.activeEventId;
+  const activeEvent = window.cachedUserUniverse.events.find(e => String(e.EventID) === String(activeEventId));
+
+  document.querySelectorAll('#gd-all-present-toggle .scoring-option').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.value === value);
+  });
+
+  window.gdAllPlayersPresentValue = value;
+  activeEvent.AllPlayersPresent = value;
+  await window.updateEventFieldInFirestore(activeEventId, 'AllPlayersPresent', value);
+
+  // Overriding TO Yes clears every player's playerExclude back to No
+  if (value === 'Yes') {
+    const currentPlayerVersion = activeEvent.CurrentPlayerVersion;
+    const players = window.cachedUserUniverse.players.filter(
+      p => String(p.PlayerVersion) === String(currentPlayerVersion) && p.playerExclude === 'Yes'
+    );
+
+    await Promise.all(players.map(p => {
+      p.playerExclude = 'No';
+      return window.updatePlayerExcludeInFirestore(p.PlayerID, 'No');
+    }));
+
+    console.log(`Cleared playerExclude for ${players.length} player(s) — All Players Present set to Yes.`);
+  }
+}
+
+function renderPlayerAvailabilityList(payload) {
+  const activeEventId = payload.activeEventId;
+  const activeEvent = payload.events.find(e => String(e.EventID) === String(activeEventId));
+  const currentPlayerVersion = activeEvent.CurrentPlayerVersion;
+
+  const players = (payload.players || []).filter(p => String(p.PlayerVersion) === String(currentPlayerVersion));
+
+  const container = document.getElementById('gd-availability-list');
+  if (!container) return;
+
+  container.innerHTML = players.length === 0
+    ? `<div class="no-data-placeholder"><h3>No Players Found</h3></div>`
+    : players.map(player => {
+        const isUnavailable = player.playerExclude === 'Yes';
+        const contentHtml = `
+          <h3>${player.Name || 'Unnamed Player'}</h3>
+          <p class="card-meta-line">${isUnavailable ? 'Unavailable' : (player.DUPRId || 'N/A') + (player.DUPR ? ' || DUPR ' + player.DUPR : '')}</p>
+        `;
+        const extraClass = isUnavailable ? 'player-unavailable' : '';
+        return buildCardMarkup({ iconAsset: '🎾', contentHtml, cardId: player.PlayerID, extraClass });
+      }).join('');
+
+  enableAvailabilityLongPress();
+}
+
+function enableAvailabilityLongPress() {
+  document.querySelectorAll('#gd-availability-list .app-card[data-card-id]').forEach(card => {
+    let longPressTimer = null;
+
+    card.addEventListener('touchstart', () => {
+      longPressTimer = setTimeout(() => {
+        if (navigator.vibrate) navigator.vibrate(30);
+        togglePlayerExclude(card.dataset.cardId);
+      }, 350);
+    }, { passive: true });
+
+    card.addEventListener('touchmove', () => {
+      clearTimeout(longPressTimer);
+    }, { passive: true });
+
+    card.addEventListener('touchend', () => {
+      clearTimeout(longPressTimer);
+      window.suppressNextCardClick = true;
+    });
+  });
+}
+
+async function togglePlayerExclude(playerId) {
+  const player = window.cachedUserUniverse.players.find(p => p.PlayerID === playerId);
+  if (!player) return;
+
+  const newValue = player.playerExclude === 'Yes' ? 'No' : 'Yes';
+  player.playerExclude = newValue;
+
+  try {
+    await window.updatePlayerExcludeInFirestore(playerId, newValue);
+    console.log(`${playerId} playerExclude set to ${newValue}`);
+  } catch (err) {
+    console.error("Failed to update player availability:", err);
+  }
+
+  renderPlayerAvailabilityList(window.cachedUserUniverse);
 }

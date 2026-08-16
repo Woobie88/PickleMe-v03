@@ -676,8 +676,11 @@
           </div>
 
           <div class="detail-form-group">
-            <label>Game Type</label>
-            <div class="detail-readonly" id="gd-game-type">—</div>
+            <label>All Players Present</label>
+            <div class="scoring-toggle" id="gd-all-present-toggle">
+              <button class="scoring-option" data-value="No" onclick="handleAllPlayersPresentToggle('No')">No</button>
+              <button class="scoring-option" data-value="Yes" onclick="handleAllPlayersPresentToggle('Yes')">Yes</button>
+            </div>
           </div>
 
           <div class="detail-form-group" id="gd-rounds-group">
@@ -741,19 +744,13 @@
       </section>
 
       <!-- Available screen -->
-       <section id="screen-generate-draw-available" class="app-screen">
+      <section id="screen-generate-draw-available" class="app-screen">
         <div class="welcome-banner">
           <h2>Player Availability</h2>
-          <p>Confirm who's available before building the draw</p>
+          <p>Long-press a player to mark them unavailable</p>
         </div>
 
-        <div class="event-section-title current">Player Unavailable</div>
-        <div id="gd-unavailable-list" class="card-grid">
-          <div class="no-data-placeholder"><h3>Nil</h3></div>
-        </div>
-
-        <div class="event-section-title other">Available</div>
-        <div id="gd-available-list" class="card-grid"></div>
+        <div id="gd-availability-list" class="card-grid"></div>
 
         <div class="form-action-bar">
           <button class="btn-secondary" onclick="navigateToScreen('generate-draw')">Back</button>

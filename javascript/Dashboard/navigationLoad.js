@@ -87,7 +87,7 @@ function navigateToScreen(screenId) {
       renderGenerateDrawTeams(window.cachedUserUniverse);
       break;
     case 'generate-draw-available':
-      renderAvailabilityView(window.cachedUserUniverse, 'gd-unavailable-list', 'gd-available-list');
+      renderPlayerAvailabilityList(window.cachedUserUniverse);
       break;
     case 'draw':
       renderDrawCards(payload);
