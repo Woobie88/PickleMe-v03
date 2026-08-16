@@ -250,12 +250,35 @@ function renderGenerateDrawTeams(payload) {
   const activeEvent = payload.events.find(e => String(e.EventID) === String(activeEventId));
   const gameProfile = gamesProfile.find(g => g.GameID === activeEvent?.GameID);
 
-  const divisionSupported = gameProfile?.Division === 'Yes';
+  const grouping = gameProfile?.Grouping || 'None';
   const draftSupported = gameProfile?.Draft === 'Yes';
-  const groupLabel = divisionSupported ? 'Division' : 'Team';
-  const numberOfGroups = parseInt(activeEvent?.NumberOfTeams) || 2;
 
-  document.getElementById('gd-teams-screen-heading').innerText = divisionSupported ? 'Divisions' : 'Teams';
+  const groupLabels = {
+    'Teams': 'Team',
+    'Pools': 'Pool',
+    'Divisions': 'Division',
+    'Pairs': 'Pair'
+  };
+  const groupLabel = groupLabels[grouping] || 'Team';
+
+  const currentPlayerVersion = activeEvent.CurrentPlayerVersion;
+  const players = (payload.players || [])
+    .filter(p => String(p.PlayerVersion) === String(currentPlayerVersion))
+    .filter(p => p.playerExclude !== 'Yes');
+
+  const duprSorted = [...players].sort((a, b) => {
+    const duprDiff = (parseFloat(b.DUPR) || 0) - (parseFloat(a.DUPR) || 0);
+    if (duprDiff !== 0) return duprDiff;
+    return (parseFloat(a.RandomNumber) || 0) - (parseFloat(b.RandomNumber) || 0);
+  });
+
+  // NEW — Pairs auto-computes group count as half the player count; every other
+  // grouping type uses the organizer-set NumberOfTeams field
+  const numberOfGroups = grouping === 'Pairs'
+    ? Math.floor(duprSorted.length / 2)
+    : (parseInt(activeEvent?.NumberOfTeams) || 2);
+
+  document.getElementById('gd-teams-screen-heading').innerText = groupLabel + 's';
 
   const draftToggleBlock = document.getElementById('gd-draft-toggle-block');
   if (draftSupported) {
@@ -267,20 +290,8 @@ function renderGenerateDrawTeams(payload) {
     draftToggleBlock.style.display = 'none';
   }
 
-  const currentPlayerVersion = activeEvent.CurrentPlayerVersion;
-  const players = (payload.players || [])
-    .filter(p => String(p.PlayerVersion) === String(currentPlayerVersion))
-    .filter(p => p.playerExclude !== 'Yes'); // same exclusion rule as the draw generator
-
-  const duprSorted = [...players].sort((a, b) => {
-    const duprDiff = (parseFloat(b.DUPR) || 0) - (parseFloat(a.DUPR) || 0);
-    if (duprDiff !== 0) return duprDiff;
-    return (parseFloat(a.RandomNumber) || 0) - (parseFloat(b.RandomNumber) || 0);
-  });
-
   const playersPerGroup = computePlayersPerGroup(duprSorted.length, numberOfGroups);
 
-  // Build the group assignments — either straight contiguous blocks (no draft) or draft-order pick sequence
   const groups = Array.from({ length: numberOfGroups }, () => []);
 
   if (draftSupported) {
@@ -296,7 +307,6 @@ function renderGenerateDrawTeams(payload) {
     });
   }
 
-  // Store assignment in-memory so handleTeamsNext() can persist it
   window.gdGroupAssignment = groups;
 
   const container = document.getElementById('gd-teams-groups-list');
@@ -323,8 +333,6 @@ function renderGenerateDrawTeams(payload) {
   container.innerHTML = html || `<div class="no-data-placeholder"><h3>No Players Found</h3></div>`;
 
   enableTeamsDragDrop(numberOfGroups);
-
-  // NEW — persist the computed assignment immediately, so Team is saved even if the organizer never drags a card
   commitTeamsAssignment(numberOfGroups);
 }
 
