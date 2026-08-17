@@ -836,6 +836,28 @@
         </div>
       </section>
 
+      <section id="screen-redivision-teams" class="app-screen">
+        <div class="welcome-banner">
+          <h2 id="rd-teams-screen-heading">Teams</h2>
+          <p>Players grouped by DUPR ranking</p>
+        </div>
+
+        <div class="scoring-toggle-block" id="rd-draft-toggle-block" style="display: none;">
+          <span class="scoring-toggle-label">Draft Method</span>
+          <div class="scoring-toggle" id="rd-draft-toggle">
+            <button class="scoring-option" data-value="3rr" onclick="setGdDraftType('3rr')">3rd Round Rev</button>
+            <button class="scoring-option" data-value="snake" onclick="setGdDraftType('snake')">Snake</button>
+          </div>
+        </div>
+
+        <div id="rd-teams-groups-list"></div>
+
+        <div class="form-action-bar">
+          <button class="btn-secondary" onclick="navigateToScreen('redivision')">Back</button>
+          <button class="btn-primary" id="rd-teams-next-btn" onclick="handleRedivisionTeamsNext()">Next</button>
+        </div>
+      </section>
+
       <!-- CSV file download -->
       <section id="screen-dupr" class="app-screen">
         <div class="placeholder-view">

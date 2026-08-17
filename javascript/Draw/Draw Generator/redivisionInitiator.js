@@ -218,3 +218,171 @@ function handleRedivisionBuild() {
   console.log('Redivision build not yet implemented.', window.rdConfig);
   alert('Redivision logic coming soon — screen flow is wired and ready.');
 }
+
+/**
+ * Ladder Scramble redivision: every division simultaneously trades its
+ * top `promoteCount` players upward and bottom `promoteCount` players
+ * downward with its immediate neighbors, computed from each division's
+ * CURRENT standings rank (before any movement is applied this round).
+ * Top division only loses from the bottom (nowhere to send up).
+ * Bottom division only loses from the top (nowhere to send down).
+ *
+ * divisionsRankedPlayers = array of arrays, index 0 = Division 1 (top),
+ * each inner array already sorted best-to-worst by standings rank.
+ */
+function applyPromoteRelegate(divisionsRankedPlayers, promoteCount) {
+  const numDivisions = divisionsRankedPlayers.length;
+  const newDivisions = Array.from({ length: numDivisions }, () => []);
+
+  divisionsRankedPlayers.forEach((divisionPlayers, divIdx) => {
+    const n = divisionPlayers.length;
+    const promoted = divIdx > 0 ? divisionPlayers.slice(0, promoteCount) : [];
+    const relegated = divIdx < numDivisions - 1 ? divisionPlayers.slice(n - promoteCount) : [];
+    const staying = divisionPlayers.slice(
+      divIdx > 0 ? promoteCount : 0,
+      divIdx < numDivisions - 1 ? n - promoteCount : n
+    );
+
+    newDivisions[divIdx].push(...staying);
+    if (promoted.length > 0) newDivisions[divIdx - 1].push(...promoted);
+    if (relegated.length > 0) newDivisions[divIdx + 1].push(...relegated);
+  });
+
+  return newDivisions;
+}
+
+/**
+ * ============================================================
+ * REDIVISION TEAM/GROUP ASSIGNMENT ENGINES
+ * One function per game's redivision rule. All read from
+ * Standings (results-based rank), not DUPR — except Doubles
+ * Pro's DRAW-time pairing, which stays DUPR-based; only its
+ * REDIVISION uses standings.
+ * ============================================================
+ */
+
+// ---------- SHARED: rank players by current Standings ----------
+
+function getStandingsRankedPlayers(payload) {
+  const activeEventId = payload.activeEventId;
+  const activeEvent = payload.events.find(e => String(e.EventID) === String(activeEventId));
+  const matches = payload.draw || [];
+  const players = payload.players.filter(p => String(p.PlayerVersion) === String(activeEvent.CurrentPlayerVersion));
+
+  const ladderScoringMode = activeEvent.LadderScoring || 'Margin';
+
+  const standings = players.map(player => {
+    const stats = calculatePlayerStats(player.PlayerID, matches); // reuses existing Standings logic
+    const points = calculateLadderPoints(stats, ladderScoringMode);
+    return { player, points };
+  });
+
+  standings.sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    return (parseFloat(b.player.DUPR) || 0) - (parseFloat(a.player.DUPR) || 0); // DUPR as tiebreak
+  });
+
+  return standings.map(s => s.player);
+}
+
+// ---------- TOP-WITH-BOTTOM PAIRING (Doubles Pro: DUPR at draw, standings at redivision) ----------
+
+function buildTopBottomPairs(sortedPlayersDesc) {
+  const n = sortedPlayersDesc.length;
+  const pairs = [];
+  for (let i = 0; i < Math.floor(n / 2); i++) {
+    pairs.push([sortedPlayersDesc[i], sortedPlayersDesc[n - 1 - i]]);
+  }
+  return pairs;
+}
+
+function redivideDoublesProByStandings(payload) {
+  const rankedPlayers = getStandingsRankedPlayers(payload);
+  const pairs = buildTopBottomPairs(rankedPlayers);
+  return pairs.map(pair => pair); // array of [playerA, playerB] — one per team
+}
+
+// ---------- CONTIGUOUS-BLOCK DIVISIONS (Pools, redivision only) ----------
+
+function redividePoolsByStandings(payload, numberOfGroups) {
+  const rankedPlayers = getStandingsRankedPlayers(payload);
+  const playersPerGroup = computePlayersPerGroup(rankedPlayers.length, numberOfGroups); // reuses existing helper
+
+  const groups = [];
+  let cursor = 0;
+  playersPerGroup.forEach(count => {
+    groups.push(rankedPlayers.slice(cursor, cursor + count));
+    cursor += count;
+  });
+  return groups;
+}
+
+// ---------- LADDER SCRAMBLE PROMOTE/RELEGATE (verified earlier) ----------
+
+function applyPromoteRelegate(divisionsRankedPlayers, promoteCount) {
+  const numDivisions = divisionsRankedPlayers.length;
+  const newDivisions = Array.from({ length: numDivisions }, () => []);
+
+  divisionsRankedPlayers.forEach((divisionPlayers, divIdx) => {
+    const n = divisionPlayers.length;
+    const promoted = divIdx > 0 ? divisionPlayers.slice(0, promoteCount) : [];
+    const relegated = divIdx < numDivisions - 1 ? divisionPlayers.slice(n - promoteCount) : [];
+    const staying = divisionPlayers.slice(
+      divIdx > 0 ? promoteCount : 0,
+      divIdx < numDivisions - 1 ? n - promoteCount : n
+    );
+
+    newDivisions[divIdx].push(...staying);
+    if (promoted.length > 0) newDivisions[divIdx - 1].push(...promoted);
+    if (relegated.length > 0) newDivisions[divIdx + 1].push(...relegated);
+  });
+
+  return newDivisions;
+}
+
+/**
+ * Ranks players WITHIN each of their current divisions by standings,
+ * then applies the promote/relegate movement.
+ */
+function redivideLadderScrambleByStandings(payload, promoteCount) {
+  const activeEventId = payload.activeEventId;
+  const activeEvent = payload.events.find(e => String(e.EventID) === String(activeEventId));
+  const rankedPlayers = getStandingsRankedPlayers(payload); // full event ranking, but we need per-division sub-rank
+
+  const currentPlayerVersion = activeEvent.CurrentPlayerVersion;
+  const numberOfDivisions = parseInt(activeEvent.NumberOfTeams) || 2;
+
+  // Group currently-ranked players by their EXISTING Team (division) number, preserving overall rank order within each
+  const divisionsMap = {};
+  rankedPlayers.forEach(p => {
+    const team = p.Team || 1;
+    if (!divisionsMap[team]) divisionsMap[team] = [];
+    divisionsMap[team].push(p);
+  });
+
+  const divisionsArray = [];
+  for (let i = 1; i <= numberOfDivisions; i++) {
+    divisionsArray.push(divisionsMap[i] || []);
+  }
+
+  return applyPromoteRelegate(divisionsArray, promoteCount);
+}
+
+// ---------- POOL FUSION (redivision = no-op, groups unchanged) ----------
+
+function redividePoolFusion(payload) {
+  const activeEventId = payload.activeEventId;
+  const activeEvent = payload.events.find(e => String(e.EventID) === String(activeEventId));
+  const currentPlayerVersion = activeEvent.CurrentPlayerVersion;
+
+  const players = payload.players.filter(p => String(p.PlayerVersion) === String(currentPlayerVersion));
+  const numberOfGroups = parseInt(activeEvent.NumberOfTeams) || 2;
+
+  const groups = Array.from({ length: numberOfGroups }, () => []);
+  players.forEach(p => {
+    const teamIdx = (parseInt(p.Team) || 1) - 1;
+    if (groups[teamIdx]) groups[teamIdx].push(p);
+  });
+
+  return groups; // literally unchanged from current Team assignments
+}
