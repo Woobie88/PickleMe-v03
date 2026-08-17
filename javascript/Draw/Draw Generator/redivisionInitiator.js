@@ -248,7 +248,7 @@ function applyPromoteRelegate(divisionsRankedPlayers, promoteCount) {
     if (relegated.length > 0) newDivisions[divIdx + 1].push(...relegated);
   });
 
-  console.log(`The new disvisions are ${newDivisions}`);
+  console.log(`The new divisions are ${newDivisions}`);
   return newDivisions;
 }
 
