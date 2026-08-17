@@ -391,7 +391,7 @@ function adjustRdStartRound(direction) {
   const hiddenInput = document.getElementById('rd-start-round-hidden');
   const displaySpan = document.getElementById('rd-start-round-value');
 
-  let current = parseInt(hiddenInput.value + 1) || 1;
+  let current = parseInt(hiddenInput.value) || 1;
   current = Math.max(1, current + direction);
 
   hiddenInput.value = current;
