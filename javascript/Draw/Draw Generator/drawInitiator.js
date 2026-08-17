@@ -88,6 +88,26 @@ function renderGenerateDrawDetails(payload) {
   });
 
   window.gdAllPlayersPresentValue = currentValue; // stored for handleTeamsNext/routing decision later
+
+  updateDetailsNextButtonLabel();
+}
+
+function updateDetailsNextButtonLabel() {
+  const activeEventId = window.cachedUserUniverse.activeEventId;
+  const activeEvent = window.cachedUserUniverse.events.find(e => String(e.EventID) === String(activeEventId));
+  const gameProfile = gamesProfile.find(g => g.GameID === activeEvent?.GameID);
+
+  const grouping = gameProfile?.Grouping || 'None';
+  const needsTeamsScreen = ['Teams', 'Pools', 'Pairs', 'Divisions'].includes(grouping);
+
+  const btn = document.getElementById('gd-details-next-btn'); // needs an id on the button — see HTML note below
+  if (!btn) return;
+
+  if (needsTeamsScreen) {
+    btn.innerText = 'Next';
+  } else {
+    btn.innerText = window.gdAllPlayersPresentValue === 'Yes' ? 'Build Draw' : 'Next';
+  }
 }
 
 async function ensureTeamsDefaultForGame(activeEventId, gameProfile) {
@@ -341,6 +361,14 @@ function renderGenerateDrawTeams(payload) {
 
   enableTeamsDragDrop(numberOfGroups);
   commitTeamsAssignment(numberOfGroups);
+  updateTeamsNextButtonLabel();
+}
+
+function updateTeamsNextButtonLabel() {
+  const btn = document.getElementById('gd-teams-next-btn'); // needs an id — see HTML note below
+  if (!btn) return;
+
+  btn.innerText = window.gdAllPlayersPresentValue === 'Yes' ? 'Build Draw' : 'Next';
 }
 
 // Persist assignment + move to the final Available screen

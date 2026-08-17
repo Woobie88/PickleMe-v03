@@ -563,6 +563,14 @@ async function generateNRoundsAndPreview(numberOfRounds) {
   }
   logPlayerSummary(players, newMatches, flatByesByRound);
 
+  // NEW — if the draw just ran with nobody excluded, ensure AllPlayersPresent reflects that going forward
+  const anyExcludedAfterDraw = players.some(p => p.playerExclude === 'Yes');
+  if (!anyExcludedAfterDraw && activeEvent.AllPlayersPresent !== 'Yes') {
+    activeEvent.AllPlayersPresent = 'Yes';
+    await window.updateEventFieldInFirestore(activeEventId, 'AllPlayersPresent', 'Yes');
+    console.log('No players excluded — AllPlayersPresent reset to Yes.');
+  }
+
   await window.saveGeneratedDrawToFirestore(newMatches);
   window.cachedUserUniverse.draw = newMatches;
 
