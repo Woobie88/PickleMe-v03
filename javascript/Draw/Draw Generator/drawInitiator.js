@@ -299,8 +299,6 @@ function renderGenerateDrawTeams(payload) {
     return (parseFloat(a.RandomNumber) || 0) - (parseFloat(b.RandomNumber) || 0);
   });
 
-  // NEW — Pairs auto-computes group count as half the player count; every other
-  // grouping type uses the organizer-set NumberOfTeams field
   const numberOfGroups = grouping === 'Pairs'
     ? Math.floor(duprSorted.length / 2)
     : (parseInt(activeEvent?.NumberOfTeams) || 2);
@@ -321,7 +319,13 @@ function renderGenerateDrawTeams(payload) {
 
   const groups = Array.from({ length: numberOfGroups }, () => []);
 
-  if (draftSupported) {
+  if (grouping === 'Pairs') {
+    // Doubles Pro — top-with-bottom DUPR pairing, not contiguous blocks
+    const pairs = buildTopBottomPairs(duprSorted);
+    pairs.forEach((pair, idx) => {
+      groups[idx] = pair;
+    });
+  } else if (draftSupported) {
     const pickOrder = buildDraftPickOrder(numberOfGroups, playersPerGroup);
     pickOrder.forEach((groupIdx, pickIdx) => {
       groups[groupIdx].push(duprSorted[pickIdx]);
