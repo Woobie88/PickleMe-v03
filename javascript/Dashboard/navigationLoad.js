@@ -117,6 +117,12 @@ function navigateToScreen(screenId) {
     case 'redivision':
       renderRedivisionScreen(window.cachedUserUniverse);
       break;
+    case 'redivision-teams':
+      renderRedivisionTeamsScreen(window.cachedUserUniverse);
+      break;
+    case 'redivision-available':
+      renderRedivisionAvailabilityList(window.cachedUserUniverse); // see #4 below
+      break;
   }
 }
 

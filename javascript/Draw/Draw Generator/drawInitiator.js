@@ -580,7 +580,7 @@ function enableAvailabilityLongPress() {
     card.addEventListener('touchstart', () => {
       longPressTimer = setTimeout(() => {
         if (navigator.vibrate) navigator.vibrate(30);
-        togglePlayerExclude(card.dataset.cardId);
+        togglePlayerExclude(card.dataset.cardId, renderPlayerAvailabilityList); // Generate Draw version
       }, 350);
     }, { passive: true });
 
@@ -595,7 +595,7 @@ function enableAvailabilityLongPress() {
   });
 }
 
-async function togglePlayerExclude(playerId) {
+async function togglePlayerExclude(playerId, refreshFn) {
   const player = window.cachedUserUniverse.players.find(p => p.PlayerID === playerId);
   if (!player) return;
 
@@ -604,10 +604,9 @@ async function togglePlayerExclude(playerId) {
 
   try {
     await window.updatePlayerExcludeInFirestore(playerId, newValue);
-    console.log(`${playerId} playerExclude set to ${newValue}`);
   } catch (err) {
     console.error("Failed to update player availability:", err);
   }
 
-  renderPlayerAvailabilityList(window.cachedUserUniverse);
+  refreshFn(window.cachedUserUniverse); // CHANGED — caller decides what to re-render
 }
