@@ -272,7 +272,16 @@ function setGdDraftType(type) {
   renderGenerateDrawTeams(window.cachedUserUniverse); // re-render assignment with new draft order
 }
 
-function renderGenerateDrawTeams(payload) {
+function renderGenerateDrawTeams(payload, ids = {}) {
+  const {
+    headingId = 'gd-teams-screen-heading',
+    draftToggleBlockId = 'gd-draft-toggle-block',
+    draftToggleId = 'gd-draft-toggle',
+    groupsListId = 'gd-teams-groups-list',
+    nextBtnId = 'gd-teams-next-btn',
+    allPlayersPresentVar = 'gdAllPlayersPresentValue'
+  } = ids;
+
   const activeEventId = payload.activeEventId;
   const activeEvent = payload.events.find(e => String(e.EventID) === String(activeEventId));
   const gameProfile = gamesProfile.find(g => g.GameID === activeEvent?.GameID);
@@ -303,12 +312,13 @@ function renderGenerateDrawTeams(payload) {
     ? Math.floor(duprSorted.length / 2)
     : (parseInt(activeEvent?.NumberOfTeams) || 2);
 
-  document.getElementById('gd-teams-screen-heading').innerText = groupLabel + 's';
+  const headingEl = document.getElementById(headingId);
+  if (headingEl) headingEl.innerText = groupLabel + 's';
 
-  const draftToggleBlock = document.getElementById('gd-draft-toggle-block');
+  const draftToggleBlock = document.getElementById(draftToggleBlockId);
   if (draftSupported) {
     draftToggleBlock.style.display = 'flex';
-    document.querySelectorAll('#gd-draft-toggle .scoring-option').forEach(btn => {
+    document.querySelectorAll(`#${draftToggleId} .scoring-option`).forEach(btn => {
       btn.classList.toggle('active', btn.dataset.value === window.gdDraftType);
     });
   } else {
@@ -316,11 +326,9 @@ function renderGenerateDrawTeams(payload) {
   }
 
   const playersPerGroup = computePlayersPerGroup(duprSorted.length, numberOfGroups);
-
   const groups = Array.from({ length: numberOfGroups }, () => []);
 
   if (grouping === 'Pairs') {
-    // Doubles Pro — top-with-bottom DUPR pairing, not contiguous blocks
     const pairs = buildTopBottomPairs(duprSorted);
     pairs.forEach((pair, idx) => {
       groups[idx] = pair;
@@ -340,13 +348,13 @@ function renderGenerateDrawTeams(payload) {
 
   window.gdGroupAssignment = groups;
 
-  const container = document.getElementById('gd-teams-groups-list');
+  const container = document.getElementById(groupsListId);
   let html = '';
 
   groups.forEach((groupPlayers, idx) => {
     const groupNumber = idx + 1;
     html += `<div class="event-section-title current">${groupLabel} ${groupNumber}</div>`;
-    html += `<div class="card-grid" id="gd-group-${groupNumber}" data-group-number="${groupNumber}">`;
+    html += `<div class="card-grid" id="${groupsListId}-group-${groupNumber}" data-group-number="${groupNumber}">`;
     groupPlayers.forEach(player => {
       const seedNumber = duprSorted.findIndex(p => p.PlayerID === player.PlayerID) + 1;
       const seedUrl = playerSeeds[0]['seed-' + seedNumber];
@@ -363,9 +371,13 @@ function renderGenerateDrawTeams(payload) {
 
   container.innerHTML = html || `<div class="no-data-placeholder"><h3>No Players Found</h3></div>`;
 
-  enableTeamsDragDrop(numberOfGroups);
-  commitTeamsAssignment(numberOfGroups);
-  updateTeamsNextButtonLabel();
+  enableTeamsDragDrop(numberOfGroups, groupsListId);
+  commitTeamsAssignment(numberOfGroups, groupsListId);
+
+  const btn = document.getElementById(nextBtnId);
+  if (btn) {
+    btn.innerText = window[allPlayersPresentVar] === 'Yes' ? 'Build Draw' : 'Next';
+  }
 }
 
 function updateTeamsNextButtonLabel() {
@@ -381,10 +393,10 @@ function handleTeamsNext() {
 }
 
 // Generalized N-group drag engine
-function enableTeamsDragDrop(numberOfGroups) {
+function enableTeamsDragDrop(numberOfGroups, groupsListId = 'gd-teams-groups-list') {
   const groupContainers = [];
   for (let i = 1; i <= numberOfGroups; i++) {
-    const el = document.getElementById(`gd-group-${i}`);
+    const el = document.getElementById(`${groupsListId}-group-${i}`);
     if (el) groupContainers.push(el);
   }
 
@@ -402,7 +414,6 @@ function enableTeamsDragDrop(numberOfGroups) {
           if (navigator.vibrate) navigator.vibrate(30);
 
           const rect = card.getBoundingClientRect();
-
           placeholder = document.createElement('div');
           placeholder.className = 'app-card';
           placeholder.style.opacity = '0.2';
@@ -428,13 +439,9 @@ function enableTeamsDragDrop(numberOfGroups) {
         const scrollContainer = document.querySelector('.app-container');
         const edgeThreshold = 80;
         const scrollSpeed = 12;
-
         if (scrollContainer) {
-          if (touch.clientY < edgeThreshold) {
-            scrollContainer.scrollTop -= scrollSpeed;
-          } else if (touch.clientY > window.innerHeight - edgeThreshold) {
-            scrollContainer.scrollTop += scrollSpeed;
-          }
+          if (touch.clientY < edgeThreshold) scrollContainer.scrollTop -= scrollSpeed;
+          else if (touch.clientY > window.innerHeight - edgeThreshold) scrollContainer.scrollTop += scrollSpeed;
         }
 
         card.style.display = 'none';
@@ -445,15 +452,11 @@ function enableTeamsDragDrop(numberOfGroups) {
         if (!targetContainer) return;
 
         const targetCard = elBelow.closest('.app-card[data-card-id]');
-
         if (targetCard && targetCard !== placeholder) {
           const box = targetCard.getBoundingClientRect();
           const midY = box.top + box.height / 2;
-          if (touch.clientY < midY) {
-            targetContainer.insertBefore(placeholder, targetCard);
-          } else {
-            targetContainer.insertBefore(placeholder, targetCard.nextSibling);
-          }
+          if (touch.clientY < midY) targetContainer.insertBefore(placeholder, targetCard);
+          else targetContainer.insertBefore(placeholder, targetCard.nextSibling);
         } else if (!targetContainer.querySelector('.app-card[data-card-id]')) {
           targetContainer.innerHTML = '';
           targetContainer.appendChild(placeholder);
@@ -478,23 +481,21 @@ function enableTeamsDragDrop(numberOfGroups) {
         }
 
         window.suppressNextCardClick = true;
-        commitTeamsAssignment(numberOfGroups);
+        commitTeamsAssignment(numberOfGroups, groupsListId);
       });
     });
   });
 }
 
-// Commit — reads final DOM order across all groups, updates in-memory + Firestore
-async function commitTeamsAssignment(numberOfGroups) {
+async function commitTeamsAssignment(numberOfGroups, groupsListId = 'gd-teams-groups-list') {
   const payload = window.cachedUserUniverse;
   const updates = [];
 
   for (let i = 1; i <= numberOfGroups; i++) {
-    const container = document.getElementById(`gd-group-${i}`);
+    const container = document.getElementById(`${groupsListId}-group-${i}`);
     if (!container) continue;
 
     const cardIds = Array.from(container.querySelectorAll('.app-card[data-card-id]')).map(c => c.dataset.cardId);
-
     cardIds.forEach(pid => {
       const player = payload.players.find(p => p.PlayerID === pid);
       if (player) player.Team = i;

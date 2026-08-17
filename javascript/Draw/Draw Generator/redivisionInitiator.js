@@ -92,11 +92,14 @@ function renderRedivisionScreen(payload) {
 }
 
 function renderRedivisionTeamsScreen(payload) {
-  renderGenerateDrawTeams(payload); // reuse entirely — group-building logic doesn't differ
-
-  const btn = document.getElementById('rd-teams-next-btn');
-  if (!btn) return;
-  btn.innerText = window.rdAllPlayersPresentValue === 'Yes' ? 'Build Draw' : 'Next';
+  renderGenerateDrawTeams(payload, {
+    headingId: 'rd-teams-screen-heading',
+    draftToggleBlockId: 'rd-draft-toggle-block',
+    draftToggleId: 'rd-draft-toggle',
+    groupsListId: 'rd-teams-groups-list',
+    nextBtnId: 'rd-teams-next-btn',
+    allPlayersPresentVar: 'rdAllPlayersPresentValue'
+  });
 }
 
 function handleRedivisionTeamsNext() {
