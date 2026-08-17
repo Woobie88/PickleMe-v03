@@ -92,10 +92,41 @@ function renderRedivisionScreen(payload) {
 }
 
 function renderRedivisionTeamsScreen(payload) {
-  renderGenerateDrawTeams(payload, {
-    headingId: 'rd-teams-screen-heading',
-    draftToggleBlockId: 'rd-draft-toggle-block',
-    draftToggleId: 'rd-draft-toggle',
+  const activeEventId = payload.activeEventId;
+  const activeEvent = payload.events.find(e => String(e.EventID) === String(activeEventId));
+  const gameId = activeEvent?.GameID;
+  const gameProfile = gamesProfile.find(g => g.GameID === gameId);
+  const grouping = gameProfile?.Grouping || 'None';
+
+  const groupLabels = { 'Teams': 'Team', 'Pools': 'Pool', 'Divisions': 'Division', 'Pairs': 'Pair' };
+  const groupLabel = groupLabels[grouping] || 'Team';
+
+  const currentPlayerVersion = activeEvent.CurrentPlayerVersion;
+  const allPlayers = (payload.players || [])
+    .filter(p => String(p.PlayerVersion) === String(currentPlayerVersion))
+    .filter(p => p.playerExclude !== 'Yes');
+
+  document.getElementById('rd-teams-screen-heading').innerText = groupLabel + 's';
+  document.getElementById('rd-draft-toggle-block').style.display = 'none'; // redivision never drafts
+
+  let groups;
+
+  if (gameId === 'doubles-pro') {
+    groups = redivideDoublesProByStandings(payload);
+  } else if (gameId === 'ladder-scramble') {
+    const promoteCount = parseInt(activeEvent.RedivisionPromoteCount) || 2;
+    groups = redivideLadderScrambleByStandings(payload, promoteCount);
+  } else if (gameId === 'pools') {
+    const numberOfGroups = parseInt(activeEvent.NumberOfTeams) || 2;
+    groups = redividePoolsByStandings(payload, numberOfGroups);
+  } else if (gameId === 'pool-fusion') {
+    groups = redividePoolFusion(payload);
+  } else {
+    console.error(`No redivision rule defined for game "${gameId}".`);
+    groups = [];
+  }
+
+  renderGroupsUI(groups, groupLabel, allPlayers, {
     groupsListId: 'rd-teams-groups-list',
     nextBtnId: 'rd-teams-next-btn',
     allPlayersPresentVar: 'rdAllPlayersPresentValue'

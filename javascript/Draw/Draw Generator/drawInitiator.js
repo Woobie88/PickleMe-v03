@@ -289,12 +289,7 @@ function renderGenerateDrawTeams(payload, ids = {}) {
   const grouping = gameProfile?.Grouping || 'None';
   const draftSupported = gameProfile?.Draft === 'Yes';
 
-  const groupLabels = {
-    'Teams': 'Team',
-    'Pools': 'Pool',
-    'Divisions': 'Division',
-    'Pairs': 'Pair'
-  };
+  const groupLabels = { 'Teams': 'Team', 'Pools': 'Pool', 'Divisions': 'Division', 'Pairs': 'Pair' };
   const groupLabel = groupLabels[grouping] || 'Team';
 
   const currentPlayerVersion = activeEvent.CurrentPlayerVersion;
@@ -330,14 +325,10 @@ function renderGenerateDrawTeams(payload, ids = {}) {
 
   if (grouping === 'Pairs') {
     const pairs = buildTopBottomPairs(duprSorted);
-    pairs.forEach((pair, idx) => {
-      groups[idx] = pair;
-    });
+    pairs.forEach((pair, idx) => { groups[idx] = pair; });
   } else if (draftSupported) {
     const pickOrder = buildDraftPickOrder(numberOfGroups, playersPerGroup);
-    pickOrder.forEach((groupIdx, pickIdx) => {
-      groups[groupIdx].push(duprSorted[pickIdx]);
-    });
+    pickOrder.forEach((groupIdx, pickIdx) => { groups[groupIdx].push(duprSorted[pickIdx]); });
   } else {
     let cursor = 0;
     playersPerGroup.forEach((count, groupIdx) => {
@@ -346,38 +337,9 @@ function renderGenerateDrawTeams(payload, ids = {}) {
     });
   }
 
-  window.gdGroupAssignment = groups;
+  renderGroupsUI(groups, groupLabel, players, { groupsListId, nextBtnId, allPlayersPresentVar });
 
-  const container = document.getElementById(groupsListId);
-  let html = '';
-
-  groups.forEach((groupPlayers, idx) => {
-    const groupNumber = idx + 1;
-    html += `<div class="event-section-title current">${groupLabel} ${groupNumber}</div>`;
-    html += `<div class="card-grid" id="${groupsListId}-group-${groupNumber}" data-group-number="${groupNumber}">`;
-    groupPlayers.forEach(player => {
-      const seedNumber = duprSorted.findIndex(p => p.PlayerID === player.PlayerID) + 1;
-      const seedUrl = playerSeeds[0]['seed-' + seedNumber];
-      const iconAsset = seedUrl || '🎾';
-
-      const contentHtml = `
-        <h3>${player.Name || 'Unnamed Player'}</h3>
-        <p class="card-meta-line">${player.DUPRId || 'N/A'} ${player.DUPR ? ' || DUPR ' + player.DUPR : '0'}</p>
-      `;
-      html += buildCardMarkup({ iconAsset, contentHtml, cardId: player.PlayerID });
-    });
-    html += `</div>`;
-  });
-
-  container.innerHTML = html || `<div class="no-data-placeholder"><h3>No Players Found</h3></div>`;
-
-  enableTeamsDragDrop(numberOfGroups, groupsListId);
-  commitTeamsAssignment(numberOfGroups, groupsListId);
-
-  const btn = document.getElementById(nextBtnId);
-  if (btn) {
-    btn.innerText = window[allPlayersPresentVar] === 'Yes' ? 'Build Draw' : 'Next';
-  }
+  // heading/draft-toggle already handled above; headingId already set
 }
 
 function updateTeamsNextButtonLabel() {
@@ -614,4 +576,47 @@ async function togglePlayerExclude(playerId, refreshFn) {
   }
 
   refreshFn(window.cachedUserUniverse); // CHANGED — caller decides what to re-render
+}
+
+function renderGroupsUI(groups, groupLabel, allPlayersForSeedLookup, ids) {
+  const { groupsListId, nextBtnId, allPlayersPresentVar } = ids;
+
+  window.gdGroupAssignment = groups;
+
+  const duprSorted = [...allPlayersForSeedLookup].sort((a, b) => {
+    const duprDiff = (parseFloat(b.DUPR) || 0) - (parseFloat(a.DUPR) || 0);
+    if (duprDiff !== 0) return duprDiff;
+    return (parseFloat(a.RandomNumber) || 0) - (parseFloat(b.RandomNumber) || 0);
+  });
+
+  const container = document.getElementById(groupsListId);
+  let html = '';
+
+  groups.forEach((groupPlayers, idx) => {
+    const groupNumber = idx + 1;
+    html += `<div class="event-section-title current">${groupLabel} ${groupNumber}</div>`;
+    html += `<div class="card-grid" id="${groupsListId}-group-${groupNumber}" data-group-number="${groupNumber}">`;
+    groupPlayers.forEach(player => {
+      const seedNumber = duprSorted.findIndex(p => p.PlayerID === player.PlayerID) + 1;
+      const seedUrl = playerSeeds[0]['seed-' + seedNumber];
+      const iconAsset = seedUrl || '🎾';
+
+      const contentHtml = `
+        <h3>${player.Name || 'Unnamed Player'}</h3>
+        <p class="card-meta-line">${player.DUPRId || 'N/A'} ${player.DUPR ? ' || DUPR ' + player.DUPR : '0'}</p>
+      `;
+      html += buildCardMarkup({ iconAsset, contentHtml, cardId: player.PlayerID });
+    });
+    html += `</div>`;
+  });
+
+  container.innerHTML = html || `<div class="no-data-placeholder"><h3>No Players Found</h3></div>`;
+
+  enableTeamsDragDrop(groups.length, groupsListId);
+  commitTeamsAssignment(groups.length, groupsListId);
+
+  const btn = document.getElementById(nextBtnId);
+  if (btn) {
+    btn.innerText = window[allPlayersPresentVar] === 'Yes' ? 'Build Draw' : 'Next';
+  }
 }
