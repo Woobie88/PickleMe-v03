@@ -386,3 +386,28 @@ function redividePoolFusion(payload) {
 
   return groups; // literally unchanged from current Team assignments
 }
+
+function adjustRdStartRound(direction) {
+  const hiddenInput = document.getElementById('rd-start-round-hidden');
+  const displaySpan = document.getElementById('rd-start-round-value');
+
+  let current = parseInt(hiddenInput.value + 1) || 1;
+  current = Math.max(1, current + direction);
+
+  hiddenInput.value = current;
+  displaySpan.innerText = current;
+
+  saveRdStartRound(current);
+}
+
+async function saveRdStartRound(value) {
+  const activeEventId = window.cachedUserUniverse.activeEventId;
+  const activeEvent = window.cachedUserUniverse.events.find(e => String(e.EventID) === String(activeEventId));
+  if (activeEvent) activeEvent.CurrentRound = value;
+
+  try {
+    await window.updateEventFieldInFirestore(activeEventId, 'CurrentRound', value);
+  } catch (err) {
+    console.error("Failed to save CurrentRound:", err);
+  }
+}
