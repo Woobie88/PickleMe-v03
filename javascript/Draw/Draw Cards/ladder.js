@@ -111,7 +111,7 @@ async function renderStandingsView(payload) {
     `;
 
     return `
-      <div class="app-card">
+      <div class="app-card" onclick="viewPlayerResultsFromStandings('${entry.player.PlayerID}')">
         <div class="card-icon-wrapper">${iconMarkup}</div>
         <div class="card-content">${contentHtml}</div>
         <div class="points-badge">${entry.points}</div>
