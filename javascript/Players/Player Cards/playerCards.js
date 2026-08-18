@@ -416,15 +416,15 @@ function renderPlayerDetailView() {
   const idx = window.currentPlayerDetailIndex;
   if (idx === 0) renderPlayerEditView();
   else if (idx === 1) renderPlayerSummaryView();
+  else if (idx === 2) renderPlayerResultsSummaryView(); // NEW
   else renderPlayerMatchesView();
 }
 
 function goToNextPlayerDetailScreen() {
-  if (window.currentPlayerDetailIndex < 2) {
+  if (window.currentPlayerDetailIndex < 3) { // CHANGED — was < 2
     window.currentPlayerDetailIndex++;
     renderPlayerDetailView();
   } else {
-    // Already on the Draw screen (index 2) — swiping forward exits to Player Roster
     navigateToScreen('players');
   }
 }
@@ -434,7 +434,6 @@ function goToPreviousPlayerDetailScreen() {
     window.currentPlayerDetailIndex--;
     renderPlayerDetailView();
   } else {
-    // Already on the Edit screen (index 0) — swiping back exits to Player Roster
     navigateToScreen('players');
   }
 }
@@ -667,4 +666,49 @@ function handlePlayerFieldEdit(field, value) {
       .then(() => console.log(`Saved ${field}`))
       .catch(err => console.error(`Failed to save ${field}:`, err));
   }, 600);
+}
+
+function renderPlayerResultsSummaryView() {
+  const player = window.cachedUserUniverse.players.find(p => p.PlayerID === window.currentPlayerDetailId);
+  const container = document.getElementById('player-detail-content');
+  if (!player) return;
+
+  const activeEventId = window.cachedUserUniverse.activeEventId;
+  const activeEvent = window.cachedUserUniverse.events.find(e => String(e.EventID) === String(activeEventId));
+  const matches = window.cachedUserUniverse.draw || [];
+  const allPlayers = window.cachedUserUniverse.players.filter(
+    p => String(p.PlayerVersion) === String(activeEvent.CurrentPlayerVersion)
+  );
+
+  const ladderScoringMode = activeEvent.LadderScoring || 'Margin';
+
+  // Compute event-wide standings once, to determine this player's rank correctly
+  const standings = allPlayers.map(p => {
+    const stats = calculatePlayerStats(p.PlayerID, matches);
+    const points = calculateLadderPoints(stats, ladderScoringMode);
+    return { player: p, stats, points };
+  });
+
+  standings.sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    return (parseFloat(b.player.DUPR) || 0) - (parseFloat(a.player.DUPR) || 0);
+  });
+
+  const rank = standings.findIndex(s => s.player.PlayerID === player.PlayerID) + 1;
+  const entry = standings.find(s => s.player.PlayerID === player.PlayerID);
+  const stats = entry?.stats || { games: 0, wins: 0, losses: 0, pointsFor: 0, pointsAgainst: 0 };
+  const points = entry?.points || 0;
+
+  container.innerHTML = `
+    <div class="welcome-banner"><h2>${player.Name || 'Unnamed'} — Results</h2></div>
+    <div class="detail-view-container">
+      <div class="detail-form-group"><label>Rank</label><div class="detail-readonly">${rank}</div></div>
+      <div class="detail-form-group"><label>Games Played</label><div class="detail-readonly">${stats.games}</div></div>
+      <div class="detail-form-group"><label>Wins</label><div class="detail-readonly">${stats.wins}</div></div>
+      <div class="detail-form-group"><label>Losses</label><div class="detail-readonly">${stats.losses}</div></div>
+      <div class="detail-form-group"><label>Points For</label><div class="detail-readonly">${stats.pointsFor}</div></div>
+      <div class="detail-form-group"><label>Points Against</label><div class="detail-readonly">${stats.pointsAgainst}</div></div>
+      <div class="detail-form-group"><label>Points</label><div class="detail-readonly">${points}</div></div>
+    </div>
+  `;
 }
