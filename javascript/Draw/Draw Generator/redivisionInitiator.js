@@ -130,7 +130,7 @@ function renderRedivisionTeamsScreen(payload) {
     groupsListId: 'rd-teams-groups-list',
     nextBtnId: 'rd-teams-next-btn',
     allPlayersPresentVar: 'rdAllPlayersPresentValue'
-  });
+  }, true); // NEW — ladder-style cards for redivision
 }
 
 function handleRedivisionTeamsNext() {
@@ -439,5 +439,98 @@ async function saveRdStartRound(value) {
     await window.updateEventFieldInFirestore(activeEventId, 'CurrentRound', value);
   } catch (err) {
     console.error("Failed to save CurrentRound:", err);
+  }
+}
+
+function renderGroupsUI(groups, groupLabel, allPlayersForSeedLookup, ids, useStandingsCards = false) {
+  const { groupsListId, nextBtnId, allPlayersPresentVar } = ids;
+
+  window.gdGroupAssignment = groups;
+
+  const container = document.getElementById(groupsListId);
+  let html = '';
+
+  // Pre-compute standings rank/points ONCE if needed, so every group's cards can use it
+  let rankByPlayerId = {}, statsByPlayerId = {}, pointsByPlayerId = {};
+  if (useStandingsCards) {
+    const activeEventId = window.cachedUserUniverse.activeEventId;
+    const activeEvent = window.cachedUserUniverse.events.find(e => String(e.EventID) === String(activeEventId));
+    const matches = window.cachedUserUniverse.draw || [];
+    const ladderScoringMode = activeEvent.LadderScoring || 'Margin';
+
+    const standings = allPlayersForSeedLookup.map(player => {
+      const stats = calculatePlayerStats(player.PlayerID, matches);
+      const points = calculateLadderPoints(stats, ladderScoringMode);
+      return { player, stats, points };
+    });
+
+    standings.sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points;
+      return (parseFloat(b.player.DUPR) || 0) - (parseFloat(a.player.DUPR) || 0);
+    });
+
+    standings.forEach((entry, index) => {
+      rankByPlayerId[entry.player.PlayerID] = index + 1;
+      statsByPlayerId[entry.player.PlayerID] = entry.stats;
+      pointsByPlayerId[entry.player.PlayerID] = entry.points;
+    });
+  }
+
+  const duprSorted = [...allPlayersForSeedLookup].sort((a, b) => {
+    const duprDiff = (parseFloat(b.DUPR) || 0) - (parseFloat(a.DUPR) || 0);
+    if (duprDiff !== 0) return duprDiff;
+    return (parseFloat(a.RandomNumber) || 0) - (parseFloat(b.RandomNumber) || 0);
+  });
+
+  groups.forEach((groupPlayers, idx) => {
+    const groupNumber = idx + 1;
+    html += `<div class="event-section-title current">${groupLabel} ${groupNumber}</div>`;
+    html += `<div class="card-grid" id="${groupsListId}-group-${groupNumber}" data-group-number="${groupNumber}">`;
+
+    groupPlayers.forEach(player => {
+      if (useStandingsCards) {
+        // Ladder-style card — rank icon + points badge, matching the Standings screen exactly
+        const rank = rankByPlayerId[player.PlayerID];
+        const stats = statsByPlayerId[player.PlayerID] || { games: 0, wins: 0, losses: 0 };
+        const points = pointsByPlayerId[player.PlayerID] || 0;
+        const iconAsset = ladderRankings[0]['rank-' + rank] || '🏅';
+
+        html += `
+          <div class="app-card" data-card-id="${player.PlayerID}">
+            <div class="card-icon-wrapper">
+              <img src="${iconAsset}" alt="Rank ${rank}" class="card-icon-images" loading="lazy">
+            </div>
+            <div class="card-content">
+              <h3>${player.FirstName || 'Unnamed'} (DUPR: ${player.DUPR || 'N/A'})</h3>
+              <p class="card-meta-line">${stats.games} Games || ${stats.wins} Wins || ${stats.losses} Losses</p>
+            </div>
+            <div class="points-badge">${points}</div>
+          </div>
+        `;
+      } else {
+        // Existing plain DUPR-only card, unchanged — used for fresh draws
+        const seedNumber = duprSorted.findIndex(p => p.PlayerID === player.PlayerID) + 1;
+        const seedUrl = playerSeeds[0]['seed-' + seedNumber];
+        const iconAsset = seedUrl || '🎾';
+
+        const contentHtml = `
+          <h3>${player.Name || 'Unnamed Player'}</h3>
+          <p class="card-meta-line">${player.DUPRId || 'N/A'} ${player.DUPR ? ' || DUPR ' + player.DUPR : '0'}</p>
+        `;
+        html += buildCardMarkup({ iconAsset, contentHtml, cardId: player.PlayerID });
+      }
+    });
+
+    html += `</div>`;
+  });
+
+  container.innerHTML = html || `<div class="no-data-placeholder"><h3>No Players Found</h3></div>`;
+
+  enableTeamsDragDrop(groups.length, groupsListId);
+  commitTeamsAssignment(groups.length, groupsListId);
+
+  const btn = document.getElementById(nextBtnId);
+  if (btn) {
+    btn.innerText = window[allPlayersPresentVar] === 'Yes' ? 'Build Draw' : 'Next';
   }
 }
