@@ -405,9 +405,26 @@ function switchGenerateDrawTab(tabId) {
 window.currentPlayerDetailId = null;
 window.currentPlayerDetailIndex = 0; // 0=edit, 1=summary, 2=matches
 
+window.currentPlayerDetailId = null;
+window.currentPlayerDetailIndex = 0;
+window.playerDetailMinIndex = 0;   // NEW — lower bound for swiping
+window.playerDetailExitScreen = 'players'; // NEW — where boundary swipes exit to
+
 function viewPlayerDetail(playerId) {
   window.currentPlayerDetailId = playerId;
   window.currentPlayerDetailIndex = 0;
+  window.playerDetailMinIndex = 0;
+  window.playerDetailExitScreen = 'players';
+  renderPlayerDetailView();
+  navigateToScreen('player-detail');
+}
+
+// NEW — entry point from a Standings card tap
+function viewPlayerResultsFromStandings(playerId) {
+  window.currentPlayerDetailId = playerId;
+  window.currentPlayerDetailIndex = 2; // starts on Results Summary
+  window.playerDetailMinIndex = 2;     // can't swipe back past Results Summary
+  window.playerDetailExitScreen = 'standings'; // special-cased below
   renderPlayerDetailView();
   navigateToScreen('player-detail');
 }
@@ -416,25 +433,34 @@ function renderPlayerDetailView() {
   const idx = window.currentPlayerDetailIndex;
   if (idx === 0) renderPlayerEditView();
   else if (idx === 1) renderPlayerSummaryView();
-  else if (idx === 2) renderPlayerResultsSummaryView(); // NEW
+  else if (idx === 2) renderPlayerResultsSummaryView();
   else renderPlayerMatchesView();
 }
 
+function exitPlayerDetail() {
+  if (window.playerDetailExitScreen === 'standings') {
+    navigateToScreen('draw');
+    switchDrawTab('standings');
+  } else {
+    navigateToScreen(window.playerDetailExitScreen);
+  }
+}
+
 function goToNextPlayerDetailScreen() {
-  if (window.currentPlayerDetailIndex < 3) { // CHANGED — was < 2
+  if (window.currentPlayerDetailIndex < 3) {
     window.currentPlayerDetailIndex++;
     renderPlayerDetailView();
   } else {
-    navigateToScreen('players');
+    exitPlayerDetail();
   }
 }
 
 function goToPreviousPlayerDetailScreen() {
-  if (window.currentPlayerDetailIndex > 0) {
+  if (window.currentPlayerDetailIndex > window.playerDetailMinIndex) { // CHANGED — respects the entry floor
     window.currentPlayerDetailIndex--;
     renderPlayerDetailView();
   } else {
-    navigateToScreen('players');
+    exitPlayerDetail();
   }
 }
 
