@@ -248,11 +248,6 @@ function enableRedivisionAvailabilityLongPress() {
   // needs a small tweak so it re-renders the RIGHT screen depending on context. See note below.
 }
 
-function handleRedivisionBuild() {
-  console.log('Redivision build not yet implemented.', window.rdConfig);
-  alert('Redivision logic coming soon — screen flow is wired and ready.');
-}
-
 /**
  * Ladder Scramble redivision: every division simultaneously trades its
  * top `promoteCount` players upward and bottom `promoteCount` players

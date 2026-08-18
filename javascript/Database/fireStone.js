@@ -305,3 +305,9 @@ window.changeUserPassword = async function(newPassword) {
 window.onAuthStateChangedListener = function(callback) {
   onAuthStateChanged(auth, callback);
 };
+
+window.deleteMatchInFirestore = async function(matchId) {
+  const db = window.db;
+  const matchDocRef = doc(db, "draw", String(matchId));
+  await deleteDoc(matchDocRef);
+};

@@ -1,15 +1,22 @@
 /**
  * ============================================================
- * CIRCLE DRAW GENERATOR FOR FIXED TEAMS
- * Fixed teams (from players.Team, 2 or 4 players per team).
+ * DOUBLES PRO DRAW GENERATOR
+ * Fixed teams (from players.Team, 2 or 4 players per team,
+ * assigned via top-with-bottom DUPR pairing at draw time, or
+ * top-with-bottom STANDINGS pairing at redivision time — the
+ * grouping itself happens on the Teams screen, not here).
  * Uses the circle method to guarantee every team plays every
- * other team exactly once, with automatic bye handling for
- * odd team counts. DUPR calculations average across all
- * players on each team, regardless of team size.
+ * other team exactly once per cycle, repeating the cycle as
+ * many times as needed to fill the requested round count, with
+ * court balancing carried across the whole history so repeats
+ * land on different courts. Supports starting from any round
+ * number and continuing from existing match history — needed
+ * for redivision, which regenerates only a window of rounds
+ * without resetting DrawVersion or losing prior-round history.
  * ============================================================
  */
 
-// ---------- FIXED TEAM ASSIGNMENT (from players.Team) ----------
+// ---------- FIXED TEAM ASSIGNMENT (reads players.Team, set by the Teams screen) ----------
 
 function assignDoublesProPartnerships(players) {
   const teams = {};
@@ -24,7 +31,7 @@ function assignDoublesProPartnerships(players) {
   return teamKeys.map(teamKey => teams[teamKey]); // array of arrays — each inner array = all players on that team
 }
 
-// ---------- CIRCLE METHOD SCHEDULER (guaranteed no-repeat opponents) ----------
+// ---------- CIRCLE METHOD SCHEDULER (guaranteed no-repeat opponents per cycle) ----------
 
 function generateCircleMethodSchedule(teams) {
   const teamList = [...teams];
@@ -95,8 +102,8 @@ function buildDoublesProMatchRecord(m, roundNumber, eventId, drawVersion, userEm
     DUPRMatchDelta: Math.abs(avg1 - avg2),
     Team1WinProb: winProb1,
     Team2WinProb: 1 - winProb1,
-    ExpectedTeam1Score: winProb1 >= 0.5 ? 11 : Math.max(Math.round(winProb1 * 11 / (1 - winProb1)),9),
-    ExpectedTeam2Score: winProb1 >= 0.5 ? Math.max(Math.round((1 - winProb1) * 11 / winProb1),9) : 11,
+    ExpectedTeam1Score: winProb1 >= 0.5 ? 11 : Math.round(winProb1 * 11 / (1 - winProb1)),
+    ExpectedTeam2Score: winProb1 >= 0.5 ? Math.round((1 - winProb1) * 11 / winProb1) : 11,
     Team1Score: 0,
     Team2Score: 0,
     Team1WinLoss: '',
@@ -107,28 +114,44 @@ function buildDoublesProMatchRecord(m, roundNumber, eventId, drawVersion, userEm
   };
 }
 
-// ---------- DOUBLES PRO ENTRY POINT (with full court balancing) ----------
+// ---------- DOUBLES PRO ENTRY POINT (with full court balancing, cycle repetition, and redivision support) ----------
 
-function generateDoublesProDraw(players, courtsCount, eventId, drawVersion, userEmail, numberOfRounds) {
+/**
+ * @param players            active players for this generation (already filtered for exclusions)
+ * @param courtsCount        number of courts to fill each round
+ * @param eventId            active event ID
+ * @param drawVersion        current DrawVersion (never bumped for redivision)
+ * @param userEmail          logged-in user's email, stamped on each match
+ * @param numberOfRounds     how many rounds to generate in this call
+ * @param startRound         round number to begin at (1 for a fresh draw, or the
+ *                           Redivision screen's chosen round for a redivision)
+ * @param existingMatches    match history to use for court-balancing continuity —
+ *                           pass [] for a fresh draw, or prior rounds' matches for
+ *                           a redivision so court exposure keeps balancing correctly
+ *                           across the redivision boundary rather than resetting
+ */
+function generateDoublesProDraw(players, courtsCount, eventId, drawVersion, userEmail, numberOfRounds, startRound = 1, existingMatches = []) {
   const teamGroups = assignDoublesProPartnerships(players);
   const oneCycle = generateCircleMethodSchedule(teamGroups); // one complete round-robin cycle
 
-  const { courtCounts } = buildDrawHistory([]);
+  const { courtCounts } = buildDrawHistory(existingMatches); // seeds court balancing with prior history, if any
+
   const allMatches = [];
+  let roundNumber = startRound;
+  const endRound = startRound + numberOfRounds - 1;
 
-  let roundNumber = 1;
-
-  while (roundNumber <= numberOfRounds) {
-    // Cycle back to the start of oneCycle once we've used all of it
-    const cycleIndex = (roundNumber - 1) % oneCycle.length;
+  while (roundNumber <= endRound) {
+    // Cycle back to the start of oneCycle once exhausted, relative to startRound
+    const cycleIndex = (roundNumber - startRound) % oneCycle.length;
     const roundMatchups = oneCycle[cycleIndex];
 
     const courtNumbers = Array.from({ length: courtsCount }, (_, i) => i + 1);
-    const courted = assignCourts(roundMatchups, courtNumbers, courtCounts); // court balance considers ALL prior rounds, including earlier cycles
+    const courted = assignCourts(roundMatchups, courtNumbers, courtCounts); // court balance considers ALL prior rounds passed in
 
     const roundRecords = courted.map(m => buildDoublesProMatchRecord(m, roundNumber, eventId, drawVersion, userEmail));
     allMatches.push(...roundRecords);
 
+    // Update courtCounts with this round's assignments so the NEXT round balances against it
     roundRecords.forEach(rec => {
       const allTeamPlayers = [
         rec.Team1Player1, rec.Team1Player2, rec.Team1Player3, rec.Team1Player4,
