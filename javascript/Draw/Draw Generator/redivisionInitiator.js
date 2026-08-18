@@ -85,7 +85,7 @@ function renderRedivisionScreen(payload) {
   const allRounds = [...new Set(matches.map(m => parseInt(m.Round) || 0))];
   const highestCompleteRound = allRounds.filter(r => isRoundComplete(matches, r)).reduce((max, r) => Math.max(max, r), 0);
   const currentRound = parseInt(activeEvent?.CurrentRound) || 1;
-  const startRoundValue = Math.max(highestCompleteRound, currentRound);
+  const startRoundValue = Math.max(highestCompleteRound, currentRound) + 1; // CHANGED — added +1
 
   document.getElementById('rd-start-round-value').innerText = startRoundValue;
   document.getElementById('rd-start-round-hidden').value = startRoundValue;

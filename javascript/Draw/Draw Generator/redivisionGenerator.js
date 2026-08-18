@@ -81,6 +81,11 @@ async function handleRedivisionBuild() {
       ...newMatches
     ];
 
+    // NEW — move CurrentRound to the redivision's start round
+    activeEvent.CurrentRound = startRound;
+    await window.updateEventFieldInFirestore(activeEventId, 'CurrentRound', startRound);
+    window.currentRoundNumber = startRound; // keep the Current Round screen's tracker in sync too
+
     console.log(`Redivision complete — ${staleMatches.length} old match(es) removed, ${newMatches.length} new match(es) saved for rounds ${startRound}-${startRound + numberOfRounds - 1}.`);
     alert("Redivision complete.");
     navigateToScreen('draw');
