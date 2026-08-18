@@ -656,4 +656,15 @@ async function handleDeletePlayer() {
   }
 }
 
+let playerFieldSaveTimer = null;
+function handlePlayerFieldEdit(field, value) {
+  const player = window.cachedUserUniverse.players.find(p => p.PlayerID === window.currentPlayerDetailId);
+  if (player) player[field] = value;
 
+  clearTimeout(playerFieldSaveTimer);
+  playerFieldSaveTimer = setTimeout(() => {
+    window.updatePlayerFieldInFirestore(window.currentPlayerDetailId, field, value)
+      .then(() => console.log(`Saved ${field}`))
+      .catch(err => console.error(`Failed to save ${field}:`, err));
+  }, 600);
+}
