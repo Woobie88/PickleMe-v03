@@ -353,15 +353,13 @@ function generateClusteredRoundDraw(players, matches, byesByTeamForThisRound, ro
     let teamMatches;
 
     if (isRedivision) {
-      // ---- NEW BRANCH: guaranteed unique-partnership scheduling ----
-      // Cache this pool's full schedule so it's only computed once per
-      // draw generation, not recomputed every single round.
       window.gdRedivisionCache = window.gdRedivisionCache || {};
       const cacheKey = `${eventId}_${teamKey}`;
 
       if (!window.gdRedivisionCache[cacheKey]) {
-        // numberOfRounds needs to be known here — passed through from generateNRoundsAndPreview
-        window.gdRedivisionCache[cacheKey] = buildRedivisionPartnerships(allPoolPlayers, window.gdCurrentNumberOfRounds);
+        const stableOrder = buildStablePoolOrder(allPoolPlayers); // CHANGED — was PlayerID-only sort
+        const schedule = generatePoolScheduleWithByes(stableOrder.length);
+        window.gdRedivisionCache[cacheKey] = { stableOrder, schedule };
       }
 
       const roundPlan = window.gdRedivisionCache[cacheKey][roundNumber - 1];
@@ -576,5 +574,118 @@ async function generateNRoundsAndPreview(numberOfRounds) {
   window.cachedUserUniverse.draw = newMatches;
 
   return newMatches;
+}
+
+/**
+ * ============================================================
+ * MANUAL BYE ORDER SUPPORT
+ * Ensures players.byeOrder takes priority across every draw
+ * engine — Pools/Divisions/Ladder Scramble (phantom rotation),
+ * Teams/Pool Fusion (whole-team byes), and Doubles Pro/Rx
+ * (team-level byes, where a partner is automatically included
+ * whenever their teammate has an early manual preference).
+ * ============================================================
+ */
+
+// ---------- PLAYER-LEVEL: Pools, Divisions, Ladder Scramble ----------
+
+/**
+ * Builds a stable, deterministic player order for a pool, respecting
+ * manually-set players.byeOrder first (sorted ascending), with everyone
+ * else following in a fixed order behind them. Feeds the phantom-rotation
+ * engine (generatePoolScheduleWithByes) used for any game with
+ * Redivisioning === "Yes" in gamesProfile.
+ */
+function buildStablePoolOrder(poolPlayers) {
+  const manual = poolPlayers.filter(p =>
+    p.byeOrder !== undefined && p.byeOrder !== null && p.byeOrder !== '' && !isNaN(parseInt(p.byeOrder))
+  );
+  manual.sort((a, b) => parseInt(a.byeOrder) - parseInt(b.byeOrder));
+
+  const manualIds = new Set(manual.map(p => p.PlayerID));
+  const remaining = poolPlayers.filter(p => !manualIds.has(p.PlayerID));
+
+  remaining.sort((a, b) => String(a.PlayerID).localeCompare(String(b.PlayerID)));
+
+  return [...manual, ...remaining];
+}
+
+// ---------- TEAM-LEVEL: Teams, Pool Fusion, Doubles Pro/Rx ----------
+
+/**
+ * Derives a TEAM's effective manual bye preference from its players —
+ * the earliest (lowest) manual byeOrder among any of its members, or
+ * null if nobody on the team has one set. If any one player on a team
+ * wants an early bye, the whole team is pulled earlier in the rotation
+ * (their partner is automatically included, since byes happen at the
+ * team level for these game types).
+ */
+function getTeamEffectiveByeOrder(teamPlayers) {
+  const manualOrders = teamPlayers
+    .map(p => p.byeOrder)
+    .filter(v => v !== undefined && v !== null && v !== '' && !isNaN(parseInt(v)))
+    .map(v => parseInt(v));
+
+  if (manualOrders.length === 0) return null;
+  return Math.min(...manualOrders);
+}
+
+/**
+ * Orders a set of teams (each an array of players) with manual-preference
+ * teams first (by effective order), everyone else following in a stable,
+ * deterministic order.
+ */
+function buildStableTeamOrder(teamGroups) {
+  const withOrder = teamGroups.map(team => ({ team, order: getTeamEffectiveByeOrder(team) }));
+
+  const manual = withOrder.filter(t => t.order !== null)
+    .sort((a, b) => a.order - b.order)
+    .map(t => t.team);
+
+  const remaining = withOrder.filter(t => t.order === null).map(t => t.team);
+  remaining.sort((a, b) => String(a[0]?.PlayerID).localeCompare(String(b[0]?.PlayerID)));
+
+  return [...manual, ...remaining];
+}
+
+/**
+ * Same cycling mechanism as generateEntityByeSchedule, but takes an
+ * ALREADY-ORDERED list instead of shuffling internally — needed
+ * wherever manual bye order must take priority over randomization.
+ */
+function generateEntityByeScheduleOrdered(orderedEntityIds, numberOfRounds, neededPerRound) {
+  const byesByRound = {};
+
+  if (neededPerRound <= 0) {
+    for (let i = 0; i < numberOfRounds; i++) byesByRound[i] = [];
+    return byesByRound;
+  }
+
+  let pointer = 0;
+  for (let round = 0; round < numberOfRounds; round++) {
+    const byes = [];
+    for (let i = 0; i < neededPerRound; i++) {
+      byes.push(orderedEntityIds[pointer % orderedEntityIds.length]);
+      pointer++;
+    }
+    byesByRound[round] = byes;
+  }
+
+  return byesByRound;
+}
+
+// ---------- UPDATED: assignDoublesProPartnerships ----------
+
+function assignDoublesProPartnerships(players) {
+  const teams = {};
+  players.forEach(p => {
+    const t = p.Team;
+    if (!teams[t]) teams[t] = [];
+    teams[t].push(p);
+  });
+
+  const teamGroups = Object.values(teams);
+
+  return buildStableTeamOrder(teamGroups); // CHANGED — was a numeric teamKey sort
 }
   // ---- END BRANCH ----
