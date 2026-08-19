@@ -858,6 +858,69 @@
         </div>
       </section>
 
+      <!-- Redraw Screen -->
+      <section id="screen-redraw" class="app-screen">
+        <div class="welcome-banner">
+          <h2>Redraw</h2>
+          <p>Rework remaining matches due to player changes</p>
+        </div>
+
+        <div class="detail-view-container">
+          <div class="detail-form-group">
+            <label>Selected Game</label>
+            <div class="detail-readonly" id="rw-selected-game-title">—</div>
+          </div>
+
+          <div class="detail-form-group" id="rw-lives-group" style="display: none;">
+            <label>Number Of Lives</label>
+            <div class="score-control">
+              <button class="score-btn" onclick="adjustRwLives(-1)">−</button>
+              <span id="rw-lives-value" class="score-value">1</span>
+              <button class="score-btn" onclick="adjustRwLives(1)">+</button>
+            </div>
+            <input type="hidden" id="rw-lives-hidden" value="1">
+          </div>
+
+          <div class="detail-form-group">
+            <label>All Players Present</label>
+            <div class="scoring-toggle" id="rw-all-present-toggle">
+              <button class="scoring-option" data-value="No" onclick="handleRwAllPlayersPresentToggle('No')">No</button>
+              <button class="scoring-option" data-value="Yes" onclick="handleRwAllPlayersPresentToggle('Yes')">Yes</button>
+            </div>
+          </div>
+
+          <div class="detail-form-group">
+            <label>Redraw Starts From Round</label>
+            <div class="score-control">
+              <button class="score-btn" onclick="adjustRwStartRound(-1)">−</button>
+              <span id="rw-start-round-value" class="score-value">2</span>
+              <button class="score-btn" onclick="adjustRwStartRound(1)">+</button>
+            </div>
+            <input type="hidden" id="rw-start-round-hidden" value="2">
+          </div>
+
+          <div class="form-action-bar">
+            <button class="btn-secondary" onclick="navigateToScreen('draw')">Cancel</button>
+            <button class="btn-primary" id="rw-confirm-btn" onclick="handleRedrawConfirm()">Confirm</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Redraw Availability Screen -->
+      <section id="screen-redraw-available" class="app-screen">
+        <div class="welcome-banner">
+          <h2>Player Availability</h2>
+          <p>Long-press a player to mark them unavailable</p>
+        </div>
+
+        <div id="rw-availability-list" class="card-grid"></div>
+
+        <div class="form-action-bar">
+          <button class="btn-secondary" onclick="navigateToScreen('redraw')">Back</button>
+          <button class="btn-primary" onclick="handleRedrawBuild()">Build Draw</button>
+        </div>
+      </section>
+
       <!-- CSV file download -->
       <section id="screen-dupr" class="app-screen">
         <div class="placeholder-view">
@@ -1043,8 +1106,9 @@
     <script src="javascript/Draw/Draw Generator/drawGeneratorProgressive.js"></script>
     <script src="javascript/Draw/Draw Generator/drawGeneratorTeams.js"></script>
     <script src="javascript/Draw/Draw Generator/drawGeneratorRedivision.js"></script>
+    <script src="javascript/Draw/Draw Generator/drawGeneratorRedivision.js"></script>
     <script src="javascript/Draw/Draw Generator/redivisionInitiator.js"></script>
-    <script src="javascript/Draw/Draw Generator/redivisionGenerator.js"></script>
+    <script src="javascript/Draw/Draw Generator/redraw.js"></script>
     <script src="javascript/Dashboard/cleanUp.js"></script>
     <script src="javascript/Dashboard/navigationLoad.js"></script>
     <script src="javascript/eventListeners.js"></script>

@@ -123,6 +123,13 @@ function navigateToScreen(screenId) {
     case 'redivision-available':
       renderRedivisionAvailabilityList(window.cachedUserUniverse); // see #4 below
       break;
+    // Add to navigateToScreen's switch statement:
+    case 'redraw':
+      renderRedrawScreen(window.cachedUserUniverse);
+      break;
+    case 'redraw-available':
+      renderRedrawAvailabilityList(window.cachedUserUniverse);
+      break;  
   }
 }
 

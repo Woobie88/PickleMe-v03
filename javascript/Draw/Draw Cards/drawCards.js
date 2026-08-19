@@ -489,6 +489,10 @@ function handleFabAction(action) {
     case 'result-refresh': // NEW
       console.log('Draw Refresh tapped — routing not yet wired up');
       break;
+    // Add to handleFabAction's switch statement:
+    case 'redraw':
+      navigateToScreen('redraw');
+      break;
   }
 }
 
