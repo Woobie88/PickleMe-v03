@@ -362,15 +362,14 @@ function generateClusteredRoundDraw(players, matches, byesByTeamForThisRound, ro
       if (!window.gdRedivisionCache[cacheKey]) {
         const stableOrder = buildStablePoolOrder(allPoolPlayers);
         const schedule = generatePoolScheduleWithByes(stableOrder.length);
-        window.gdRedivisionCache[cacheKey] = { stableOrder, schedule };
+        window.gdRedivisionCache[cacheKey] = { stableOrder, schedule, firstRoundSeen: roundNumber }; // NEW — remember the first round this cache entry was built for
       }
 
-      const { stableOrder, schedule } = window.gdRedivisionCache[cacheKey]; // NEW — destructure both pieces
-      const cycleIndex = (roundNumber - 1) % schedule.length; // NEW — cycle through if numberOfRounds exceeds the schedule's natural length
-      const roundPlan = schedule[cycleIndex]; // CHANGED — reads from schedule specifically, not the cache object directly
+      const { stableOrder, schedule, firstRoundSeen } = window.gdRedivisionCache[cacheKey];
+      const cycleIndex = (roundNumber - firstRoundSeen) % schedule.length; // CHANGED — relative to the actual first round seen, not absolute round number
+      const roundPlan = schedule[cycleIndex];
 
-      // roundPlan.partnerPairs holds INDEX pairs (0-based positions in stableOrder) — need to map back to real players
-      const partnerships = roundPlan.partnerPairs.map(([i, j]) => [stableOrder[i], stableOrder[j]]); // NEW
+      const partnerships = roundPlan.partnerPairs.map(([i, j]) => [stableOrder[i], stableOrder[j]]);
 
       const matchups = generateBestMatchups(partnerships, opponentCounts);
       const courted = assignCourts(matchups, courtNumbers, courtCounts);

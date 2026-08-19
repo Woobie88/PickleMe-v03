@@ -1,8 +1,10 @@
 async function handleRedivisionBuild() {
+  window.gdRedivisionCache = {}; // NEW — forces fresh schedules for the CURRENT post-redivision player membership
+
   const activeEventId = window.cachedUserUniverse.activeEventId;
   const activeEvent = window.cachedUserUniverse.events.find(e => String(e.EventID) === String(activeEventId));
   const gameId = activeEvent.GameID;
-  const drawVersion = activeEvent.CurrentDrawVersion; // unchanged — no version bump for redivision
+  const drawVersion = activeEvent.CurrentDrawVersion;
 
   const numberOfRounds = window.rdConfig.numberOfRounds;
   const startRound = window.rdConfig.startRound;
@@ -13,9 +15,6 @@ async function handleRedivisionBuild() {
   const userEmail = window.currentUserEmail;
 
   const existingMatches = window.cachedUserUniverse.draw || [];
-
-  // History used for repeat-avoidance = only rounds BEFORE the redivision point
-  // (genuinely played rounds — anything from startRound onward is being replaced)
   const historyBeforeRedivision = existingMatches.filter(m => parseInt(m.Round) < startRound);
 
   let newMatches;
@@ -27,7 +26,6 @@ async function handleRedivisionBuild() {
     );
 
   } else if (gameId === 'teams' || gameId === 'pool-fusion') {
-    // Pool Fusion's redivision follows the Teams engine going forward, per spec
     const numberOfTeams = parseInt(activeEvent.NumberOfTeams) || 2;
     let allMatches = [...historyBeforeRedivision];
     newMatches = [];
@@ -42,7 +40,6 @@ async function handleRedivisionBuild() {
     }
 
   } else {
-    // Divisions, Ladder Scramble, Pools — standard clustered engine, re-anchored at startRound
     const numberOfTeams = parseInt(activeEvent.NumberOfTeams) || 1;
     const clusteredGames = ['divisions', 'ladder-scramble', 'pools'];
     const isClustered = clusteredGames.includes(gameId);
@@ -65,9 +62,6 @@ async function handleRedivisionBuild() {
     );
   }
 
-  // Delete any existing documents for the rounds being replaced (may be none, or may be
-  // a partially-played round — either way, this correctly clears the target window
-  // before writing fresh matches into it)
   const targetRounds = Array.from({ length: numberOfRounds }, (_, i) => startRound + i);
   const staleMatches = existingMatches.filter(m => targetRounds.includes(parseInt(m.Round)));
 
@@ -75,18 +69,31 @@ async function handleRedivisionBuild() {
     await Promise.all(staleMatches.map(m => window.deleteMatchInFirestore(m.MatchID)));
     await window.saveGeneratedDrawToFirestore(newMatches);
 
-    // Sync local cache — drop the stale rounds, add the new ones
     window.cachedUserUniverse.draw = [
       ...existingMatches.filter(m => !targetRounds.includes(parseInt(m.Round))),
       ...newMatches
     ];
 
-    // NEW — move CurrentRound to the redivision's start round
     activeEvent.CurrentRound = startRound;
     await window.updateEventFieldInFirestore(activeEventId, 'CurrentRound', startRound);
-    window.currentRoundNumber = startRound; // keep the Current Round screen's tracker in sync too
+    window.currentRoundNumber = startRound;
 
-    console.log(`Redivision complete — ${staleMatches.length} old match(es) removed, ${newMatches.length} new match(es) saved for rounds ${startRound}-${startRound + numberOfRounds - 1}.`);
+    console.log(`Redivision complete — ${staleMatches.length} old match(es) removed, ${newMatches.length} new match(es) saved for rounds ${startRound}-${startRound + numberOfRounds - 1}. CurrentRound set to ${startRound}.`);
+
+    // NEW — log per-player stats for the newly generated rounds, same format used elsewhere
+    const targetRoundByes = {};
+    targetRounds.forEach(r => {
+      const roundMatches = newMatches.filter(m => parseInt(m.Round) === r);
+      const playingIds = new Set();
+      roundMatches.forEach(m => {
+        [m.Team1Player1, m.Team1Player2, m.Team1Player3, m.Team1Player4,
+         m.Team2Player1, m.Team2Player2, m.Team2Player3, m.Team2Player4]
+          .filter(Boolean).forEach(pid => playingIds.add(pid));
+      });
+      targetRoundByes[r] = players.filter(p => !playingIds.has(p.PlayerID)).map(p => p.PlayerID);
+    });
+    logPlayerSummary(players, newMatches, targetRoundByes);
+
     alert("Redivision complete.");
     navigateToScreen('draw');
   } catch (err) {
