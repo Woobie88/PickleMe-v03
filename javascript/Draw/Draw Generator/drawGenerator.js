@@ -342,6 +342,7 @@ function generateClusteredRoundDraw(players, matches, byesByTeamForThisRound, ro
 
   const redivisioningValue = gameProfile?.drawMenuOpt?.[0]?.Redivisioning;
   const isRedivision = (Array.isArray(redivisioningValue) ? redivisioningValue[0] : redivisioningValue) === 'Yes';
+  console.log('isRedivision for this draw:', isRedivision, '| raw value:', redivisioningValue, '| gameProfile.GameID:', gameProfile?.GameID); // ADD THIS
 
   teamKeys.forEach(teamKey => {
     const allPoolPlayers = teams[teamKey];
