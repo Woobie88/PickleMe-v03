@@ -357,13 +357,17 @@ function generateClusteredRoundDraw(players, matches, byesByTeamForThisRound, ro
       const cacheKey = `${eventId}_${teamKey}`;
 
       if (!window.gdRedivisionCache[cacheKey]) {
-        const stableOrder = buildStablePoolOrder(allPoolPlayers); // CHANGED — was PlayerID-only sort
+        const stableOrder = buildStablePoolOrder(allPoolPlayers);
         const schedule = generatePoolScheduleWithByes(stableOrder.length);
         window.gdRedivisionCache[cacheKey] = { stableOrder, schedule };
       }
 
-      const roundPlan = window.gdRedivisionCache[cacheKey][roundNumber - 1];
-      const partnerships = roundPlan.pairs;
+      const { stableOrder, schedule } = window.gdRedivisionCache[cacheKey]; // NEW — destructure both pieces
+      const cycleIndex = (roundNumber - 1) % schedule.length; // NEW — cycle through if numberOfRounds exceeds the schedule's natural length
+      const roundPlan = schedule[cycleIndex]; // CHANGED — reads from schedule specifically, not the cache object directly
+
+      // roundPlan.partnerPairs holds INDEX pairs (0-based positions in stableOrder) — need to map back to real players
+      const partnerships = roundPlan.partnerPairs.map(([i, j]) => [stableOrder[i], stableOrder[j]]); // NEW
 
       const matchups = generateBestMatchups(partnerships, opponentCounts);
       const courted = assignCourts(matchups, courtNumbers, courtCounts);
