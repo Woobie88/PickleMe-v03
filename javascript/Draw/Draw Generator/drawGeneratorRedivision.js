@@ -9,6 +9,19 @@
  * ============================================================
  */
 
+/**
+ * Generalized schedule for ANY pool size (odd or even), where byes fall
+ * out naturally from the same rotation used for partnerships — no
+ * separate bye-scheduling step needed.
+ *
+ * If n is odd, adds a phantom player (index n) to make the total even.
+ * Whoever rotation-pairs with the phantom each round gets the bye.
+ *
+ * Returns an array of rounds, each shaped { bye: index|null, partnerPairs: [[i,j], ...] }
+ * — indices are POSITIONS within whatever ordered player list this was
+ * built for (e.g. stableOrder from buildStablePoolOrder), not PlayerIDs
+ * directly. Callers must map these indices back to real players.
+ */
 function generatePoolScheduleWithByes(n) {
   const hasPhantom = n % 2 !== 0;
   const totalSlots = hasPhantom ? n + 1 : n;
