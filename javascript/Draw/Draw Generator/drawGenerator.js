@@ -376,12 +376,12 @@ function generateClusteredRoundDraw(players, matches, byesByTeamForThisRound, ro
       teamMatches = courted.map((m, idx) => buildMatchRecord(m, idx, roundNumber, eventId, drawVersion, userEmail));
 
     } else {
-      // ---- EXISTING PATH: old greedy method for non-redivision games ----
       const teamByes = byesByTeamForThisRound[teamKey] || [];
+      console.log(`generateClusteredRoundDraw — Team ${teamKey}, Round ${roundNumber}, byes received:`, teamByes); // ADD THIS
       const teamPlayers = allPoolPlayers.filter(p => !teamByes.includes(p.PlayerID));
 
       const { partnerCounts } = buildDrawHistory(matches);
-      teamMatches = generateGroupMatches(teamPlayers, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion, userEmail); // ADDED userEmail
+      teamMatches = generateGroupMatches(teamPlayers, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion, userEmail);
     }
 
     allMatches.push(...teamMatches);
