@@ -133,19 +133,30 @@ function renderRedrawAvailabilityList(payload) {
   const currentPlayerVersion = activeEvent.CurrentPlayerVersion;
   const players = (payload.players || []).filter(p => String(p.PlayerVersion) === String(currentPlayerVersion));
 
+  // Build a fixed DUPR-based seed ranking, same pattern used everywhere else
+  const duprSorted = [...players].sort((a, b) => {
+    const duprDiff = (parseFloat(b.DUPR) || 0) - (parseFloat(a.DUPR) || 0);
+    if (duprDiff !== 0) return duprDiff;
+    return (parseFloat(a.RandomNumber) || 0) - (parseFloat(b.RandomNumber) || 0);
+  });
+
   const container = document.getElementById('rw-availability-list');
   if (!container) return;
 
-  container.innerHTML = players.length === 0
+  container.innerHTML = duprSorted.length === 0
     ? `<div class="no-data-placeholder"><h3>No Players Found</h3></div>`
-    : players.map(player => {
+    : duprSorted.map((player, idx) => {
         const isUnavailable = player.playerExclude === 'Yes';
+        const seedNumber = idx + 1;
+        const seedUrl = playerSeeds[0]['seed-' + seedNumber];
+        const iconAsset = seedUrl || '🎾';
+
         const contentHtml = `
           <h3>${player.Name || 'Unnamed Player'}</h3>
           <p class="card-meta-line">${isUnavailable ? 'Unavailable' : (player.DUPRId || 'N/A') + (player.DUPR ? ' || DUPR ' + player.DUPR : '')}</p>
         `;
         const extraClass = isUnavailable ? 'player-unavailable' : '';
-        return buildCardMarkup({ iconAsset: '🎾', contentHtml, cardId: player.PlayerID, extraClass });
+        return buildCardMarkup({ iconAsset, contentHtml, cardId: player.PlayerID, extraClass });
       }).join('');
 
   enableRedrawAvailabilityLongPress();
