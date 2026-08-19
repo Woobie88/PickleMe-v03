@@ -55,10 +55,6 @@ function generatePoolScheduleWithByes(n) {
   return schedule;
 }
 
-function buildStablePoolOrder(poolPlayers) {
-  return [...poolPlayers].sort((a, b) => String(a.PlayerID).localeCompare(String(b.PlayerID)));
-}
-
 /**
  * Generates a full round-by-round pairing schedule for a pool, honoring
  * the requested number of rounds. If numberOfRounds exceeds the pool's
