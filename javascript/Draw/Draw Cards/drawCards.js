@@ -477,9 +477,6 @@ function handleFabAction(action) {
     case 'add-match':
       console.log('Add Match tapped');
       break;
-    case 'redraw':
-      console.log('Redraw tapped');
-      break;
     case 'substitution': // NEW
       navigateToScreen('player-substitution');
       break;
