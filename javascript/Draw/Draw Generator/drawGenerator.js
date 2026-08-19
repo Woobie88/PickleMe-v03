@@ -104,7 +104,9 @@ function generateByeScheduleByTeam(players, numberOfRounds, courtsPerTeam) {
   const byeSchedulesByTeam = {};
 
   teamKeys.forEach(teamKey => {
-    byeSchedulesByTeam[teamKey] = generateByeSchedule(teams[teamKey], numberOfRounds, courtsPerTeam); // already uses the fixed base-order logic internally now
+    byeSchedulesByTeam[teamKey] = generateByeSchedule(teams[teamKey], numberOfRounds, courtsPerTeam);
+    console.log(`Team ${teamKey} players with byeOrder:`, teams[teamKey].map(p => ({ id: p.PlayerID, byeOrder: p.byeOrder })));
+    console.log(`Team ${teamKey} bye schedule:`, byeSchedulesByTeam[teamKey]);
   });
 
   return byeSchedulesByTeam;
