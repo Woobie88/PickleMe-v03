@@ -620,7 +620,7 @@ function renderPlayerMatchesView() {
 
   const allRounds = [...new Set(matches.map(m => parseInt(m.Round) || 0))].sort((a, b) => a - b);
 
-  let html = `<div class="welcome-banner"><h2>${player.Name || 'Unnamed'} Match Details</h2></div><div class="card-grid">`;
+  let html = `<div class="welcome-banner"><h2>${player.Name || 'Unnamed'} — Draw</h2></div><div class="card-grid">`;
 
   allRounds.forEach(round => {
     html += `<div class="event-section-title">Round ${round}</div>`;
@@ -628,13 +628,12 @@ function renderPlayerMatchesView() {
 
     if (match) {
       const iconAsset = courts[0]['court-' + match.Court] || '🏟️';
-      const allTeam1 = [match.Team1Player1, match.Team1Player2, match.Team1Player3, match.Team1Player4];
-      const onTeam1 = allTeam1.includes(player.PlayerID);
-      const myTeamIds = onTeam1 ? allTeam1 : [match.Team2Player1, match.Team2Player2, match.Team2Player3, match.Team2Player4];
-      const oppTeamIds = onTeam1 ? [match.Team2Player1, match.Team2Player2, match.Team2Player3, match.Team2Player4] : allTeam1;
 
-      const myTeamNames = formatTeamNames(myTeamIds.map(id => playerMap[id]));
-      const oppTeamNames = formatTeamNames(oppTeamIds.map(id => playerMap[id]));
+      const team1Ids = [match.Team1Player1, match.Team1Player2, match.Team1Player3, match.Team1Player4];
+      const team2Ids = [match.Team2Player1, match.Team2Player2, match.Team2Player3, match.Team2Player4];
+
+      const team1Names = formatTeamNames(team1Ids.map(id => playerMap[id]));
+      const team2Names = formatTeamNames(team2Ids.map(id => playerMap[id]));
 
       const isComplete = match.Team1WinLoss && match.Team2WinLoss;
 
@@ -646,7 +645,7 @@ function renderPlayerMatchesView() {
         metaLine = `DUPR Diff ${duprDelta} || Exp Res. ${match.ExpectedTeam1Score} - ${match.ExpectedTeam2Score}`;
       }
 
-      const contentHtml = `<h4>${myTeamNames} vs. ${oppTeamNames}</h4><p class="card-meta-line">${metaLine}</p>`;
+      const contentHtml = `<h4>${team1Names} vs. ${team2Names}</h4><p class="card-meta-line">${metaLine}</p>`;
       const onClickAttr = `onclick="openMatchScoreView('${match.MatchID}')"`;
       html += buildCardMarkup({ iconAsset, contentHtml, onClickAttr });
     } else {
