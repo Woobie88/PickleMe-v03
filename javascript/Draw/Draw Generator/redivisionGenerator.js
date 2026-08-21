@@ -43,6 +43,7 @@ async function handleRedivisionBuild() {
     const numberOfTeams = parseInt(activeEvent.NumberOfTeams) || 1;
     const clusteredGames = ['divisions', 'ladder-scramble', 'pools'];
     const isClustered = clusteredGames.includes(gameId);
+    const gameProfile = gamesProfile.find(g => g.GameID === gameId); // NEW — this was never computed here at all
 
     let byesByRound;
     if (isClustered) {
@@ -58,7 +59,7 @@ async function handleRedivisionBuild() {
 
     newMatches = generateMultipleRounds(
       players, historyBeforeRedivision, byesByRound, startRound, numberOfRounds, courtsCount,
-      activeEventId, drawVersion, gameId, numberOfTeams, userEmail
+      activeEventId, drawVersion, gameId, numberOfTeams, userEmail, gameProfile // ADDED gameProfile
     );
   }
 
