@@ -369,6 +369,8 @@ function generateClusteredRoundDraw(players, matches, byesByTeamForThisRound, ro
       const cycleIndex = (roundNumber - firstRoundSeen) % schedule.length; // CHANGED — relative to the actual first round seen, not absolute round number
       const roundPlan = schedule[cycleIndex];
 
+      console.log(`Pool ${teamKey} | Round ${roundNumber} | firstRoundSeen=${firstRoundSeen} | schedule.length=${schedule.length} | cycleIndex=${cycleIndex} | stableOrder=${stableOrder.map(p => p.PlayerID)}`);
+
       const partnerships = roundPlan.partnerPairs.map(([i, j]) => [stableOrder[i], stableOrder[j]]);
 
       const matchups = generateBestMatchups(partnerships, opponentCounts);
