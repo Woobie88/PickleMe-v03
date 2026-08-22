@@ -475,7 +475,7 @@ function handleFabAction(action) {
       navigateToScreen('redivision');
       break;
     case 'add-match':
-      console.log('Add Match tapped');
+      navigateToScreen('add-match-round');
       break;
     case 'substitution': // NEW
       navigateToScreen('player-substitution');
