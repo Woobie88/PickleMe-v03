@@ -130,6 +130,12 @@ function navigateToScreen(screenId) {
     case 'redraw-available':
       renderRedrawAvailabilityList(window.cachedUserUniverse);
       break;  
+    // navigateToScreen switch statement:
+  case 'add-match-round':
+    renderAddMatchRoundScreen(window.cachedUserUniverse);
+    break;
+  case 'add-match-players':
+    renderAddMatchPlayersScreen(window.cachedUserUniverse);
   }
 }
 
