@@ -1258,3 +1258,39 @@ body {
   min-width: 60px;
   text-align: center;
 }
+
+.app-card.am-pair-1 {
+  border-left-color: var(--accent) !important;
+  background-color: rgba(16, 185, 129, 0.08);
+}
+
+.app-card.am-pair-2 {
+  border-left-color: #3b82f6 !important;
+  background-color: rgba(59, 130, 246, 0.08);
+}
+
+#screen-add-match-round .score-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 8px;
+}
+
+#screen-add-match-round .score-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 1.4rem;
+  border: 1px solid var(--nav-border);
+  background-color: var(--card-bg);
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+#screen-add-match-round .score-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+  min-width: 60px;
+  text-align: center;
+}
