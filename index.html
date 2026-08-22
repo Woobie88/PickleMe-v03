@@ -463,6 +463,44 @@
         <div id="sub-bye-players-list" class="card-grid"></div>
       </section>
       
+      <section id="screen-add-match-round" class="app-screen">
+        <div class="welcome-banner">
+          <h2>Add Match</h2>
+          <p>Select which round to add matches for</p>
+        </div>
+
+        <div class="detail-view-container">
+          <div class="detail-form-group">
+            <label>Round</label>
+            <div class="score-control">
+              <button class="score-btn" onclick="adjustAmRound(-1)">−</button>
+              <span id="am-round-value" class="score-value">1</span>
+              <button class="score-btn" onclick="adjustAmRound(1)">+</button>
+          </div>
+          <input type="hidden" id="am-round-hidden" value="1">
+        </div>
+
+        <div class="form-action-bar">
+          <button class="btn-secondary" onclick="navigateToScreen('draw')">Cancel</button>
+          <button class="btn-primary" onclick="handleAddMatchRoundNext()">Next</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="screen-add-match-players" class="app-screen">
+      <div class="welcome-banner">
+        <h2 id="am-players-heading">Select Players — Court 1</h2>
+        <p>Long-press to select. First 2 selected are one team, next 2 the other.</p>
+      </div>
+
+      <div id="am-players-list" class="card-grid"></div>
+
+      <div class="form-action-bar">
+        <button class="btn-secondary" onclick="navigateToScreen('add-match-round')">Back</button>
+        <button class="btn-primary" id="am-players-next-btn" onclick="handleAddMatchPlayersNext()" disabled>Next</button>
+      </div>
+    </section>
+      
       <!-- SCREEN 5: Game Selector Format Configuration -->
       <section id="screen-games" class="app-screen">
   
