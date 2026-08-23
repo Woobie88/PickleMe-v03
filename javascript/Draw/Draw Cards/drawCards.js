@@ -597,20 +597,40 @@ async function renderCurrentRoundView(payload) {
 }
 
 async function goToNextRound() {
-  const matches = window.cachedUserUniverse.draw || [];
+  const activeEventId = window.cachedUserUniverse.activeEventId;
+  const activeEvent = window.cachedUserUniverse.events.find(e => String(e.EventID) === String(activeEventId));
+
+  let matches = window.cachedUserUniverse.draw || [];
+
+  // NEW — Playoffs EF→Final check runs FIRST, before the maxRound early-return, since the
+  // Final round doesn't exist yet at this point (generating it is what EXTENDS maxRound)
+  const isPlayoffEFAdvance = activeEvent.PlayoffEFRound && window.currentRoundNumber === activeEvent.PlayoffEFRound;
+
+  if (isPlayoffEFAdvance) {
+    const finalRoundAlreadyExists = matches.some(m => parseInt(m.Round) === activeEvent.PlayoffFinalRound);
+
+    if (!finalRoundAlreadyExists) {
+      showLoadingState('current-round-list', 'Generating Final...');
+      const success = await handlePlayoffFinalAdvance();
+      if (!success) {
+        renderCurrentRoundView(window.cachedUserUniverse);
+        return;
+      }
+      matches = window.cachedUserUniverse.draw || []; // refresh local reference after the Final round was added
+    }
+  }
+
   const maxRound = Math.max(...matches.map(m => parseInt(m.Round) || 0), window.currentRoundNumber);
 
   if (window.currentRoundNumber >= maxRound) return;
 
-  const activeEventId = window.cachedUserUniverse.activeEventId;
-  const activeEvent = window.cachedUserUniverse.events.find(e => String(e.EventID) === String(activeEventId));
   const gameProfile = gamesProfile.find(g => g.GameID === activeEvent.GameID);
   const isProgressive = gameProfile?.GamesGroup === 'Progressive';
 
   const nextRoundNumber = window.currentRoundNumber + 1;
 
   if (isProgressive) {
-    const nextRoundAlreadyHasResults = isRoundComplete(matches, nextRoundNumber); // NEW
+    const nextRoundAlreadyHasResults = isRoundComplete(matches, nextRoundNumber);
 
     if (!nextRoundAlreadyHasResults) {
       if (!isRoundComplete(matches, window.currentRoundNumber)) {
@@ -659,7 +679,7 @@ async function goToNextRound() {
         return;
       }
     } else {
-      console.log(`Round ${nextRoundNumber} already has results — skipping recalculation, just navigating.`); // NEW
+      console.log(`Round ${nextRoundNumber} already has results — skipping recalculation, just navigating.`);
     }
   }
 
