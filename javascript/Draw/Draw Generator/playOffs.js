@@ -52,6 +52,8 @@ async function handlePlayoffsNext() {
   
   // Build playoff schedule
   const payload = window.cachedUserUniverse;
+  const drawVersion = activeEvent.CurrentDrawVersion;
+  const userEmail = window.currentUserEmail;
   generatePlayoffFinalRound(payload, roundsValue, activeEvent, drawVersion, userEmail);
 }
 
