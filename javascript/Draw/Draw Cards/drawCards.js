@@ -109,7 +109,9 @@ async function renderDrawCards(payload) {
   matches.forEach(m => {
     if (m.Round !== currentRound) {
       currentRound = m.Round;
-      html += `<div class="event-section-title">Round ${currentRound}</div>`;
+      const isPlayoff = m.MatchType && m.MatchType !== "Round Robin";
+      const roundLabel = isPlayoff ? `Round ${currentRound} (${m.MatchType})` : `Round ${currentRound}`;
+      html += `<div class="event-section-title">${roundLabel}</div>`;
     }
 
     const iconAsset = courts[0]['court-' + m.Court] || '🏟️';

@@ -262,7 +262,7 @@ function assignCourts(matchups, courtNumbers, courtCounts) {
 
 // ---------- MATCH RECORD BUILDER ----------
 
-function buildMatchRecord(m, idx, roundNumber, eventId, drawVersion, userEmail) {
+function buildMatchRecord(m, idx, roundNumber, eventId, drawVersion, userEmail, matchType = "Round Robin") {
   const avg1 = teamAvgDupr(m.teamA);
   const avg2 = teamAvgDupr(m.teamB);
   const winProb1 = calculateWinProbability(avg1, avg2);
@@ -273,7 +273,7 @@ function buildMatchRecord(m, idx, roundNumber, eventId, drawVersion, userEmail) 
     Round: roundNumber,
     Court: m.court,
     DrawVersion: drawVersion,
-    MatchType: "Round Robin",
+    MatchType: matchType, // CHANGED — was hardcoded "Round Robin"
     Team1: m.teamA[0].Team,
     Team2: m.teamB[0].Team,
     Team1Player1: m.teamA[0].PlayerID,
@@ -282,7 +282,7 @@ function buildMatchRecord(m, idx, roundNumber, eventId, drawVersion, userEmail) 
     Team2Player2: m.teamB[1].PlayerID,
     Team1AvgDUPR: avg1,
     Team2AvgDUPR: avg2,
-    DUPRMatchDelta: Math.abs(avg1 - avg2), // NEW
+    DUPRMatchDelta: Math.abs(avg1 - avg2),
     Team1WinProb: winProb1,
     Team2WinProb: 1 - winProb1,
     ExpectedTeam1Score: winProb1 >= 0.5 ? 11 : Math.min(Math.round(winProb1 * 11 / (1 - winProb1)),9),
@@ -291,8 +291,8 @@ function buildMatchRecord(m, idx, roundNumber, eventId, drawVersion, userEmail) 
     Team2Score: 0,
     Team1WinLoss: '',
     Team2WinLoss: '',
-    Active: 'Active', // NEW
-    UserEmail: userEmail || 'unknown', // NEW
+    Active: 'Active',
+    UserEmail: userEmail || 'unknown',
     Timestamp: new Date().toISOString()
   };
 }
