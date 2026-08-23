@@ -32,7 +32,9 @@ function computeAnalyticsPlayerCounts(payload) {
         if (m.Team1WinLoss === 'Win') {
             wins++;
         }
-
+        else if (m.Team1WinLoss === 'Loss') {
+             losses++;
+        }
         pointsFor += Number(m.Team1Score) || 0;
         pointsAgainst += Number(m.Team2Score) || 0;
       }
