@@ -117,7 +117,7 @@ function renderAnalyticsCards(payload) {
         { label: 'Points For', data: sorted.map(d => d.pointsFor), backgroundColor: '#00E676' }, // CHANGED — green, "for" is the positive number
         { label: 'Points Against', data: sorted.map(d => d.pointsAgainst), backgroundColor: '#ef4444' }  // CHANGED — red, "against" is the number you want lower
     ];
-    }
+  }
 
   document.getElementById('analytics-heading').innerText = heading;
 
