@@ -1042,20 +1042,13 @@
       <section id="screen-analytics" class="app-screen">
         <div class="welcome-banner">
           <h2>Analytics</h2>
+          <p>Unique Partners & Opponents per player</p>
         </div>
 
-        <div class="scoring-toggle-block">
-          <span class="scoring-toggle-label">Metric</span>
-          <div class="scoring-toggle" id="analytics-metric-toggle">
-            <button class="scoring-option active" data-value="partners" onclick="setAnalyticsMetric('partners')">Unique Partners</button>
-            <button class="scoring-option" data-value="opponents" onclick="setAnalyticsMetric('opponents')">Unique Opponents</button>
-          </div>
-        </div>
-
-        <div style="padding: 16px;">
+        <div style="padding: 16px; height: 600px; position: relative;">
           <canvas id="analytics-chart-canvas"></canvas>
         </div>
-      </section> 
+      </section>
 
       <!-- Login / Profile screen -->
       <section id="screen-login" class="app-screen">

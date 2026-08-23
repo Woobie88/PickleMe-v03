@@ -1,4 +1,3 @@
-window.analyticsCurrentMetric = 'partners';
 window.analyticsChartInstance = null;
 
 function computeAnalyticsPlayerCounts(payload) {
@@ -37,36 +36,47 @@ function computeAnalyticsPlayerCounts(payload) {
 
 function renderAnalyticsCards(payload) {
   const data = computeAnalyticsPlayerCounts(payload);
-  const metricKey = window.analyticsCurrentMetric === 'partners' ? 'uniquePartners' : 'uniqueOpponents';
-  const metricLabel = window.analyticsCurrentMetric === 'partners' ? 'Unique Partners' : 'Unique Opponents';
-
-  const sorted = [...data].sort((a, b) => b[metricKey] - a[metricKey]);
+  const sorted = [...data].sort((a, b) => (a.player.FirstName || '').localeCompare(b.player.FirstName || ''));
 
   const labels = sorted.map(d => d.player.FirstName || 'Unnamed');
-  const values = sorted.map(d => d[metricKey]);
+  const partnerValues = sorted.map(d => d.uniquePartners);
+  const opponentValues = sorted.map(d => d.uniqueOpponents);
 
   const canvas = document.getElementById('analytics-chart-canvas');
   if (!canvas) return;
 
   if (window.analyticsChartInstance) {
-    window.analyticsChartInstance.destroy(); // must destroy before re-creating, or Chart.js throws on canvas reuse
+    window.analyticsChartInstance.destroy();
+  }
+
+  if (sorted.length === 0) {
+    console.log("Analytics: no players/matches to chart yet.");
+    return;
   }
 
   window.analyticsChartInstance = new Chart(canvas, {
     type: 'bar',
     data: {
       labels,
-      datasets: [{
-        label: metricLabel,
-        data: values,
-        backgroundColor: '#00E676' // matches your app's accent color
-      }]
+      datasets: [
+        {
+          label: 'Unique Partners',
+          data: partnerValues,
+          backgroundColor: '#00E676'
+        },
+        {
+          label: 'Unique Opponents',
+          data: opponentValues,
+          backgroundColor: '#3b82f6'
+        }
+      ]
     },
     options: {
-      indexAxis: 'y', // makes it horizontal
+      indexAxis: 'y',
       responsive: true,
+      maintainAspectRatio: false, // CRITICAL — lets the chart actually fill the sized container instead of collapsing
       plugins: {
-        legend: { display: false }
+        legend: { display: true, position: 'top' }
       },
       scales: {
         x: {
@@ -76,14 +86,4 @@ function renderAnalyticsCards(payload) {
       }
     }
   });
-}
-
-function setAnalyticsMetric(metric) {
-  window.analyticsCurrentMetric = metric;
-
-  document.querySelectorAll('#analytics-metric-toggle .scoring-option').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.value === metric);
-  });
-
-  renderAnalyticsCards(window.cachedUserUniverse);
 }
