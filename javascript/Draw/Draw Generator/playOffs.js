@@ -49,5 +49,8 @@ async function handlePlayoffsNext() {
   await window.updateEventFieldInFirestore(activeEventId, 'PlayoffRounds', roundsValue);
 
   console.log(`Playoffs configured: ${roundsValue} round(s) — ${PLAYOFF_ROUND_NAMES[roundsValue].join(', ')}`);
-  // Next screen (player/team qualification selection, bracket generation) not yet built
+  
+  // Build playoff schedule
+  generatePlayoffFinalRound(payload, roundsValue, activeEvent, drawVersion, userEmail);
 }
+

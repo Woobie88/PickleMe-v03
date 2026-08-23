@@ -61,7 +61,5 @@ function generatePlayoffFinalRound(payload, roundNumber, eventId, drawVersion, u
     ));
   }
 
-  console.log(`Generated ${newMatches.length} matches across ${numberOfRounds} round(s) for game type "${gameId}" (DrawVersion ${newDrawVersion}):`, newMatches);
-
   return matches;
 }
