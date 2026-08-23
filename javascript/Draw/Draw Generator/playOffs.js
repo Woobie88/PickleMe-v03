@@ -51,6 +51,7 @@ async function handlePlayoffsNext() {
   console.log(`Playoffs configured: ${roundsValue} round(s) — ${PLAYOFF_ROUND_NAMES[roundsValue].join(', ')}`);
   
   // Build playoff schedule
+  const payload = window.cachedUserUniverse;
   generatePlayoffFinalRound(payload, roundsValue, activeEvent, drawVersion, userEmail);
 }
 
