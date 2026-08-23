@@ -137,6 +137,9 @@ function navigateToScreen(screenId) {
     case 'add-match-players':
       renderAddMatchPlayersScreen(window.cachedUserUniverse);
       break;
+    case 'playoffs':
+      renderPlayoffsScreen(window.cachedUserUniverse);
+      break;
   }
 }
 

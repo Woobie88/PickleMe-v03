@@ -490,6 +490,9 @@ function handleFabAction(action) {
     case 'redraw':
       navigateToScreen('redraw');
       break;
+    case 'playoffs':
+      navigateToScreen('playoffs');
+      break;
   }
 }
 

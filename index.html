@@ -463,6 +463,7 @@
         <div id="sub-bye-players-list" class="card-grid"></div>
       </section>
       
+      <!-- Add Matches -->
       <section id="screen-add-match-round" class="app-screen">
         <div class="welcome-banner">
           <h2>Add Match</h2>
@@ -476,31 +477,62 @@
               <button class="score-btn" onclick="adjustAmRound(-1)">−</button>
               <span id="am-round-value" class="score-value">1</span>
               <button class="score-btn" onclick="adjustAmRound(1)">+</button>
+            </div>
+            <input type="hidden" id="am-round-hidden" value="1">
           </div>
-          <input type="hidden" id="am-round-hidden" value="1">
+
+          <div class="form-action-bar">
+            <button class="btn-secondary" onclick="navigateToScreen('draw')">Cancel</button>
+            <button class="btn-primary" onclick="handleAddMatchRoundNext()">Next</button>
+          </div>
         </div>
+      </section>
+
+      <!-- Add Match Players -->
+      <section id="screen-add-match-players" class="app-screen">
+        <div class="welcome-banner">
+          <h2 id="am-players-heading">Select Players — Court 1</h2>
+          <p>Long-press to select. First 2 selected are one team, next 2 the other.</p>
+        </div>
+
+        <div id="am-players-list" class="card-grid"></div>
 
         <div class="form-action-bar">
-          <button class="btn-secondary" onclick="navigateToScreen('draw')">Cancel</button>
-          <button class="btn-primary" onclick="handleAddMatchRoundNext()">Next</button>
+          <button class="btn-secondary" onclick="navigateToScreen('add-match-round')">Back</button>
+          <button class="btn-primary" id="am-players-next-btn" onclick="handleAddMatchPlayersNext()" disabled>Next</button>
         </div>
-      </div>
-    </section>
-
-    <section id="screen-add-match-players" class="app-screen">
-      <div class="welcome-banner">
-        <h2 id="am-players-heading">Select Players — Court 1</h2>
-        <p>Long-press to select. First 2 selected are one team, next 2 the other.</p>
-      </div>
-
-      <div id="am-players-list" class="card-grid"></div>
-
-      <div class="form-action-bar">
-        <button class="btn-secondary" onclick="navigateToScreen('add-match-round')">Back</button>
-        <button class="btn-primary" id="am-players-next-btn" onclick="handleAddMatchPlayersNext()" disabled>Next</button>
-      </div>
-    </section>
+      </section>
       
+      <!-- Play Offs -->
+      <section id="screen-playoffs" class="app-screen">
+        <div class="welcome-banner">
+          <h2>Playoffs</h2>
+          <p>Configure the finals format</p>
+        </div>
+
+        <div class="detail-view-container">
+          <div class="detail-form-group">
+            <label>Number Of Rounds</label>
+            <div class="score-control">
+              <button class="score-btn" onclick="adjustPoRounds(-1)">−</button>
+              <span id="po-rounds-value" class="score-value">1</span>
+              <button class="score-btn" onclick="adjustPoRounds(1)">+</button>
+            </div>
+            <input type="hidden" id="po-rounds-hidden" value="1">
+          </div>
+
+          <div class="detail-form-group">
+            <label>Final Type</label>
+            <div id="po-final-type-list" class="card-grid"></div>
+          </div>
+
+          <div class="form-action-bar">
+            <button class="btn-secondary" onclick="navigateToScreen('draw')">Cancel</button>
+            <button class="btn-primary" onclick="handlePlayoffsNext()">Next</button>
+          </div>
+        </div>
+      </section>
+
       <!-- SCREEN 5: Game Selector Format Configuration -->
       <section id="screen-games" class="app-screen">
   

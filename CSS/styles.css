@@ -1294,3 +1294,33 @@ body {
   min-width: 60px;
   text-align: center;
 }
+
+#screen-playoffs .score-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 8px;
+}
+
+#screen-playoffs .score-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 1.4rem;
+  border: 1px solid var(--nav-border);
+  background-color: var(--card-bg);
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+#screen-playoffs .score-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+  min-width: 60px;
+  text-align: center;
+}
+
+#po-final-type-list .detail-readonly {
+  margin-bottom: 8px;
+}
