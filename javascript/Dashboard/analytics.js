@@ -173,7 +173,7 @@ function initAnalyticsSwipeHandlers() {
     const deltaY = e.changedTouches[0].screenY - startY;
     if (Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY)) return;
 
-    if (deltaX < 0 && window.analyticsScreenIndex < 1) {
+    if (deltaX < 0 && window.analyticsScreenIndex < 3) {
       window.analyticsScreenIndex++;
       renderAnalyticsCards(window.cachedUserUniverse);
     } else if (deltaX > 0 && window.analyticsScreenIndex > 0) {
