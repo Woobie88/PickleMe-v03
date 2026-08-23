@@ -94,30 +94,30 @@ function renderAnalyticsCards(payload) {
   let datasets, heading;
 
   if (window.analyticsScreenIndex === 0) {
-    heading = 'Analytics — Unique Partners & Opponents';
+    heading = 'Unique Partners & Opponents';
     datasets = [
-      { label: 'Unique Partners', data: sorted.map(d => d.uniquePartners), backgroundColor: '#00E676' },
-      { label: 'Unique Opponents', data: sorted.map(d => d.uniqueOpponents), backgroundColor: '#3b82f6' }
+        { label: 'Unique Partners', data: sorted.map(d => d.uniquePartners), backgroundColor: '#00E676' }, // green — more variety is good
+        { label: 'Unique Opponents', data: sorted.map(d => d.uniqueOpponents), backgroundColor: '#3b82f6' }  // blue — neutral counterpart
     ];
-  } else if (window.analyticsScreenIndex === 1) {
-    heading = 'Analytics — Max Same Partner & Opponent';
+    } else if (window.analyticsScreenIndex === 1) {
+    heading = 'Max Same Partner & Opponent';
     datasets = [
-      { label: 'Max Partner', data: sorted.map(d => d.maxSamePartner), backgroundColor: '#f59e0b' }, // amber — new dataset, distinct from screen 1
-      { label: 'Max Opponent', data: sorted.map(d => d.maxSameOpponent), backgroundColor: '#ef4444' }  // red — new dataset, distinct from screen 1
+        { label: 'Max Partner', data: sorted.map(d => d.maxSamePartner), backgroundColor: '#f59e0b' }, // amber — repeats are a caution signal
+        { label: 'Max Opponent', data: sorted.map(d => d.maxSameOpponent), backgroundColor: '#ef4444' }  // red — repeats you'd want to minimize most
     ];
-  } else if (window.analyticsScreenIndex === 2) {
-    heading = 'Analytics — Wins & Losses';
+    } else if (window.analyticsScreenIndex === 2) {
+    heading = 'Game Wins & Losses';
     datasets = [
-      { label: 'Wins', data: sorted.map(d => d.wins), backgroundColor: '#8b5cf6' }, // amber — new dataset, distinct from screen 1
-      { label: 'Losses', data: sorted.map(d => d.losses), backgroundColor: '#ec4899' }  // red — new dataset, distinct from screen 1
+        { label: 'Wins', data: sorted.map(d => d.wins), backgroundColor: '#00E676' }, // CHANGED — green, matches your app's "good outcome" color everywhere else
+        { label: 'Losses', data: sorted.map(d => d.losses), backgroundColor: '#ef4444' }  // CHANGED — red, matches your app's "bad/warning" color everywhere else
     ];
-  } else if (window.analyticsScreenIndex === 3) {
-    heading = 'Analytics — Points For & Against';
+    } else if (window.analyticsScreenIndex === 3) {
+    heading = 'Game Points For & Against';
     datasets = [
-      { label: 'Points For', data: sorted.map(d => d.pointsFor), backgroundColor: '#06b6d4' }, // amber — new dataset, distinct from screen 1
-      { label: 'Points Against', data: sorted.map(d => d.pointsAgainst), backgroundColor: '#64748b' }  // red — new dataset, distinct from screen 1
+        { label: 'Points For', data: sorted.map(d => d.pointsFor), backgroundColor: '#00E676' }, // CHANGED — green, "for" is the positive number
+        { label: 'Points Against', data: sorted.map(d => d.pointsAgainst), backgroundColor: '#ef4444' }  // CHANGED — red, "against" is the number you want lower
     ];
-  }
+    }
 
   document.getElementById('analytics-heading').innerText = heading;
 
