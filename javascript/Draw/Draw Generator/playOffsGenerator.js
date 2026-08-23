@@ -77,9 +77,9 @@ function generatePlayoffFinalRound(payload, roundNumber, eventId, drawVersion, u
     const courtNumber = c + 1;
     const pairing = bestBalancedPairing(courtPlayers);
     matches.push(buildMatchRecord(
-      { teamA: pairing.teamA, teamB: pairing.teamB, court: courtNumber },
-      0, roundNumber, eventId, drawVersion, userEmail
-    ));
+        { teamA: pairing.teamA, teamB: pairing.teamB, court: courtNumber },
+        0, roundNumber, eventId, drawVersion, userEmail, "Final" // ADDED
+        ));
   }
 
   return matches;
@@ -124,7 +124,7 @@ function generatePlayoffEliminationRound(payload, roundNumber, eventId, drawVers
     const pairing = bestBalancedPairing(group.efPlayers);
     matches.push(buildMatchRecord(
       { teamA: pairing.teamA, teamB: pairing.teamB, court: courtNumber },
-      0, roundNumber, eventId, drawVersion, userEmail
+        0, roundNumber, eventId, drawVersion, userEmail, "Elimination Final" // ADDED
     ));
   });
 
@@ -205,7 +205,7 @@ function generatePlayoffFinalAfterElimination(payload, efMatches, roundNumber, e
     const pairing = bestBalancedPairing(groupPlayers);
     matches.push(buildMatchRecord(
       { teamA: pairing.teamA, teamB: pairing.teamB, court: courtNumber },
-      0, roundNumber, eventId, drawVersion, userEmail
+        0, roundNumber, eventId, drawVersion, userEmail, "Final" // ADDED
     ));
   });
 
