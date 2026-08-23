@@ -102,6 +102,7 @@ function navigateToScreen(screenId) {
       renderLadderCards(payload);
       break;
     case 'analytics':
+      window.analyticsScreenIndex = 0; // NEW — always start on Unique Partners/Opponents
       renderAnalyticsCards(payload);
       break;
     case 'profile':
@@ -262,6 +263,7 @@ window.addEventListener("DOMContentLoaded", () => {
       initPlayerDetailSwipeHandlers();
       initPlayerSubstitutionSwipeHandlers();
       enableCardPressFeedback('#screen-dashboard .app-card');
+      initAnalyticsSwipeHandlers();
 
       document.getElementById('ind-firstname')?.addEventListener('input', () => {
         indFirstNameManuallyEdited = true;

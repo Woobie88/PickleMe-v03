@@ -1,4 +1,5 @@
 window.analyticsChartInstance = null;
+window.analyticsScreenIndex = 0; // 0 = unique counts, 1 = max repeat counts
 
 function computeAnalyticsPlayerCounts(payload) {
   const activeEventId = payload.activeEventId;
@@ -9,8 +10,8 @@ function computeAnalyticsPlayerCounts(payload) {
   );
 
   return players.map(player => {
-    const partners = new Set();
-    const opponents = new Set();
+    const partnerCounts = {};
+    const opponentCounts = {};
 
     matches.forEach(m => {
       const t1 = [m.Team1Player1, m.Team1Player2, m.Team1Player3, m.Team1Player4].filter(Boolean);
@@ -22,14 +23,20 @@ function computeAnalyticsPlayerCounts(payload) {
       const myTeam = onT1 ? t1 : t2;
       const oppTeam = onT1 ? t2 : t1;
 
-      myTeam.forEach(pid => { if (pid !== player.PlayerID) partners.add(pid); });
-      oppTeam.forEach(pid => opponents.add(pid));
+      myTeam.forEach(pid => {
+        if (pid !== player.PlayerID) partnerCounts[pid] = (partnerCounts[pid] || 0) + 1;
+      });
+      oppTeam.forEach(pid => {
+        opponentCounts[pid] = (opponentCounts[pid] || 0) + 1;
+      });
     });
 
     return {
       player,
-      uniquePartners: partners.size,
-      uniqueOpponents: opponents.size
+      uniquePartners: Object.keys(partnerCounts).length,
+      uniqueOpponents: Object.keys(opponentCounts).length,
+      maxSamePartner: Math.max(0, ...Object.values(partnerCounts)),
+      maxSameOpponent: Math.max(0, ...Object.values(opponentCounts))
     };
   });
 }
@@ -39,8 +46,6 @@ function renderAnalyticsCards(payload) {
   const sorted = [...data].sort((a, b) => (a.player.FirstName || '').localeCompare(b.player.FirstName || ''));
 
   const labels = sorted.map(d => d.player.FirstName || 'Unnamed');
-  const partnerValues = sorted.map(d => d.uniquePartners);
-  const opponentValues = sorted.map(d => d.uniqueOpponents);
 
   const canvas = document.getElementById('analytics-chart-canvas');
   if (!canvas) return;
@@ -54,27 +59,31 @@ function renderAnalyticsCards(payload) {
     return;
   }
 
+  let datasets, heading;
+
+  if (window.analyticsScreenIndex === 0) {
+    heading = 'Analytics — Unique Partners & Opponents';
+    datasets = [
+      { label: 'Unique Partners', data: sorted.map(d => d.uniquePartners), backgroundColor: '#00E676' },
+      { label: 'Unique Opponents', data: sorted.map(d => d.uniqueOpponents), backgroundColor: '#3b82f6' }
+    ];
+  } else {
+    heading = 'Analytics — Max Same Partner & Opponent';
+    datasets = [
+      { label: 'Max Same Partner', data: sorted.map(d => d.maxSamePartner), backgroundColor: '#f59e0b' }, // amber — new dataset, distinct from screen 1
+      { label: 'Max Same Opponent', data: sorted.map(d => d.maxSameOpponent), backgroundColor: '#ef4444' }  // red — new dataset, distinct from screen 1
+    ];
+  }
+
+  document.getElementById('analytics-heading').innerText = heading;
+
   window.analyticsChartInstance = new Chart(canvas, {
     type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        {
-          label: 'Unique Partners',
-          data: partnerValues,
-          backgroundColor: '#00E676'
-        },
-        {
-          label: 'Unique Opponents',
-          data: opponentValues,
-          backgroundColor: '#3b82f6'
-        }
-      ]
-    },
+    data: { labels, datasets },
     options: {
       indexAxis: 'y',
       responsive: true,
-      maintainAspectRatio: false, // CRITICAL — lets the chart actually fill the sized container instead of collapsing
+      maintainAspectRatio: false,
       plugins: {
         legend: { display: true, position: 'top' }
       },
@@ -84,6 +93,31 @@ function renderAnalyticsCards(payload) {
           ticks: { stepSize: 1 }
         }
       }
+    }
+  });
+}
+
+function initAnalyticsSwipeHandlers() {
+  const container = document.getElementById('screen-analytics');
+  if (!container) return;
+  let startX = 0, startY = 0;
+
+  container.addEventListener('touchstart', (e) => {
+    startX = e.changedTouches[0].screenX;
+    startY = e.changedTouches[0].screenY;
+  });
+
+  container.addEventListener('touchend', (e) => {
+    const deltaX = e.changedTouches[0].screenX - startX;
+    const deltaY = e.changedTouches[0].screenY - startY;
+    if (Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY)) return;
+
+    if (deltaX < 0 && window.analyticsScreenIndex < 1) {
+      window.analyticsScreenIndex++;
+      renderAnalyticsCards(window.cachedUserUniverse);
+    } else if (deltaX > 0 && window.analyticsScreenIndex > 0) {
+      window.analyticsScreenIndex--;
+      renderAnalyticsCards(window.cachedUserUniverse);
     }
   });
 }
