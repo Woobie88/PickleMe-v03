@@ -1038,6 +1038,25 @@
         </div>
       </section>
 
+      <!-- Analytics -->
+      <section id="screen-analytics" class="app-screen">
+        <div class="welcome-banner">
+          <h2>Analytics</h2>
+        </div>
+
+        <div class="scoring-toggle-block">
+          <span class="scoring-toggle-label">Metric</span>
+          <div class="scoring-toggle" id="analytics-metric-toggle">
+            <button class="scoring-option active" data-value="partners" onclick="setAnalyticsMetric('partners')">Unique Partners</button>
+            <button class="scoring-option" data-value="opponents" onclick="setAnalyticsMetric('opponents')">Unique Opponents</button>
+          </div>
+        </div>
+
+        <div style="padding: 16px;">
+          <canvas id="analytics-chart-canvas"></canvas>
+        </div>
+      </section> 
+
       <!-- Login / Profile screen -->
       <section id="screen-login" class="app-screen">
         <div class="welcome-banner">
@@ -1184,6 +1203,7 @@
     <script src="javascript/Draw/Draw Generator/playOffs.js"></script>
     <script src="javascript/Draw/Draw Generator/playOffsGenerator.js"></script>
     <script src="javascript/Dashboard/cleanUp.js"></script>
+    <script src="javascript/Dashboard/analytics.js"></script>
     <script src="javascript/Dashboard/navigationLoad.js"></script>
     <script src="javascript/eventListeners.js"></script>
   </body>
