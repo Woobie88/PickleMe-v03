@@ -38,36 +38,17 @@ function computeAnalyticsPlayerCounts(payload) {
         pointsFor += Number(m.Team1Score) || 0;
         pointsAgainst += Number(m.Team2Score) || 0;
       }
-
+      
       if (onT2) {
         if (m.Team2WinLoss === 'Win') {
             wins++;
         }
-
+        else if (m.Team2WinLoss === 'Loss') {
+             losses++;
+        }
         pointsFor += Number(m.Team2Score) || 0;
         pointsAgainst += Number(m.Team1Score) || 0;
       }
-
-      // Count losses and points for
-      if (onT1) {
-        if (m.Team1WinLoss === 'Loss') {
-            losses++;
-        }
-
-        pointsFor += Number(m.Team1Score) || 0;
-        pointsAgainst += Number(m.Team2Score) || 0;
-      }
-
-      if (onT2) {
-        if (m.Team2WinLoss === 'Loss') {
-            losses++;
-        }
-
-        pointsFor += Number(m.Team2Score) || 0;
-        pointsAgainst += Number(m.Team1Score) || 0;
-      }
-
-      
 
       myTeam.forEach(pid => {
         if (pid !== player.PlayerID) partnerCounts[pid] = (partnerCounts[pid] || 0) + 1;
