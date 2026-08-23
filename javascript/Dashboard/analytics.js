@@ -12,6 +12,10 @@ function computeAnalyticsPlayerCounts(payload) {
   return players.map(player => {
     const partnerCounts = {};
     const opponentCounts = {};
+    let wins = 0;
+    let losses = 0;
+    let pointsFor = 0;
+    let pointsAgainst = 0;
 
     matches.forEach(m => {
       const t1 = [m.Team1Player1, m.Team1Player2, m.Team1Player3, m.Team1Player4].filter(Boolean);
@@ -22,6 +26,46 @@ function computeAnalyticsPlayerCounts(payload) {
 
       const myTeam = onT1 ? t1 : t2;
       const oppTeam = onT1 ? t2 : t1;
+
+      // Count wins and points for
+      if (onT1) {
+        if (m.Team1WinLoss === 'Win') {
+            wins++;
+        }
+
+        pointsFor += Number(m.Team1Score) || 0;
+        pointsAgainst += Number(m.Team2Score) || 0;
+      }
+
+      if (onT2) {
+        if (m.Team2WinLoss === 'Win') {
+            wins++;
+        }
+
+        pointsFor += Number(m.Team2Score) || 0;
+        pointsAgainst += Number(m.Team1Score) || 0;
+      }
+
+      // Count losses and points for
+      if (onT1) {
+        if (m.Team1WinLoss === 'Loss') {
+            losses++;
+        }
+
+        pointsFor += Number(m.Team1Score) || 0;
+        pointsAgainst += Number(m.Team2Score) || 0;
+      }
+
+      if (onT2) {
+        if (m.Team2WinLoss === 'Loss') {
+            losses++;
+        }
+
+        pointsFor += Number(m.Team2Score) || 0;
+        pointsAgainst += Number(m.Team1Score) || 0;
+      }
+
+      
 
       myTeam.forEach(pid => {
         if (pid !== player.PlayerID) partnerCounts[pid] = (partnerCounts[pid] || 0) + 1;
@@ -36,7 +80,12 @@ function computeAnalyticsPlayerCounts(payload) {
       uniquePartners: Object.keys(partnerCounts).length,
       uniqueOpponents: Object.keys(opponentCounts).length,
       maxSamePartner: Math.max(0, ...Object.values(partnerCounts)),
-      maxSameOpponent: Math.max(0, ...Object.values(opponentCounts))
+      maxSameOpponent: Math.max(0, ...Object.values(opponentCounts)),
+      wins: wins,
+      losses: losses,
+      pointsFor: pointsFor,
+      pointsAgainst: pointsAgainst
+
     };
   });
 }
@@ -67,7 +116,7 @@ function renderAnalyticsCards(payload) {
       { label: 'Unique Partners', data: sorted.map(d => d.uniquePartners), backgroundColor: '#00E676' },
       { label: 'Unique Opponents', data: sorted.map(d => d.uniqueOpponents), backgroundColor: '#3b82f6' }
     ];
-  } else {
+  } else if (window.analyticsScreenIndex === 1) {
     heading = 'Analytics — Max Same Partner & Opponent';
     datasets = [
       { label: 'Max Partner', data: sorted.map(d => d.maxSamePartner), backgroundColor: '#f59e0b' }, // amber — new dataset, distinct from screen 1
