@@ -516,49 +516,43 @@ function switchDrawTab(tabId) {
 
 async function renderCurrentRoundView(payload) {
   showLoadingState('current-round-list', 'Loading current round...');
-
   const activeEventId = payload.activeEventId;
   const activeEvent = (payload.events || []).find(
     e => String(e.EventID || e.eventId) === String(activeEventId)
   );
   if (!activeEvent) return;
-
   renderScoringToggle(activeEvent.Scoring || 'None');
-
-  // Initialize the round tracker only once per event load
   window.currentRoundNumber = parseInt(activeEvent.CurrentRound) || 1;
-
   const currentDrawVersion = activeEvent.CurrentDrawVersion;
-
   const matches = window.cachedUserUniverse.draw && window.cachedUserUniverse.draw.length > 0
     ? window.cachedUserUniverse.draw
     : await window.fetchDrawFromFirestore(activeEventId, currentDrawVersion);
   window.cachedUserUniverse.draw = matches;
-
   const players = window.cachedUserUniverse.players && window.cachedUserUniverse.players.length > 0
     ? window.cachedUserUniverse.players
     : await window.fetchPlayersFromFirestore(activeEventId, activeEvent.CurrentPlayerVersion);
   window.cachedUserUniverse.players = players;
-
   const playerMap = {};
   players.forEach(p => { playerMap[p.PlayerID] = p.FirstName; });
-
   const roundMatches = matches
     .filter(m => parseInt(m.Round) === window.currentRoundNumber)
     .sort((a, b) => (parseInt(a.Court) || 0) - (parseInt(b.Court) || 0));
 
-  document.getElementById('current-round-heading').innerText = `Round ${window.currentRoundNumber}`;
+  // CHANGED — was: document.getElementById('current-round-heading').innerText = `Round ${window.currentRoundNumber}`;
+  const roundMatchTypeSample = roundMatches[0]?.MatchType;
+  const isPlayoffRound = roundMatchTypeSample && roundMatchTypeSample !== "Round Robin";
+  document.getElementById('current-round-heading').innerText = isPlayoffRound
+    ? `Round ${window.currentRoundNumber} (${roundMatchTypeSample})`
+    : `Round ${window.currentRoundNumber}`;
 
   const container = document.getElementById('current-round-list');
   const placeholder = document.getElementById('placeholder-view-current-round');
-
   if (roundMatches.length === 0) {
     if (placeholder) placeholder.style.display = '';
     container.innerHTML = '';
     return;
   }
   if (placeholder) placeholder.style.display = 'none';
-
   let html = '';
   roundMatches.forEach(m => {
     const iconAsset = courts[0]['court-' + m.Court] || '🏟️';
@@ -570,15 +564,12 @@ async function renderCurrentRoundView(payload) {
       playerMap[m.Team2Player1], playerMap[m.Team2Player2],
       playerMap[m.Team2Player3], playerMap[m.Team2Player4]
     ]);
-
     const isComplete = m.Team1WinLoss && m.Team2WinLoss;
     const hasRealScore = (parseInt(m.Team1Score) || 0) > 0 || (parseInt(m.Team2Score) || 0) > 0;
-
     let metaLine;
     if (isComplete && hasRealScore) {
       metaLine = `Score ${m.Team1Score} - ${m.Team2Score} || Exp Res. ${m.ExpectedTeam1Score} - ${m.ExpectedTeam2Score}`;
     } else if (isComplete) {
-      // Wins-mode result — no score was ever entered, just show W/L
       const team1Result = m.Team1WinLoss === 'Win' ? 'W' : 'L';
       const team2Result = m.Team2WinLoss === 'Win' ? 'W' : 'L';
       metaLine = `Result ${team1Result} - ${team2Result} || Exp Res. ${m.ExpectedTeam1Score} - ${m.ExpectedTeam2Score}`;
@@ -586,7 +577,6 @@ async function renderCurrentRoundView(payload) {
       const duprDelta = Math.abs((parseFloat(m.Team1AvgDUPR) || 0) - (parseFloat(m.Team2AvgDUPR) || 0)).toFixed(2);
       metaLine = `DUPR Diff ${duprDelta} || Exp Res. ${m.ExpectedTeam1Score} - ${m.ExpectedTeam2Score}`;
     }
-
     const contentHtml = `
       <h4>${team1} vs. ${team2}</h4>
       <p class="card-meta-line">${metaLine}</p>
@@ -594,7 +584,6 @@ async function renderCurrentRoundView(payload) {
     const onClickAttr = `onclick="openMatchScoreView('${m.MatchID}')"`;
     html += buildCardMarkup({ iconAsset, contentHtml, onClickAttr });
   });
-
   container.innerHTML = html;
 }
 
