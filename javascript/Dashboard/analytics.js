@@ -125,14 +125,14 @@ function renderAnalyticsCards(payload) {
   } else if (window.analyticsScreenIndex === 2) {
     heading = 'Analytics — Wins & Losses';
     datasets = [
-      { label: 'Wins', data: sorted.map(d => d.wins), backgroundColor: '#00E676' }, // amber — new dataset, distinct from screen 1
-      { label: 'Losses', data: sorted.map(d => d.losses), backgroundColor: '#3b82f6' }  // red — new dataset, distinct from screen 1
+      { label: 'Wins', data: sorted.map(d => d.wins), backgroundColor: '#8b5cf6' }, // amber — new dataset, distinct from screen 1
+      { label: 'Losses', data: sorted.map(d => d.losses), backgroundColor: '#ec4899' }  // red — new dataset, distinct from screen 1
     ];
   } else if (window.analyticsScreenIndex === 3) {
     heading = 'Analytics — Points For & Against';
     datasets = [
-      { label: 'Points For', data: sorted.map(d => d.pointsFor), backgroundColor: '#f59e0b' }, // amber — new dataset, distinct from screen 1
-      { label: 'Points Against', data: sorted.map(d => d.pointsAgainst), backgroundColor: '#ef4444' }  // red — new dataset, distinct from screen 1
+      { label: 'Points For', data: sorted.map(d => d.pointsFor), backgroundColor: '#06b6d4' }, // amber — new dataset, distinct from screen 1
+      { label: 'Points Against', data: sorted.map(d => d.pointsAgainst), backgroundColor: '#64748b' }  // red — new dataset, distinct from screen 1
     ];
   }
 
