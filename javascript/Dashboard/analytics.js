@@ -122,6 +122,18 @@ function renderAnalyticsCards(payload) {
       { label: 'Max Partner', data: sorted.map(d => d.maxSamePartner), backgroundColor: '#f59e0b' }, // amber — new dataset, distinct from screen 1
       { label: 'Max Opponent', data: sorted.map(d => d.maxSameOpponent), backgroundColor: '#ef4444' }  // red — new dataset, distinct from screen 1
     ];
+  } else if (window.analyticsScreenIndex === 2) {
+    heading = 'Analytics — Wins & Losses';
+    datasets = [
+      { label: 'Wins', data: sorted.map(d => d.wins), backgroundColor: '#00E676' }, // amber — new dataset, distinct from screen 1
+      { label: 'Losses', data: sorted.map(d => d.losses), backgroundColor: '#3b82f6' }  // red — new dataset, distinct from screen 1
+    ];
+  } else if (window.analyticsScreenIndex === 3) {
+    heading = 'Analytics — Points For & Against';
+    datasets = [
+      { label: 'Points For', data: sorted.map(d => d.pointsFor), backgroundColor: '#f59e0b' }, // amber — new dataset, distinct from screen 1
+      { label: 'Points Against', data: sorted.map(d => d.pointsAgainst), backgroundColor: '#ef4444' }  // red — new dataset, distinct from screen 1
+    ];
   }
 
   document.getElementById('analytics-heading').innerText = heading;
