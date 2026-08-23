@@ -61,6 +61,6 @@ function generatePlayoffFinalRound(payload, roundNumber, eventId, drawVersion, u
     ));
   }
 
-  console.log(`The playoff matches are ${matches}`);
+  console.log(`Generated ${matches.length} matches across ${roundNumber} round(s)`, matches);
   return matches;
 }
