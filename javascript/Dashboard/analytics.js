@@ -1,5 +1,6 @@
 window.analyticsChartInstance = null;
-window.analyticsScreenIndex = 0; // 0 = unique counts, 1 = max repeat counts
+window.analyticsScreenIndex = 0; // 0 = unique counts, 1 = max repeat counts, 2 = wins/losses, 3 = points for/against
+window.analyticsRawData = [];
 
 function computeAnalyticsPlayerCounts(payload) {
   const activeEventId = payload.activeEventId;
@@ -27,24 +28,21 @@ function computeAnalyticsPlayerCounts(payload) {
       const myTeam = onT1 ? t1 : t2;
       const oppTeam = onT1 ? t2 : t1;
 
-      // Count wins and points for
       if (onT1) {
         if (m.Team1WinLoss === 'Win') {
-            wins++;
-        }
-        else if (m.Team1WinLoss === 'Loss') {
-             losses++;
+          wins++;
+        } else if (m.Team1WinLoss === 'Loss') {
+          losses++;
         }
         pointsFor += Number(m.Team1Score) || 0;
         pointsAgainst += Number(m.Team2Score) || 0;
       }
-      
+
       if (onT2) {
         if (m.Team2WinLoss === 'Win') {
-            wins++;
-        }
-        else if (m.Team2WinLoss === 'Loss') {
-             losses++;
+          wins++;
+        } else if (m.Team2WinLoss === 'Loss') {
+          losses++;
         }
         pointsFor += Number(m.Team2Score) || 0;
         pointsAgainst += Number(m.Team1Score) || 0;
@@ -67,16 +65,18 @@ function computeAnalyticsPlayerCounts(payload) {
       wins: wins,
       losses: losses,
       pointsFor: pointsFor,
-      pointsAgainst: pointsAgainst
-
+      pointsAgainst: pointsAgainst,
+      partnerCounts,
+      opponentCounts
     };
   });
 }
 
 function renderAnalyticsCards(payload) {
   const data = computeAnalyticsPlayerCounts(payload);
-  const sorted = [...data].sort((a, b) => (a.player.FirstName || '').localeCompare(b.player.FirstName || ''));
+  window.analyticsRawData = data;
 
+  const sorted = [...data].sort((a, b) => (a.player.FirstName || '').localeCompare(b.player.FirstName || ''));
   const labels = sorted.map(d => d.player.FirstName || 'Unnamed');
 
   const canvas = document.getElementById('analytics-chart-canvas');
@@ -85,6 +85,9 @@ function renderAnalyticsCards(payload) {
   if (window.analyticsChartInstance) {
     window.analyticsChartInstance.destroy();
   }
+
+  const detailEl = document.getElementById('analytics-tap-detail');
+  if (detailEl) detailEl.style.display = 'none';
 
   if (sorted.length === 0) {
     console.log("Analytics: no players/matches to chart yet.");
@@ -96,26 +99,26 @@ function renderAnalyticsCards(payload) {
   if (window.analyticsScreenIndex === 0) {
     heading = 'Unique Partners & Opponents';
     datasets = [
-        { label: 'Unique Partners', data: sorted.map(d => d.uniquePartners), backgroundColor: '#00E676' }, // green — more variety is good
-        { label: 'Unique Opponents', data: sorted.map(d => d.uniqueOpponents), backgroundColor: '#3b82f6' }  // blue — neutral counterpart
+      { label: 'Unique Partners', data: sorted.map(d => d.uniquePartners), backgroundColor: '#00E676' },
+      { label: 'Unique Opponents', data: sorted.map(d => d.uniqueOpponents), backgroundColor: '#3b82f6' }
     ];
-    } else if (window.analyticsScreenIndex === 1) {
+  } else if (window.analyticsScreenIndex === 1) {
     heading = 'Max Same Partner & Opponent';
     datasets = [
-        { label: 'Max Partner', data: sorted.map(d => d.maxSamePartner), backgroundColor: '#f59e0b' }, // amber — repeats are a caution signal
-        { label: 'Max Opponent', data: sorted.map(d => d.maxSameOpponent), backgroundColor: '#ef4444' }  // red — repeats you'd want to minimize most
+      { label: 'Max Partner', data: sorted.map(d => d.maxSamePartner), backgroundColor: '#f59e0b' },
+      { label: 'Max Opponent', data: sorted.map(d => d.maxSameOpponent), backgroundColor: '#ef4444' }
     ];
-    } else if (window.analyticsScreenIndex === 2) {
+  } else if (window.analyticsScreenIndex === 2) {
     heading = 'Game Wins & Losses';
     datasets = [
-        { label: 'Wins', data: sorted.map(d => d.wins), backgroundColor: '#00E676' }, // CHANGED — green, matches your app's "good outcome" color everywhere else
-        { label: 'Losses', data: sorted.map(d => d.losses), backgroundColor: '#ef4444' }  // CHANGED — red, matches your app's "bad/warning" color everywhere else
+      { label: 'Wins', data: sorted.map(d => d.wins), backgroundColor: '#00E676' },
+      { label: 'Losses', data: sorted.map(d => d.losses), backgroundColor: '#ef4444' }
     ];
-    } else if (window.analyticsScreenIndex === 3) {
+  } else if (window.analyticsScreenIndex === 3) {
     heading = 'Game Points For & Against';
     datasets = [
-        { label: 'Points For', data: sorted.map(d => d.pointsFor), backgroundColor: '#00E676' }, // CHANGED — green, "for" is the positive number
-        { label: 'Points Against', data: sorted.map(d => d.pointsAgainst), backgroundColor: '#ef4444' }  // CHANGED — red, "against" is the number you want lower
+      { label: 'Points For', data: sorted.map(d => d.pointsFor), backgroundColor: '#00E676' },
+      { label: 'Points Against', data: sorted.map(d => d.pointsAgainst), backgroundColor: '#ef4444' }
     ];
   }
 
@@ -136,9 +139,71 @@ function renderAnalyticsCards(payload) {
           beginAtZero: true,
           ticks: { stepSize: 1 }
         }
+      },
+      onClick: (evt, elements) => {
+        if (elements.length === 0) return;
+        if (window.analyticsScreenIndex === 0) {
+          handleAnalyticsFullListTap(elements[0], sorted); // NEW
+        } else if (window.analyticsScreenIndex === 1) {
+          handleAnalyticsBarTap(elements[0], sorted);
+        }
       }
     }
   });
+}
+
+function handleAnalyticsBarTap(element, sorted) {
+  const playerIdx = element.index;
+  const datasetIdx = element.datasetIndex;
+  const entry = sorted[playerIdx];
+
+  const countsMap = datasetIdx === 0 ? entry.partnerCounts : entry.opponentCounts;
+  const maxValue = datasetIdx === 0 ? entry.maxSamePartner : entry.maxSameOpponent;
+  const label = datasetIdx === 0 ? 'partnered' : 'opposed';
+
+  const namesAtMax = Object.entries(countsMap)
+    .filter(([pid, count]) => count === maxValue)
+    .map(([pid]) => {
+      const p = window.analyticsRawData.find(d => d.player.PlayerID === pid);
+      return p ? (p.player.FirstName || 'Unnamed') : pid;
+    });
+
+  const detailEl = document.getElementById('analytics-tap-detail');
+  if (!detailEl) return;
+
+  if (maxValue === 0 || namesAtMax.length === 0) {
+    detailEl.innerText = `${entry.player.FirstName || 'Unnamed'} has no repeats yet.`;
+  } else {
+    detailEl.innerText = `${entry.player.FirstName || 'Unnamed'} ${label} ${namesAtMax.join(', ')} ${maxValue} time(s).`;
+  }
+  detailEl.style.display = '';
+}
+
+function handleAnalyticsFullListTap(element, sorted) { // NEW
+  const playerIdx = element.index;
+  const datasetIdx = element.datasetIndex; // 0 = Unique Partners, 1 = Unique Opponents
+  const entry = sorted[playerIdx];
+
+  const countsMap = datasetIdx === 0 ? entry.partnerCounts : entry.opponentCounts;
+  const label = datasetIdx === 0 ? 'Partners' : 'Opponents';
+
+  const sortedList = Object.entries(countsMap)
+    .sort((a, b) => b[1] - a[1]) // sorted by frequency descending
+    .map(([pid, count]) => {
+      const p = window.analyticsRawData.find(d => d.player.PlayerID === pid);
+      const name = p ? (p.player.FirstName || 'Unnamed') : pid;
+      return `${name} (${count})`;
+    });
+
+  const detailEl = document.getElementById('analytics-tap-detail');
+  if (!detailEl) return;
+
+  if (sortedList.length === 0) {
+    detailEl.innerText = `${entry.player.FirstName || 'Unnamed'} has no ${label.toLowerCase()} yet.`;
+  } else {
+    detailEl.innerText = `${entry.player.FirstName || 'Unnamed'}'s ${label}: ${sortedList.join(', ')}`;
+  }
+  detailEl.style.display = '';
 }
 
 function initAnalyticsSwipeHandlers() {
