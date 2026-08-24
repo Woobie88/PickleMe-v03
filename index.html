@@ -526,6 +526,14 @@
             <div id="po-final-type-list" class="card-grid"></div>
           </div>
 
+          <div class="detail-form-group" id="po-progression-group" style="display: none;">
+            <label>Progression Type</label>
+            <div class="scoring-toggle" id="po-progression-toggle">
+              <button class="scoring-option active" data-value="kings-queens" onclick="setPlayoffProgressionType('kings-queens')">Kings & Queens</button>
+              <button class="scoring-option" data-value="snakes-ladders" onclick="setPlayoffProgressionType('snakes-ladders')">Snakes & Ladders</button>
+            </div>
+          </div>
+
           <div class="form-action-bar">
             <button class="btn-secondary" onclick="navigateToScreen('draw')">Cancel</button>
             <button class="btn-primary" onclick="handlePlayoffsNext()">Build Playoffs</button>

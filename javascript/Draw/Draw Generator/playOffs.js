@@ -20,10 +20,10 @@ function renderPlayoffsScreen(payload) {
 function renderPlayoffFinalTypeList(roundsValue) {
   const roundNames = PLAYOFF_ROUND_NAMES[roundsValue] || [];
   const container = document.getElementById('po-final-type-list');
+  container.innerHTML = roundNames.map(name => `<div class="detail-readonly">${name}</div>`).join('');
 
-  container.innerHTML = roundNames.map(name =>
-    `<div class="detail-readonly">${name}</div>`
-  ).join('');
+  const progressionGroup = document.getElementById('po-progression-group');
+  progressionGroup.style.display = (roundsValue === 3 || roundsValue === 4) ? '' : 'none'; // CHANGED — was only === 4
 }
 
 function adjustPoRounds(direction) {
@@ -44,17 +44,13 @@ async function handlePlayoffsNext() {
   const activeEvent = window.cachedUserUniverse.events.find(e => String(e.EventID) === String(activeEventId));
 
   const roundsValue = parseInt(document.getElementById('po-rounds-hidden').value) || 1;
-
   activeEvent.PlayoffRounds = roundsValue;
   await window.updateEventFieldInFirestore(activeEventId, 'PlayoffRounds', roundsValue);
-
-  console.log(`Playoffs configured: ${roundsValue} round(s) — ${PLAYOFF_ROUND_NAMES[roundsValue].join(', ')}`);
 
   const payload = window.cachedUserUniverse;
   const drawVersion = activeEvent.CurrentDrawVersion;
   const userEmail = window.currentUserEmail;
 
-  // Playoffs get its own round-numbering, starting right after the regular event's last round
   const existingMatches = payload.draw || [];
   const lastRegularRound = existingMatches.reduce((max, m) => Math.max(max, parseInt(m.Round) || 0), 0);
   const playoffStartRound = lastRegularRound + 1;
@@ -63,23 +59,30 @@ async function handlePlayoffsNext() {
 
   if (roundsValue === 1) {
     newMatches = generatePlayoffFinalRound(payload, playoffStartRound, activeEventId, drawVersion, userEmail);
+
   } else if (roundsValue === 2) {
     newMatches = generatePlayoffEliminationRound(payload, playoffStartRound, activeEventId, drawVersion, userEmail);
-
-    // NEW — remember which rounds are EF and Final, so goToNextRound knows when to trigger the Final generation
     activeEvent.PlayoffEFRound = playoffStartRound;
     activeEvent.PlayoffFinalRound = playoffStartRound + 1;
     await window.updateEventFieldInFirestore(activeEventId, 'PlayoffEFRound', playoffStartRound);
     await window.updateEventFieldInFirestore(activeEventId, 'PlayoffFinalRound', playoffStartRound + 1);
+
+  } else if (roundsValue === 3 || roundsValue === 4) { // CHANGED — combined branch, was only === 4
+    newMatches = generatePlayoffProgressiveRound1(payload, roundsValue, playoffStartRound, activeEventId, drawVersion, userEmail);
+    activeEvent.PlayoffStartRound = playoffStartRound;
+    activeEvent.PlayoffType = window.playoffProgressionType;
+    await window.updateEventFieldInFirestore(activeEventId, 'PlayoffStartRound', playoffStartRound);
+    await window.updateEventFieldInFirestore(activeEventId, 'PlayoffType', window.playoffProgressionType);
+
   } else {
-    alert(`${roundsValue}-round Playoffs isn't built yet — only 1 and 2 rounds are currently supported.`);
+    alert(`${roundsValue}-round Playoffs isn't built yet.`);
     return;
   }
 
   try {
     await window.saveGeneratedDrawToFirestore(newMatches);
     window.cachedUserUniverse.draw = [...existingMatches, ...newMatches];
-    console.log(`Playoffs Round ${playoffStartRound} generated: ${newMatches.length} match(es).`);
+    console.log(`Playoffs generated: ${newMatches.length} match(es) starting Round ${playoffStartRound}.`);
     navigateToScreen('draw');
   } catch (err) {
     console.error("Failed to save playoff matches:", err);

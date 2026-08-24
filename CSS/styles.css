@@ -1324,3 +1324,11 @@ body {
 #po-final-type-list .detail-readonly {
   margin-bottom: 8px;
 }
+
+#po-progression-toggle {
+  display: flex;
+}
+#po-progression-toggle .scoring-option {
+  flex: 1;
+  text-align: center;
+}

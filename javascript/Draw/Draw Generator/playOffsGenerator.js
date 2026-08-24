@@ -248,3 +248,97 @@ async function handlePlayoffFinalAdvance() {
     return false;
   }
 }
+
+/**
+ * ============================================================
+ * PLAYOFFS: 3 & 4-ROUND PROGRESSIVE BRACKET
+ * 4 rounds = Qualifying Final, Semi Final, Elimination Final, Final
+ * 3 rounds = Semi Final, Elimination Final, Final (identical
+ * mechanism, just starts one stage later)
+ *
+ * Round 1 of the bracket is rank-based (top-ranked players fill
+ * Court 1 cascading down), with randomly-chosen byes each round.
+ * Every subsequent round reuses the verified Progressive engine
+ * (Kings & Queens or Snakes & Ladders, via toggle) — independent
+ * of the event's actual GameID. Each round only generates once
+ * the prior round's results are entered, visible on swipe.
+ * ============================================================
+ */
+
+window.playoffProgressionType = 'kings-queens';
+
+function setPlayoffProgressionType(type) {
+  window.playoffProgressionType = type;
+  document.querySelectorAll('#po-progression-toggle .scoring-option').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.value === type);
+  });
+}
+
+function pickRandomByes(activePlayers, byesNeeded) {
+  const shuffled = [...activePlayers].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, byesNeeded).map(p => p.PlayerID);
+}
+
+/**
+ * Builds the FIRST round of a 3 or 4-round progressive bracket —
+ * rank-based, top-ranked players cascade into Court 1 downward.
+ * roundsValue determines the label (PLAYOFF_ROUND_NAMES[roundsValue][0]) —
+ * "Semi Final" for 3 rounds, "Qualifying Final" for 4 rounds.
+ */
+function generatePlayoffProgressiveRound1(payload, roundsValue, roundNumber, eventId, drawVersion, userEmail) {
+  const rankedPlayers = getStandingsRankedPlayers(payload);
+  const courtsCount = Math.floor(rankedPlayers.length / 4);
+  const byesNeeded = rankedPlayers.length - courtsCount * 4;
+
+  const byeIds = pickRandomByes(rankedPlayers, byesNeeded);
+  const activePlayers = rankedPlayers.filter(p => !byeIds.includes(p.PlayerID));
+
+  const roundLabel = PLAYOFF_ROUND_NAMES[roundsValue][0]; // CHANGED — parameterized, was hardcoded "Qualifying Final"
+
+  const matches = [];
+  for (let c = 0; c < courtsCount; c++) {
+    const courtPlayers = activePlayers.slice(c * 4, c * 4 + 4);
+    const courtNumber = c + 1;
+    const pairing = bestBalancedPairing(courtPlayers);
+    matches.push(buildMatchRecord(
+      { teamA: pairing.teamA, teamB: pairing.teamB, court: courtNumber },
+      0, roundNumber, eventId, drawVersion, userEmail, roundLabel
+    ));
+  }
+
+  return matches;
+}
+
+/**
+ * Builds a minimal placeholder round purely to encode "who's on bye"
+ * for advanceProgressiveRound's getByePlayersForRound lookup — the
+ * actual pairings here are thrown away and overwritten by the real
+ * progression logic, so any valid pairing of the active players works.
+ */
+function buildPlayoffPlaceholderRound(activePlayers, courtsCount, roundNumber, eventId, drawVersion, userEmail) {
+  const courtNumbers = Array.from({ length: courtsCount }, (_, i) => i + 1);
+  const matches = [];
+  for (let c = 0; c < courtsCount; c++) {
+    const courtPlayers = activePlayers.slice(c * 4, c * 4 + 4);
+    if (courtPlayers.length < 4) break;
+    matches.push(buildMatchRecord(
+      { teamA: [courtPlayers[0], courtPlayers[1]], teamB: [courtPlayers[2], courtPlayers[3]], court: courtNumbers[c] },
+      0, roundNumber, eventId, drawVersion, userEmail
+    ));
+  }
+  return matches;
+}
+
+function generatePlayoffPlaceholderForRound(payload, roundNumber, eventId, drawVersion, userEmail) {
+  const activeEvent = payload.events.find(e => String(e.EventID) === String(eventId));
+  const activePlayers = payload.players.filter(
+    p => String(p.PlayerVersion) === String(activeEvent.CurrentPlayerVersion) && p.playerExclude !== 'Yes'
+  );
+
+  const courtsCount = Math.floor(activePlayers.length / 4);
+  const byesNeeded = activePlayers.length - courtsCount * 4;
+  const byeIds = pickRandomByes(activePlayers, byesNeeded);
+  const roundActivePlayers = activePlayers.filter(p => !byeIds.includes(p.PlayerID));
+
+  return buildPlayoffPlaceholderRound(roundActivePlayers, courtsCount, roundNumber, eventId, drawVersion, userEmail);
+}

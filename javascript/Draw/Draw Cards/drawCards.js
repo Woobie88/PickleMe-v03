@@ -593,26 +593,71 @@ async function goToNextRound() {
 
   let matches = window.cachedUserUniverse.draw || [];
 
-  // NEW — Playoffs EF→Final check runs FIRST, before the maxRound early-return, since the
-  // Final round doesn't exist yet at this point (generating it is what EXTENDS maxRound)
+  // Playoffs EF→Final (2-round case)
   const isPlayoffEFAdvance = activeEvent.PlayoffEFRound && window.currentRoundNumber === activeEvent.PlayoffEFRound;
-
   if (isPlayoffEFAdvance) {
     const finalRoundAlreadyExists = matches.some(m => parseInt(m.Round) === activeEvent.PlayoffFinalRound);
-
     if (!finalRoundAlreadyExists) {
       showLoadingState('current-round-list', 'Generating Final...');
       const success = await handlePlayoffFinalAdvance();
-      if (!success) {
+      if (!success) { renderCurrentRoundView(window.cachedUserUniverse); return; }
+      matches = window.cachedUserUniverse.draw || [];
+    }
+  }
+
+  // Playoffs 3 or 4-round progressive advance
+  const playoffRounds = parseInt(activeEvent.PlayoffRounds) || 0;
+  const playoffStartRound = parseInt(activeEvent.PlayoffStartRound) || 0;
+  const isPlayoffProgressiveBracket = (playoffRounds === 3 || playoffRounds === 4) && playoffStartRound; // CHANGED — was === 4 only
+  const isPlayoffAdvance = isPlayoffProgressiveBracket &&
+    window.currentRoundNumber >= playoffStartRound && window.currentRoundNumber < playoffStartRound + (playoffRounds - 1); // CHANGED — was hardcoded + 3
+
+  if (isPlayoffAdvance) {
+    const nextRoundNumber = window.currentRoundNumber + 1;
+    const nextRoundAlreadyExists = matches.some(m => parseInt(m.Round) === nextRoundNumber);
+
+    if (!nextRoundAlreadyExists) {
+      if (!isRoundComplete(matches, window.currentRoundNumber)) {
+        alert("Enter results for every match in this round before advancing.");
+        return;
+      }
+
+      showLoadingState('current-round-list', 'Generating next round...');
+
+      const placeholderRound = generatePlayoffPlaceholderForRound(
+        window.cachedUserUniverse, nextRoundNumber, activeEventId, activeEvent.CurrentDrawVersion, window.currentUserEmail
+      );
+
+      const updatedMatches = advanceProgressiveRound(
+        activeEvent.PlayoffType, matches, placeholderRound, window.cachedUserUniverse.players,
+        nextRoundNumber, activeEventId, activeEvent.CurrentDrawVersion, window.currentUserEmail
+      );
+
+      if (!updatedMatches) {
+        alert("Could not generate the next playoff round — check the console for details.");
         renderCurrentRoundView(window.cachedUserUniverse);
         return;
       }
-      matches = window.cachedUserUniverse.draw || []; // refresh local reference after the Final round was added
+
+      const roundLabels = PLAYOFF_ROUND_NAMES[playoffRounds]; // CHANGED — was hardcoded [4]
+      const roundIndex = nextRoundNumber - playoffStartRound;
+      updatedMatches.forEach(m => { m.MatchType = roundLabels[roundIndex]; });
+
+      try {
+        await window.saveGeneratedDrawToFirestore(updatedMatches);
+        window.cachedUserUniverse.draw = [...matches, ...updatedMatches];
+        matches = window.cachedUserUniverse.draw;
+        console.log(`Playoff Round ${nextRoundNumber} (${roundLabels[roundIndex]}) generated.`);
+      } catch (err) {
+        console.error("Failed to save playoff round:", err);
+        alert("Failed to save the next playoff round — check the console for details.");
+        renderCurrentRoundView(window.cachedUserUniverse);
+        return;
+      }
     }
   }
 
   const maxRound = Math.max(...matches.map(m => parseInt(m.Round) || 0), window.currentRoundNumber);
-
   if (window.currentRoundNumber >= maxRound) return;
 
   const gameProfile = gamesProfile.find(g => g.GameID === activeEvent.GameID);
