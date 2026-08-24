@@ -13,6 +13,8 @@ function computeAnalyticsPlayerCounts(payload) {
   return players.map(player => {
     const partnerCounts = {};
     const opponentCounts = {};
+    const roundResults = {}; // NEW — { roundNumber: 'Win'|'Loss' }
+    const roundPoints = {}; // NEW — { roundNumber: { for, against } }
     let wins = 0;
     let losses = 0;
     let pointsFor = 0;
@@ -27,19 +29,26 @@ function computeAnalyticsPlayerCounts(payload) {
 
       const myTeam = onT1 ? t1 : t2;
       const oppTeam = onT1 ? t2 : t1;
+      const round = parseInt(m.Round) || 0;
 
       if (onT1) {
-        if (m.Team1WinLoss === 'Win') wins++;
-        else if (m.Team1WinLoss === 'Loss') losses++;
-        pointsFor += Number(m.Team1Score) || 0;
-        pointsAgainst += Number(m.Team2Score) || 0;
+        if (m.Team1WinLoss === 'Win') { wins++; roundResults[round] = 'Win'; }
+        else if (m.Team1WinLoss === 'Loss') { losses++; roundResults[round] = 'Loss'; }
+        const forScore = Number(m.Team1Score) || 0;
+        const againstScore = Number(m.Team2Score) || 0;
+        pointsFor += forScore;
+        pointsAgainst += againstScore;
+        roundPoints[round] = { for: forScore, against: againstScore };
       }
 
       if (onT2) {
-        if (m.Team2WinLoss === 'Win') wins++;
-        else if (m.Team2WinLoss === 'Loss') losses++;
-        pointsFor += Number(m.Team2Score) || 0;
-        pointsAgainst += Number(m.Team1Score) || 0;
+        if (m.Team2WinLoss === 'Win') { wins++; roundResults[round] = 'Win'; }
+        else if (m.Team2WinLoss === 'Loss') { losses++; roundResults[round] = 'Loss'; }
+        const forScore = Number(m.Team2Score) || 0;
+        const againstScore = Number(m.Team1Score) || 0;
+        pointsFor += forScore;
+        pointsAgainst += againstScore;
+        roundPoints[round] = { for: forScore, against: againstScore };
       }
 
       myTeam.forEach(pid => {
@@ -58,7 +67,9 @@ function computeAnalyticsPlayerCounts(payload) {
       maxSameOpponent: Math.max(0, ...Object.values(opponentCounts)),
       wins, losses, pointsFor, pointsAgainst,
       partnerCounts,
-      opponentCounts
+      opponentCounts,
+      roundResults, // NEW
+      roundPoints // NEW
     };
   });
 }
@@ -129,29 +140,38 @@ function renderAnalyticsCards(payload) {
         tooltip: {
           callbacks: {
             label(ctx) {
-              // Only screens 0 and 1 have a per-player breakdown to expand into the tooltip
-              if (window.analyticsScreenIndex !== 0 && window.analyticsScreenIndex !== 1) {
-                return `${ctx.dataset.label}: ${ctx.parsed.x}`;
-              }
-
               const entry = sorted[ctx.dataIndex];
-              const isPartnerDataset = ctx.datasetIndex === 0;
-              const countsMap = isPartnerDataset ? entry.partnerCounts : entry.opponentCounts;
+              const isFirstDataset = ctx.datasetIndex === 0;
 
               if (window.analyticsScreenIndex === 0) {
-                // Unique screen — full list, sorted by frequency descending
+                const countsMap = isFirstDataset ? entry.partnerCounts : entry.opponentCounts;
                 const lines = Object.entries(countsMap)
                   .sort((a, b) => b[1] - a[1])
                   .map(([pid, count]) => `${getPlayerNameById(pid)}: ${count}`);
                 return lines.length > 0 ? lines : ['No games yet'];
-              } else {
-                // Max screen — only names tied at the max value
-                const maxValue = isPartnerDataset ? entry.maxSamePartner : entry.maxSameOpponent;
+
+              } else if (window.analyticsScreenIndex === 1) {
+                const countsMap = isFirstDataset ? entry.partnerCounts : entry.opponentCounts;
+                const maxValue = isFirstDataset ? entry.maxSamePartner : entry.maxSameOpponent;
                 const namesAtMax = Object.entries(countsMap)
                   .filter(([pid, count]) => count === maxValue)
                   .map(([pid]) => getPlayerNameById(pid));
                 return namesAtMax.length > 0 ? [`${maxValue}x: ${namesAtMax.join(', ')}`] : ['No repeats yet'];
+
+              } else if (window.analyticsScreenIndex === 2) {
+                // NEW — Wins/Losses by round, chronological order
+                const rounds = Object.keys(entry.roundResults).map(Number).sort((a, b) => a - b);
+                const lines = rounds.map(r => `Round ${r}: ${entry.roundResults[r]}`);
+                return lines.length > 0 ? lines : ['No results yet'];
+
+              } else if (window.analyticsScreenIndex === 3) {
+                // NEW — Points For/Against by round, chronological order
+                const rounds = Object.keys(entry.roundPoints).map(Number).sort((a, b) => a - b);
+                const lines = rounds.map(r => `Round ${r}: ${entry.roundPoints[r].for} - ${entry.roundPoints[r].against}`);
+                return lines.length > 0 ? lines : ['No scores yet'];
               }
+
+              return `${ctx.dataset.label}: ${ctx.parsed.x}`;
             }
           }
         }
