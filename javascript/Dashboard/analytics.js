@@ -1,5 +1,5 @@
 window.analyticsChartInstance = null;
-window.analyticsScreenIndex = 0; // 0 = unique counts, 1 = max repeat counts, 2 = wins/losses, 3 = points for/against
+window.analyticsScreenIndex = 0;
 window.analyticsRawData = [];
 
 function computeAnalyticsPlayerCounts(payload) {
@@ -29,21 +29,15 @@ function computeAnalyticsPlayerCounts(payload) {
       const oppTeam = onT1 ? t2 : t1;
 
       if (onT1) {
-        if (m.Team1WinLoss === 'Win') {
-          wins++;
-        } else if (m.Team1WinLoss === 'Loss') {
-          losses++;
-        }
+        if (m.Team1WinLoss === 'Win') wins++;
+        else if (m.Team1WinLoss === 'Loss') losses++;
         pointsFor += Number(m.Team1Score) || 0;
         pointsAgainst += Number(m.Team2Score) || 0;
       }
 
       if (onT2) {
-        if (m.Team2WinLoss === 'Win') {
-          wins++;
-        } else if (m.Team2WinLoss === 'Loss') {
-          losses++;
-        }
+        if (m.Team2WinLoss === 'Win') wins++;
+        else if (m.Team2WinLoss === 'Loss') losses++;
         pointsFor += Number(m.Team2Score) || 0;
         pointsAgainst += Number(m.Team1Score) || 0;
       }
@@ -62,14 +56,16 @@ function computeAnalyticsPlayerCounts(payload) {
       uniqueOpponents: Object.keys(opponentCounts).length,
       maxSamePartner: Math.max(0, ...Object.values(partnerCounts)),
       maxSameOpponent: Math.max(0, ...Object.values(opponentCounts)),
-      wins: wins,
-      losses: losses,
-      pointsFor: pointsFor,
-      pointsAgainst: pointsAgainst,
+      wins, losses, pointsFor, pointsAgainst,
       partnerCounts,
       opponentCounts
     };
   });
+}
+
+function getPlayerNameById(pid) {
+  const p = window.analyticsRawData.find(d => d.player.PlayerID === pid);
+  return p ? (p.player.FirstName || 'Unnamed') : pid;
 }
 
 function renderAnalyticsCards(payload) {
@@ -85,9 +81,6 @@ function renderAnalyticsCards(payload) {
   if (window.analyticsChartInstance) {
     window.analyticsChartInstance.destroy();
   }
-
-  const detailEl = document.getElementById('analytics-tap-detail');
-  if (detailEl) detailEl.style.display = 'none';
 
   if (sorted.length === 0) {
     console.log("Analytics: no players/matches to chart yet.");
@@ -132,78 +125,45 @@ function renderAnalyticsCards(payload) {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { display: true, position: 'top' }
+        legend: { display: true, position: 'top' },
+        tooltip: {
+          callbacks: {
+            label(ctx) {
+              // Only screens 0 and 1 have a per-player breakdown to expand into the tooltip
+              if (window.analyticsScreenIndex !== 0 && window.analyticsScreenIndex !== 1) {
+                return `${ctx.dataset.label}: ${ctx.parsed.x}`;
+              }
+
+              const entry = sorted[ctx.dataIndex];
+              const isPartnerDataset = ctx.datasetIndex === 0;
+              const countsMap = isPartnerDataset ? entry.partnerCounts : entry.opponentCounts;
+
+              if (window.analyticsScreenIndex === 0) {
+                // Unique screen — full list, sorted by frequency descending
+                const lines = Object.entries(countsMap)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([pid, count]) => `${getPlayerNameById(pid)}: ${count}`);
+                return lines.length > 0 ? lines : ['No games yet'];
+              } else {
+                // Max screen — only names tied at the max value
+                const maxValue = isPartnerDataset ? entry.maxSamePartner : entry.maxSameOpponent;
+                const namesAtMax = Object.entries(countsMap)
+                  .filter(([pid, count]) => count === maxValue)
+                  .map(([pid]) => getPlayerNameById(pid));
+                return namesAtMax.length > 0 ? [`${maxValue}x: ${namesAtMax.join(', ')}`] : ['No repeats yet'];
+              }
+            }
+          }
+        }
       },
       scales: {
         x: {
           beginAtZero: true,
           ticks: { stepSize: 1 }
         }
-      },
-      onClick: (evt, elements) => {
-        if (elements.length === 0) return;
-        if (window.analyticsScreenIndex === 0) {
-          handleAnalyticsFullListTap(elements[0], sorted); // NEW
-        } else if (window.analyticsScreenIndex === 1) {
-          handleAnalyticsBarTap(elements[0], sorted);
-        }
       }
     }
   });
-}
-
-function handleAnalyticsBarTap(element, sorted) {
-  const playerIdx = element.index;
-  const datasetIdx = element.datasetIndex;
-  const entry = sorted[playerIdx];
-
-  const countsMap = datasetIdx === 0 ? entry.partnerCounts : entry.opponentCounts;
-  const maxValue = datasetIdx === 0 ? entry.maxSamePartner : entry.maxSameOpponent;
-  const label = datasetIdx === 0 ? 'partnered' : 'opposed';
-
-  const namesAtMax = Object.entries(countsMap)
-    .filter(([pid, count]) => count === maxValue)
-    .map(([pid]) => {
-      const p = window.analyticsRawData.find(d => d.player.PlayerID === pid);
-      return p ? (p.player.FirstName || 'Unnamed') : pid;
-    });
-
-  const detailEl = document.getElementById('analytics-tap-detail');
-  if (!detailEl) return;
-
-  if (maxValue === 0 || namesAtMax.length === 0) {
-    detailEl.innerText = `${entry.player.FirstName || 'Unnamed'} has no repeats yet.`;
-  } else {
-    detailEl.innerText = `${entry.player.FirstName || 'Unnamed'} ${label} ${namesAtMax.join(', ')} ${maxValue} time(s).`;
-  }
-  detailEl.style.display = '';
-}
-
-function handleAnalyticsFullListTap(element, sorted) { // NEW
-  const playerIdx = element.index;
-  const datasetIdx = element.datasetIndex; // 0 = Unique Partners, 1 = Unique Opponents
-  const entry = sorted[playerIdx];
-
-  const countsMap = datasetIdx === 0 ? entry.partnerCounts : entry.opponentCounts;
-  const label = datasetIdx === 0 ? 'Partners' : 'Opponents';
-
-  const sortedList = Object.entries(countsMap)
-    .sort((a, b) => b[1] - a[1]) // sorted by frequency descending
-    .map(([pid, count]) => {
-      const p = window.analyticsRawData.find(d => d.player.PlayerID === pid);
-      const name = p ? (p.player.FirstName || 'Unnamed') : pid;
-      return `${name} (${count})`;
-    });
-
-  const detailEl = document.getElementById('analytics-tap-detail');
-  if (!detailEl) return;
-
-  if (sortedList.length === 0) {
-    detailEl.innerText = `${entry.player.FirstName || 'Unnamed'} has no ${label.toLowerCase()} yet.`;
-  } else {
-    detailEl.innerText = `${entry.player.FirstName || 'Unnamed'}'s ${label}: ${sortedList.join(', ')}`;
-  }
-  detailEl.style.display = '';
 }
 
 function initAnalyticsSwipeHandlers() {
