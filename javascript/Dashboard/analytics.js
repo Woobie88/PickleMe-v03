@@ -96,6 +96,14 @@ function renderAnalyticsCards(payload) {
   window.analyticsRawData = data;
 
   const sorted = [...data].sort((a, b) => (a.player.FirstName || '').localeCompare(b.player.FirstName || ''));
+
+    const allIds = data.map(d => d.player.PlayerID);
+    const uniqueIds = new Set(allIds);
+    console.log(`Total player entries: ${allIds.length}, unique PlayerIDs: ${uniqueIds.size}`);
+    if (allIds.length !== uniqueIds.size) {
+    const duplicates = allIds.filter((id, idx) => allIds.indexOf(id) !== idx);
+    console.log('Duplicate PlayerIDs:', duplicates);
+    }
   const labels = sorted.map(d => d.player.FirstName || 'Unnamed');
 
   const canvas = document.getElementById('analytics-chart-canvas');
