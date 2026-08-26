@@ -64,11 +64,7 @@ function computeAnalyticsPlayerCounts(payload) {
     });
 
     const byeRounds = allRounds.filter(r => !roundsPlayed.has(r));
-        if (player.FirstName === 'Wendy') {
-        console.log('Wendy allRounds:', allRounds);
-        console.log('Wendy roundsPlayed:', [...roundsPlayed]);
-        console.log('Wendy byeRounds:', byeRounds);
-        }
+        
 
     return {
       player,
@@ -218,51 +214,53 @@ function renderByesScatterChart(sorted, labels) {
     });
   });
 
-    console.log('Total points:', points.length);
-    console.log('Wendy points:', points.filter(p => sorted[p.y]?.player.FirstName === 'Wendy'));
 
-  window.analyticsChartInstance = new Chart(canvas, {
-    type: 'scatter',
-    data: {
-        datasets: [{
-        label: 'Bye',
-        data: points,
-        backgroundColor: '#facc15', // CHANGED — bright yellow, much higher contrast against the dark app background
-        borderColor: '#ffffff', // NEW — white outline makes each dot pop further
-        borderWidth: 1.5,
-        pointRadius: 7, // CHANGED — slightly bigger
-        pointHoverRadius: 10,
-        pointHoverBackgroundColor: '#00E676' // NEW — hovered dot flashes your app's accent green
-        }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label(ctx) {
-              const playerName = labels[ctx.parsed.y] || 'Unnamed';
-              return `${playerName} — Round ${ctx.parsed.x}`;
-            }
-          }
-        }
-      },
-      scales: {
-        x: {
-          title: { display: true, text: 'Round' },
-          ticks: { stepSize: 1 }
+    window.analyticsChartInstance = new Chart(canvas, {
+        type: 'scatter',
+        data: {
+            datasets: [{
+            label: 'Bye',
+            data: points,
+            backgroundColor: '#facc15',
+            borderColor: '#ffffff',
+            borderWidth: 1.5,
+            pointRadius: 5, // CHANGED — slightly smaller, less overlap risk
+            pointHoverRadius: 8,
+            pointHoverBackgroundColor: '#00E676'
+            }]
         },
-        y: {
-          type: 'category',
-          labels,
-          title: { display: false },
-          ticks: { autoSkip: false, font: { size: 10 } }
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: {
+            padding: { top: 10, bottom: 10 }
+            },
+            plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                label(ctx) {
+                    const playerName = labels[ctx.parsed.y] || 'Unnamed';
+                    return `${playerName} — Round ${ctx.parsed.x}`;
+                }
+                }
+            }
+            },
+            scales: {
+            x: {
+                title: { display: true, text: 'Round' },
+                ticks: { stepSize: 1 }
+            },
+            y: {
+                type: 'category',
+                labels,
+                title: { display: false },
+                ticks: { autoSkip: false, font: { size: 10 } },
+                offset: true // NEW — adds spacing so category rows don't sit flush against each other
+            }
+            }
         }
-      }
-    }
-  });
+     });
 }
 
 function initAnalyticsSwipeHandlers() {
