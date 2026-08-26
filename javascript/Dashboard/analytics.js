@@ -64,11 +64,11 @@ function computeAnalyticsPlayerCounts(payload) {
     });
 
     const byeRounds = allRounds.filter(r => !roundsPlayed.has(r));
-    if (player.FirstName === 'Wendy') { // the actual player's name
-        console.log('allRounds:', allRounds);
-        console.log('roundsPlayed:', [...roundsPlayed]);
-        console.log('byeRounds:', byeRounds);
-    }
+        if (player.FirstName === 'Wendy') {
+        console.log('Wendy allRounds:', allRounds);
+        console.log('Wendy roundsPlayed:', [...roundsPlayed]);
+        console.log('Wendy byeRounds:', byeRounds);
+        }
 
     return {
       player,
@@ -97,13 +97,6 @@ function renderAnalyticsCards(payload) {
 
   const sorted = [...data].sort((a, b) => (a.player.FirstName || '').localeCompare(b.player.FirstName || ''));
 
-    const allIds = data.map(d => d.player.PlayerID);
-    const uniqueIds = new Set(allIds);
-    console.log(`Total player entries: ${allIds.length}, unique PlayerIDs: ${uniqueIds.size}`);
-    if (allIds.length !== uniqueIds.size) {
-    const duplicates = allIds.filter((id, idx) => allIds.indexOf(id) !== idx);
-    console.log('Duplicate PlayerIDs:', duplicates);
-    }
   const labels = sorted.map(d => d.player.FirstName || 'Unnamed');
 
   const canvas = document.getElementById('analytics-chart-canvas');
