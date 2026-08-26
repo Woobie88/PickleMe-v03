@@ -1,5 +1,5 @@
 window.analyticsChartInstance = null;
-window.analyticsScreenIndex = 0; // 0=unique, 1=max, 2=byes by round (scatter), 3=wins/losses, 4=points
+window.analyticsScreenIndex = 0; // 0=unique, 1=max, 2=byes by round, 3=wins/losses, 4=points
 window.analyticsRawData = [];
 
 function computeAnalyticsPlayerCounts(payload) {
@@ -64,7 +64,6 @@ function computeAnalyticsPlayerCounts(payload) {
     });
 
     const byeRounds = allRounds.filter(r => !roundsPlayed.has(r));
-        
 
     return {
       player,
@@ -92,7 +91,6 @@ function renderAnalyticsCards(payload) {
   window.analyticsRawData = data;
 
   const sorted = [...data].sort((a, b) => (a.player.FirstName || '').localeCompare(b.player.FirstName || ''));
-
   const labels = sorted.map(d => d.player.FirstName || 'Unnamed');
 
   const canvas = document.getElementById('analytics-chart-canvas');
@@ -105,13 +103,6 @@ function renderAnalyticsCards(payload) {
 
   if (sorted.length === 0) {
     console.log("Analytics: no players/matches to chart yet.");
-    return;
-  }
-
-  // Screen 2 (Byes By Round) is a scatter chart — completely different shape from
-  // the shared bar-chart builder below, so it's handled first and returns early.
-  if (window.analyticsScreenIndex === 2) {
-    renderByesScatterChart(sorted, labels);
     return;
   }
 
@@ -128,6 +119,11 @@ function renderAnalyticsCards(payload) {
     datasets = [
       { label: 'Max Partner', data: sorted.map(d => d.maxSamePartner), backgroundColor: '#f59e0b' },
       { label: 'Max Opponent', data: sorted.map(d => d.maxSameOpponent), backgroundColor: '#ef4444' }
+    ];
+  } else if (window.analyticsScreenIndex === 2) { // CHANGED — Byes reverted to a bar chart, back in the shared builder
+    heading = 'Byes';
+    datasets = [
+      { label: 'Byes', data: sorted.map(d => d.byeRounds.length), backgroundColor: '#facc15' } // bright yellow — matches the higher-contrast color from earlier
     ];
   } else if (window.analyticsScreenIndex === 3) {
     heading = 'Game Wins & Losses';
@@ -175,6 +171,11 @@ function renderAnalyticsCards(payload) {
                   .map(([pid]) => getPlayerNameById(pid));
                 return namesAtMax.length > 0 ? [`${maxValue}x: ${namesAtMax.join(', ')}`] : ['No repeats yet'];
 
+              } else if (window.analyticsScreenIndex === 2) { // NEW — round list for byes
+                return entry.byeRounds.length > 0
+                  ? entry.byeRounds.map(r => `Round ${r}`)
+                  : ['No byes'];
+
               } else if (window.analyticsScreenIndex === 3) {
                 const rounds = Object.keys(entry.roundResults).map(Number).sort((a, b) => a - b);
                 const lines = rounds.map(r => `Round ${r}: ${entry.roundResults[r]}`);
@@ -199,68 +200,6 @@ function renderAnalyticsCards(payload) {
       }
     }
   });
-}
-
-function renderByesScatterChart(sorted, labels) {
-  const canvas = document.getElementById('analytics-chart-canvas');
-  if (!canvas) return;
-
-  document.getElementById('analytics-heading').innerText = 'Byes By Round';
-
-  const points = [];
-  sorted.forEach((entry, playerIdx) => {
-    entry.byeRounds.forEach(round => {
-      points.push({ x: round, y: playerIdx });
-    });
-  });
-
-
-    window.analyticsChartInstance = new Chart(canvas, {
-        type: 'scatter',
-        data: {
-            datasets: [{
-            label: 'Bye',
-            data: points,
-            backgroundColor: '#facc15',
-            borderColor: '#ffffff',
-            borderWidth: 1.5,
-            pointRadius: 5, // CHANGED — slightly smaller, less overlap risk
-            pointHoverRadius: 8,
-            pointHoverBackgroundColor: '#00E676'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            layout: {
-            padding: { top: 10, bottom: 10 }
-            },
-            plugins: {
-            legend: { display: false },
-            tooltip: {
-                callbacks: {
-                label(ctx) {
-                    const playerName = labels[ctx.parsed.y] || 'Unnamed';
-                    return `${playerName} — Round ${ctx.parsed.x}`;
-                }
-                }
-            }
-            },
-            scales: {
-            x: {
-                title: { display: true, text: 'Round' },
-                ticks: { stepSize: 1 }
-            },
-            y: {
-                type: 'category',
-                labels,
-                title: { display: false },
-                ticks: { autoSkip: false, font: { size: 10 } },
-                offset: true // NEW — adds spacing so category rows don't sit flush against each other
-            }
-            }
-        }
-     });
 }
 
 function initAnalyticsSwipeHandlers() {
