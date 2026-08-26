@@ -64,6 +64,11 @@ function computeAnalyticsPlayerCounts(payload) {
     });
 
     const byeRounds = allRounds.filter(r => !roundsPlayed.has(r));
+    if (player.FirstName === 'PUT_THE_NAME_HERE') { // the actual player's name
+    console.log('allRounds:', allRounds);
+    console.log('roundsPlayed:', [...roundsPlayed]);
+    console.log('byeRounds:', byeRounds);
+    }
 
     return {
       player,
