@@ -215,13 +215,16 @@ function renderByesScatterChart(sorted, labels) {
   window.analyticsChartInstance = new Chart(canvas, {
     type: 'scatter',
     data: {
-      datasets: [{
+        datasets: [{
         label: 'Bye',
         data: points,
-        backgroundColor: '#64748b',
-        pointRadius: 6,
-        pointHoverRadius: 8
-      }]
+        backgroundColor: '#facc15', // CHANGED — bright yellow, much higher contrast against the dark app background
+        borderColor: '#ffffff', // NEW — white outline makes each dot pop further
+        borderWidth: 1.5,
+        pointRadius: 7, // CHANGED — slightly bigger
+        pointHoverRadius: 10,
+        pointHoverBackgroundColor: '#00E676' // NEW — hovered dot flashes your app's accent green
+        }]
     },
     options: {
       responsive: true,
