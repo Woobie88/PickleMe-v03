@@ -218,6 +218,9 @@ function renderByesScatterChart(sorted, labels) {
     });
   });
 
+    console.log('Total points:', points.length);
+    console.log('Wendy points:', points.filter(p => sorted[p.y]?.player.FirstName === 'Wendy'));
+
   window.analyticsChartInstance = new Chart(canvas, {
     type: 'scatter',
     data: {
