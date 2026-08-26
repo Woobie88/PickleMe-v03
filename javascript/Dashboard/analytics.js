@@ -124,7 +124,7 @@ function renderAnalyticsCards(payload) {
   } else if (window.analyticsScreenIndex === 2) { // CHANGED — Byes reverted to a bar chart, back in the shared builder
     heading = 'Byes';
     datasets = [
-      { label: 'Games Played', data: sorted.map(d => d.roundsPlayed.length), backgroundColor: '#3b82f6' }, 
+      { label: 'Games Played', data: sorted.map(d => d.roundsPlayed), backgroundColor: '#3b82f6' }, 
       { label: 'Byes', data: sorted.map(d => d.byeRounds.length), backgroundColor: '#facc15' } // bright yellow — matches the higher-contrast color from earlier
     ];
   } else if (window.analyticsScreenIndex === 3) {
