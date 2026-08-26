@@ -1,5 +1,5 @@
 window.analyticsChartInstance = null;
-window.analyticsScreenIndex = 0;
+window.analyticsScreenIndex = 0; // 0=unique, 1=max, 2=wins/losses, 3=points, 4=byes
 window.analyticsRawData = [];
 
 function computeAnalyticsPlayerCounts(payload) {
@@ -10,11 +10,14 @@ function computeAnalyticsPlayerCounts(payload) {
     p => String(p.PlayerVersion) === String(activeEvent.CurrentPlayerVersion) && p.playerExclude !== 'Yes'
   );
 
+  const allRounds = [...new Set(matches.map(m => parseInt(m.Round) || 0))].sort((a, b) => a - b); // NEW
+
   return players.map(player => {
     const partnerCounts = {};
     const opponentCounts = {};
-    const roundResults = {}; // NEW — { roundNumber: 'Win'|'Loss' }
-    const roundPoints = {}; // NEW — { roundNumber: { for, against } }
+    const roundResults = {};
+    const roundPoints = {};
+    const roundsPlayed = new Set(); // NEW
     let wins = 0;
     let losses = 0;
     let pointsFor = 0;
@@ -30,6 +33,7 @@ function computeAnalyticsPlayerCounts(payload) {
       const myTeam = onT1 ? t1 : t2;
       const oppTeam = onT1 ? t2 : t1;
       const round = parseInt(m.Round) || 0;
+      roundsPlayed.add(round); // NEW — tracked regardless of scoring mode/result
 
       if (onT1) {
         if (m.Team1WinLoss === 'Win') { wins++; roundResults[round] = 'Win'; }
@@ -59,6 +63,8 @@ function computeAnalyticsPlayerCounts(payload) {
       });
     });
 
+    const byeRounds = allRounds.filter(r => !roundsPlayed.has(r)); // NEW
+
     return {
       player,
       uniquePartners: Object.keys(partnerCounts).length,
@@ -68,8 +74,9 @@ function computeAnalyticsPlayerCounts(payload) {
       wins, losses, pointsFor, pointsAgainst,
       partnerCounts,
       opponentCounts,
-      roundResults, // NEW
-      roundPoints // NEW
+      roundResults,
+      roundPoints,
+      byeRounds // NEW
     };
   });
 }
@@ -124,6 +131,11 @@ function renderAnalyticsCards(payload) {
       { label: 'Points For', data: sorted.map(d => d.pointsFor), backgroundColor: '#00E676' },
       { label: 'Points Against', data: sorted.map(d => d.pointsAgainst), backgroundColor: '#ef4444' }
     ];
+  } else if (window.analyticsScreenIndex === 4) { // NEW
+    heading = 'Byes';
+    datasets = [
+      { label: 'Byes', data: sorted.map(d => d.byeRounds.length), backgroundColor: '#64748b' } // slate — neutral, byes aren't inherently good or bad
+    ];
   }
 
   document.getElementById('analytics-heading').innerText = heading;
@@ -158,17 +170,23 @@ function renderAnalyticsCards(payload) {
                   .map(([pid]) => getPlayerNameById(pid));
                 return namesAtMax.length > 0 ? [`${maxValue}x: ${namesAtMax.join(', ')}`] : ['No repeats yet'];
 
-              } else if (window.analyticsScreenIndex === 2) {
-                // NEW — Wins/Losses by round, chronological order
+              } else if (window.analyticsScreenIndex === 3) {
                 const rounds = Object.keys(entry.roundResults).map(Number).sort((a, b) => a - b);
                 const lines = rounds.map(r => `Round ${r}: ${entry.roundResults[r]}`);
                 return lines.length > 0 ? lines : ['No results yet'];
 
-              } else if (window.analyticsScreenIndex === 3) {
-                // NEW — Points For/Against by round, chronological order
+              } else if (window.analyticsScreenIndex === 4) {
                 const rounds = Object.keys(entry.roundPoints).map(Number).sort((a, b) => a - b);
                 const lines = rounds.map(r => `Round ${r}: ${entry.roundPoints[r].for} - ${entry.roundPoints[r].against}`);
                 return lines.length > 0 ? lines : ['No scores yet'];
+
+              // Inside renderAnalyticsCards, replace the screenIndex === 4 block:
+
+              } else if (window.analyticsScreenIndex === 2) {
+                heading = 'Byes By Round';
+                // Scatter needs its own Chart.js call — different axis/data shape than the bar charts
+                renderByesScatterChart(sorted, labels);
+                return; // skip the shared bar-chart builder below entirely for this screen
               }
 
               return `${ctx.dataset.label}: ${ctx.parsed.x}`;
@@ -201,12 +219,74 @@ function initAnalyticsSwipeHandlers() {
     const deltaY = e.changedTouches[0].screenY - startY;
     if (Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY)) return;
 
-    if (deltaX < 0 && window.analyticsScreenIndex < 3) {
+    if (deltaX < 0 && window.analyticsScreenIndex < 4) { // CHANGED — was < 3
       window.analyticsScreenIndex++;
       renderAnalyticsCards(window.cachedUserUniverse);
     } else if (deltaX > 0 && window.analyticsScreenIndex > 0) {
       window.analyticsScreenIndex--;
       renderAnalyticsCards(window.cachedUserUniverse);
+    }
+  });
+}
+
+window.analyticsByeScatterInstance = null;
+
+function renderByesScatterChart(sorted, labels) {
+  const canvas = document.getElementById('analytics-chart-canvas');
+  if (!canvas) return;
+
+  if (window.analyticsChartInstance) {
+    window.analyticsChartInstance.destroy();
+    window.analyticsChartInstance = null;
+  }
+
+  document.getElementById('analytics-heading').innerText = 'Byes By Round';
+
+  // Each point: x = round number, y = player index (so players line up on their own row)
+  const points = [];
+  sorted.forEach((entry, playerIdx) => {
+    entry.byeRounds.forEach(round => {
+      points.push({ x: round, y: playerIdx });
+    });
+  });
+
+  window.analyticsChartInstance = new Chart(canvas, {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        label: 'Bye',
+        data: points,
+        backgroundColor: '#64748b',
+        pointRadius: 6,
+        pointHoverRadius: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label(ctx) {
+              const playerName = labels[ctx.parsed.y] || 'Unnamed';
+              return `${playerName} — Round ${ctx.parsed.x}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Round' },
+          ticks: { stepSize: 1 }
+        },
+        y: {
+          type: 'category',
+          labels,
+          title: { display: false },
+          ticks: { autoSkip: false, font: { size: 10 } }
+        }
+      }
     }
   });
 }
