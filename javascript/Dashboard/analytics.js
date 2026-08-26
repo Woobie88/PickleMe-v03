@@ -1,5 +1,5 @@
 window.analyticsChartInstance = null;
-window.analyticsScreenIndex = 0; // 0=unique, 1=max, 2=wins/losses, 3=points, 4=byes
+window.analyticsScreenIndex = 0; // 0=unique, 1=max, 2=byes by round (scatter), 3=wins/losses, 4=points
 window.analyticsRawData = [];
 
 function computeAnalyticsPlayerCounts(payload) {
@@ -10,14 +10,14 @@ function computeAnalyticsPlayerCounts(payload) {
     p => String(p.PlayerVersion) === String(activeEvent.CurrentPlayerVersion) && p.playerExclude !== 'Yes'
   );
 
-  const allRounds = [...new Set(matches.map(m => parseInt(m.Round) || 0))].sort((a, b) => a - b); // NEW
+  const allRounds = [...new Set(matches.map(m => parseInt(m.Round) || 0))].sort((a, b) => a - b);
 
   return players.map(player => {
     const partnerCounts = {};
     const opponentCounts = {};
     const roundResults = {};
     const roundPoints = {};
-    const roundsPlayed = new Set(); // NEW
+    const roundsPlayed = new Set();
     let wins = 0;
     let losses = 0;
     let pointsFor = 0;
@@ -33,7 +33,7 @@ function computeAnalyticsPlayerCounts(payload) {
       const myTeam = onT1 ? t1 : t2;
       const oppTeam = onT1 ? t2 : t1;
       const round = parseInt(m.Round) || 0;
-      roundsPlayed.add(round); // NEW — tracked regardless of scoring mode/result
+      roundsPlayed.add(round);
 
       if (onT1) {
         if (m.Team1WinLoss === 'Win') { wins++; roundResults[round] = 'Win'; }
@@ -63,7 +63,7 @@ function computeAnalyticsPlayerCounts(payload) {
       });
     });
 
-    const byeRounds = allRounds.filter(r => !roundsPlayed.has(r)); // NEW
+    const byeRounds = allRounds.filter(r => !roundsPlayed.has(r));
 
     return {
       player,
@@ -76,7 +76,7 @@ function computeAnalyticsPlayerCounts(payload) {
       opponentCounts,
       roundResults,
       roundPoints,
-      byeRounds // NEW
+      byeRounds
     };
   });
 }
@@ -98,10 +98,18 @@ function renderAnalyticsCards(payload) {
 
   if (window.analyticsChartInstance) {
     window.analyticsChartInstance.destroy();
+    window.analyticsChartInstance = null;
   }
 
   if (sorted.length === 0) {
     console.log("Analytics: no players/matches to chart yet.");
+    return;
+  }
+
+  // Screen 2 (Byes By Round) is a scatter chart — completely different shape from
+  // the shared bar-chart builder below, so it's handled first and returns early.
+  if (window.analyticsScreenIndex === 2) {
+    renderByesScatterChart(sorted, labels);
     return;
   }
 
@@ -119,22 +127,17 @@ function renderAnalyticsCards(payload) {
       { label: 'Max Partner', data: sorted.map(d => d.maxSamePartner), backgroundColor: '#f59e0b' },
       { label: 'Max Opponent', data: sorted.map(d => d.maxSameOpponent), backgroundColor: '#ef4444' }
     ];
-  } else if (window.analyticsScreenIndex === 2) {
+  } else if (window.analyticsScreenIndex === 3) {
     heading = 'Game Wins & Losses';
     datasets = [
       { label: 'Wins', data: sorted.map(d => d.wins), backgroundColor: '#00E676' },
       { label: 'Losses', data: sorted.map(d => d.losses), backgroundColor: '#ef4444' }
     ];
-  } else if (window.analyticsScreenIndex === 3) {
+  } else if (window.analyticsScreenIndex === 4) {
     heading = 'Game Points For & Against';
     datasets = [
       { label: 'Points For', data: sorted.map(d => d.pointsFor), backgroundColor: '#00E676' },
       { label: 'Points Against', data: sorted.map(d => d.pointsAgainst), backgroundColor: '#ef4444' }
-    ];
-  } else if (window.analyticsScreenIndex === 4) { // NEW
-    heading = 'Byes';
-    datasets = [
-      { label: 'Byes', data: sorted.map(d => d.byeRounds.length), backgroundColor: '#64748b' } // slate — neutral, byes aren't inherently good or bad
     ];
   }
 
@@ -179,14 +182,6 @@ function renderAnalyticsCards(payload) {
                 const rounds = Object.keys(entry.roundPoints).map(Number).sort((a, b) => a - b);
                 const lines = rounds.map(r => `Round ${r}: ${entry.roundPoints[r].for} - ${entry.roundPoints[r].against}`);
                 return lines.length > 0 ? lines : ['No scores yet'];
-
-              // Inside renderAnalyticsCards, replace the screenIndex === 4 block:
-
-              } else if (window.analyticsScreenIndex === 2) {
-                heading = 'Byes By Round';
-                // Scatter needs its own Chart.js call — different axis/data shape than the bar charts
-                renderByesScatterChart(sorted, labels);
-                return; // skip the shared bar-chart builder below entirely for this screen
               }
 
               return `${ctx.dataset.label}: ${ctx.parsed.x}`;
@@ -204,45 +199,12 @@ function renderAnalyticsCards(payload) {
   });
 }
 
-function initAnalyticsSwipeHandlers() {
-  const container = document.getElementById('screen-analytics');
-  if (!container) return;
-  let startX = 0, startY = 0;
-
-  container.addEventListener('touchstart', (e) => {
-    startX = e.changedTouches[0].screenX;
-    startY = e.changedTouches[0].screenY;
-  });
-
-  container.addEventListener('touchend', (e) => {
-    const deltaX = e.changedTouches[0].screenX - startX;
-    const deltaY = e.changedTouches[0].screenY - startY;
-    if (Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY)) return;
-
-    if (deltaX < 0 && window.analyticsScreenIndex < 4) { // CHANGED — was < 3
-      window.analyticsScreenIndex++;
-      renderAnalyticsCards(window.cachedUserUniverse);
-    } else if (deltaX > 0 && window.analyticsScreenIndex > 0) {
-      window.analyticsScreenIndex--;
-      renderAnalyticsCards(window.cachedUserUniverse);
-    }
-  });
-}
-
-window.analyticsByeScatterInstance = null;
-
 function renderByesScatterChart(sorted, labels) {
   const canvas = document.getElementById('analytics-chart-canvas');
   if (!canvas) return;
 
-  if (window.analyticsChartInstance) {
-    window.analyticsChartInstance.destroy();
-    window.analyticsChartInstance = null;
-  }
-
   document.getElementById('analytics-heading').innerText = 'Byes By Round';
 
-  // Each point: x = round number, y = player index (so players line up on their own row)
   const points = [];
   sorted.forEach((entry, playerIdx) => {
     entry.byeRounds.forEach(round => {
@@ -287,6 +249,31 @@ function renderByesScatterChart(sorted, labels) {
           ticks: { autoSkip: false, font: { size: 10 } }
         }
       }
+    }
+  });
+}
+
+function initAnalyticsSwipeHandlers() {
+  const container = document.getElementById('screen-analytics');
+  if (!container) return;
+  let startX = 0, startY = 0;
+
+  container.addEventListener('touchstart', (e) => {
+    startX = e.changedTouches[0].screenX;
+    startY = e.changedTouches[0].screenY;
+  });
+
+  container.addEventListener('touchend', (e) => {
+    const deltaX = e.changedTouches[0].screenX - startX;
+    const deltaY = e.changedTouches[0].screenY - startY;
+    if (Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY)) return;
+
+    if (deltaX < 0 && window.analyticsScreenIndex < 4) {
+      window.analyticsScreenIndex++;
+      renderAnalyticsCards(window.cachedUserUniverse);
+    } else if (deltaX > 0 && window.analyticsScreenIndex > 0) {
+      window.analyticsScreenIndex--;
+      renderAnalyticsCards(window.cachedUserUniverse);
     }
   });
 }
