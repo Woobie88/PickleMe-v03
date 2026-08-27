@@ -182,8 +182,6 @@ function renderAnalyticsCards(payload) {
                         ? entry.byeRounds.map(r => `Round ${r}`)
                         : ['No byes'];
                     }
-              }
-
               } else if (window.analyticsScreenIndex === 3) {
                 const rounds = Object.keys(entry.roundResults).map(Number).sort((a, b) => a - b);
                 const lines = rounds.map(r => `Round ${r}: ${entry.roundResults[r]}`);
