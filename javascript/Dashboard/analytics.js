@@ -64,7 +64,6 @@ function computeAnalyticsPlayerCounts(payload) {
     });
 
     const byeRounds = allRounds.filter(r => !roundsPlayed.has(r));
-    console.log('Rounds played is',roundsPlayed);
 
     return {
       player,
@@ -125,7 +124,7 @@ function renderAnalyticsCards(payload) {
   } else if (window.analyticsScreenIndex === 2) { // CHANGED — Byes reverted to a bar chart, back in the shared builder
     heading = 'Byes';
     datasets = [
-      { label: 'Games Played', data: sorted.map(d => d.roundsPlayed.length), backgroundColor: '#3b82f6' }, 
+      { label: 'Games Played', data: sorted.map(d => d.roundsPlayed.size), backgroundColor: '#3b82f6' }, // CHANGED — .length → .size (roundsPlayed is a Set) 
       { label: 'Byes', data: sorted.map(d => d.byeRounds.length), backgroundColor: '#facc15' } // bright yellow — matches the higher-contrast color from earlier
     ];
   } else if (window.analyticsScreenIndex === 3) {
@@ -174,10 +173,16 @@ function renderAnalyticsCards(payload) {
                   .map(([pid]) => getPlayerNameById(pid));
                 return namesAtMax.length > 0 ? [`${maxValue}x: ${namesAtMax.join(', ')}`] : ['No repeats yet'];
 
-              } else if (window.analyticsScreenIndex === 2) { // NEW — round list for byes
-                return entry.byeRounds.length > 0
-                  ? entry.byeRounds.map(r => `Round ${r}`)
-                  : ['No byes'];
+              } else if (window.analyticsScreenIndex === 2) {
+                    if (isFirstDataset) { // NEW — Games Played bar shows which rounds were played
+                        const rounds = [...entry.roundsPlayed].sort((a, b) => a - b);
+                        return rounds.length > 0 ? rounds.map(r => `Round ${r}`) : ['No games yet'];
+                    } else { // Byes bar shows which rounds were byes (unchanged)
+                        return entry.byeRounds.length > 0
+                        ? entry.byeRounds.map(r => `Round ${r}`)
+                        : ['No byes'];
+                    }
+              }
 
               } else if (window.analyticsScreenIndex === 3) {
                 const rounds = Object.keys(entry.roundResults).map(Number).sort((a, b) => a - b);
