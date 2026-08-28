@@ -1,3 +1,57 @@
+/**
+ * Computes all three ladder sub-metrics for a player, regardless of
+ * which mode is currently active — needed since tiebreak chains
+ * require metrics beyond just the primary sort criteria.
+ */
+function computeLadderMetrics(stats) {
+  const wins = stats.games > 0 ? (stats.wins / stats.games) * 100 : 0;
+  const margin = (stats.pointsFor + stats.pointsAgainst) > 0
+    ? (stats.pointsFor / (stats.pointsFor + stats.pointsAgainst)) * 100
+    : 0;
+  const overs = (stats.pointsFor + stats.pointsAgainst) > 0 && (stats.expPointsFor + stats.expPointsAgainst) > 0
+    ? ((stats.pointsFor / (stats.pointsFor + stats.pointsAgainst)) - (stats.expPointsFor / (stats.expPointsFor + stats.expPointsAgainst))) * 100
+    : 0;
+  return { wins, margin, overs };
+}
+
+/**
+ * Ranks players using the correct multi-level tiebreak chain for the
+ * given ladder scoring mode:
+ *   Overs:  Overs desc → avg Margin desc → avg Wins desc → DUPR desc
+ *   Margin: avg Margin desc → avg Wins desc → DUPR desc
+ *   Wins:   avg Wins desc → avg Margin desc → DUPR desc
+ */
+function rankPlayersByLadderCriteria(players, matches, ladderScoringMode) {
+  const withMetrics = players.map(player => {
+    const stats = calculatePlayerStats(player.PlayerID, matches);
+    const metrics = computeLadderMetrics(stats);
+    return { player, stats, metrics };
+  });
+
+  withMetrics.sort((a, b) => {
+    const dupr = (id) => parseFloat(id.player.DUPR) || 0;
+
+    if (ladderScoringMode === 'Overs') {
+      if (b.metrics.overs !== a.metrics.overs) return b.metrics.overs - a.metrics.overs;
+      if (b.metrics.margin !== a.metrics.margin) return b.metrics.margin - a.metrics.margin;
+      if (b.metrics.wins !== a.metrics.wins) return b.metrics.wins - a.metrics.wins;
+      return dupr(b) - dupr(a);
+
+    } else if (ladderScoringMode === 'Margin') {
+      if (b.metrics.margin !== a.metrics.margin) return b.metrics.margin - a.metrics.margin;
+      if (b.metrics.wins !== a.metrics.wins) return b.metrics.wins - a.metrics.wins;
+      return dupr(b) - dupr(a);
+
+    } else { // 'Wins'
+      if (b.metrics.wins !== a.metrics.wins) return b.metrics.wins - a.metrics.wins;
+      if (b.metrics.margin !== a.metrics.margin) return b.metrics.margin - a.metrics.margin;
+      return dupr(b) - dupr(a);
+    }
+  });
+
+  return withMetrics; // array of { player, stats, metrics }, in ranked order
+}
+
 function calculatePlayerStats(playerId, matches) {
   let games = 0, wins = 0, losses = 0;
   let pointsFor = 0, pointsAgainst = 0, expPointsFor = 0, expPointsAgainst = 0;
@@ -75,17 +129,12 @@ async function renderStandingsView(payload) {
 
   const ladderScoringMode = activeEvent.LadderScoring || 'Margin';
 
-  // --- Event-level player ranking (UNCHANGED — always computed flat, across everyone) ---
-  const standings = players.map(player => {
-    const stats = calculatePlayerStats(player.PlayerID, matches);
-    const points = calculateLadderPoints(stats, ladderScoringMode);
-    return { player, stats, points };
-  });
-
-  standings.sort((a, b) => {
-    if (b.points !== a.points) return b.points - a.points;
-    return (parseFloat(b.player.DUPR) || 0) - (parseFloat(a.player.DUPR) || 0);
-  });
+  const ranked = rankPlayersByLadderCriteria(players, matches, ladderScoringMode); // CHANGED
+  const standings = ranked.map(r => ({
+    player: r.player,
+    stats: r.stats,
+    points: calculateLadderPoints(r.stats, ladderScoringMode)
+  }));
 
   const rankByPlayerId = {};
   standings.forEach((entry, index) => {
@@ -107,7 +156,7 @@ async function renderStandingsView(payload) {
 
     const contentHtml = `
       <h3>${entry.player.FirstName || 'Unnamed'} (DUPR: ${entry.player.DUPR || 'N/A'})</h3>
-      <p class="card-meta-line">Game:  ${entry.stats.games} || Win: ${entry.stats.wins} || Loss: ${entry.stats.losses}</p>
+      <p class="card-meta-line">Game: ${entry.stats.games} || Win: ${entry.stats.wins} || Loss: ${entry.stats.losses}</p>
     `;
 
     return `
@@ -125,7 +174,6 @@ async function renderStandingsView(payload) {
   let html = '';
 
   if (grouping === 'None') {
-    // Unchanged — flat list, sorted by rank
     standings.forEach(entry => { html += buildPlayerLadderCard(entry); });
 
   } else if (grouping === 'Divisions' || grouping === 'Pools') {
@@ -159,6 +207,7 @@ async function renderStandingsView(payload) {
           <span class="points-badge" style="min-width: 36px; height: 36px; font-size: 0.85rem;">${teamScore}</span>
         </div>
       `;
+
       groupEntries.forEach(entry => { html += buildPlayerLadderCard(entry); });
     }
   }

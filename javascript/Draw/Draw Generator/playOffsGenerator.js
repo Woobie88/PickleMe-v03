@@ -31,18 +31,8 @@ function getStandingsRankedPlayers(payload) {
   const players = payload.players.filter(p => String(p.PlayerVersion) === String(activeEvent.CurrentPlayerVersion) && p.playerExclude !== 'Yes');
   const ladderScoringMode = activeEvent.LadderScoring || 'Margin';
 
-  const standings = players.map(player => {
-    const stats = calculatePlayerStats(player.PlayerID, matches);
-    const points = calculateLadderPoints(stats, ladderScoringMode);
-    return { player, points };
-  });
-
-  standings.sort((a, b) => {
-    if (b.points !== a.points) return b.points - a.points;
-    return (parseFloat(b.player.DUPR) || 0) - (parseFloat(a.player.DUPR) || 0);
-  });
-
-  return standings.map(s => s.player);
+  const ranked = rankPlayersByLadderCriteria(players, matches, ladderScoringMode); // CHANGED
+  return ranked.map(r => r.player);
 }
 
 function bestBalancedPairing(fourPlayers) {
