@@ -60,8 +60,8 @@ function calculatePlayerStats(playerId, matches) {
     // Only count completed matches
     if (!m.Team1WinLoss || !m.Team2WinLoss) return;
 
-    const onTeam1 = m.Team1Player1 === playerId || m.Team1Player2 === playerId;
-    const onTeam2 = m.Team2Player1 === playerId || m.Team2Player2 === playerId;
+    const onTeam1 = [m.Team1Player1, m.Team1Player2, m.Team1Player3, m.Team1Player4].includes(playerId); // FIXED
+    const onTeam2 = [m.Team2Player1, m.Team2Player2, m.Team2Player3, m.Team2Player4].includes(playerId); // FIXED
     if (!onTeam1 && !onTeam2) return;
 
     games++;
@@ -276,8 +276,8 @@ function calculateTeamStats(teamNumber, matches) {
   matches.forEach(m => {
     if (!m.Team1WinLoss || !m.Team2WinLoss) return; // only completed matches
 
-    const onTeam1 = String(m.Team1) === String(teamNumber);
-    const onTeam2 = String(m.Team2) === String(teamNumber);
+    const onTeam1 = [m.Team1Player1, m.Team1Player2, m.Team1Player3, m.Team1Player4].includes(playerId); // FIXED
+    const onTeam2 = [m.Team2Player1, m.Team2Player2, m.Team2Player3, m.Team2Player4].includes(playerId); // FIXED
     if (!onTeam1 && !onTeam2) return;
 
     games++;
