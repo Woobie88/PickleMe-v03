@@ -15,6 +15,8 @@ function computeAnalyticsPlayerCounts(payload) {
   return players.map(player => {
     const partnerCounts = {};
     const opponentCounts = {};
+    const partnerRounds = {}; // NEW — { partnerId: [round, round, ...] }
+    const opponentRounds = {}; // NEW — { opponentId: [round, round, ...] }
     const roundResults = {};
     const roundPoints = {};
     const roundsPlayed = new Set();
@@ -56,10 +58,16 @@ function computeAnalyticsPlayerCounts(payload) {
       }
 
       myTeam.forEach(pid => {
-        if (pid !== player.PlayerID) partnerCounts[pid] = (partnerCounts[pid] || 0) + 1;
+        if (pid !== player.PlayerID) {
+          partnerCounts[pid] = (partnerCounts[pid] || 0) + 1;
+          if (!partnerRounds[pid]) partnerRounds[pid] = []; // NEW
+          partnerRounds[pid].push(round); // NEW
+        }
       });
       oppTeam.forEach(pid => {
         opponentCounts[pid] = (opponentCounts[pid] || 0) + 1;
+        if (!opponentRounds[pid]) opponentRounds[pid] = []; // NEW
+        opponentRounds[pid].push(round); // NEW
       });
     });
 
@@ -74,6 +82,8 @@ function computeAnalyticsPlayerCounts(payload) {
       wins, losses, pointsFor, pointsAgainst,
       partnerCounts,
       opponentCounts,
+      partnerRounds, // NEW
+      opponentRounds, // NEW
       roundResults,
       roundPoints,
       roundsPlayed,
