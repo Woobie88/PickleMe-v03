@@ -552,53 +552,126 @@ function handlePlayerUnavailableToggle(value) {
 }
 
 // Player match summary
+// function renderPlayerSummaryView() {
+//   const player = window.cachedUserUniverse.players.find(p => p.PlayerID === window.currentPlayerDetailId);
+//   const matches = window.cachedUserUniverse.draw || [];
+//   const container = document.getElementById('player-detail-content');
+//   if (!player) return;
+
+//   let games = 0;
+//   const partners = {}, opponents = {};
+//   const allRounds = new Set(matches.map(m => m.Round));
+//   const roundsPlayed = new Set();
+
+//   matches.forEach(m => {
+//     const t1 = [m.Team1Player1, m.Team1Player2, m.Team1Player3, m.Team1Player4].filter(Boolean);
+//     const t2 = [m.Team2Player1, m.Team2Player2, m.Team2Player3, m.Team2Player4].filter(Boolean);
+//     const onT1 = t1.includes(player.PlayerID);
+//     const onT2 = t2.includes(player.PlayerID);
+//     if (!onT1 && !onT2) return;
+
+//     games++;
+//     roundsPlayed.add(m.Round);
+//     const myTeam = onT1 ? t1 : t2;
+//     const oppTeam = onT1 ? t2 : t1;
+//     myTeam.forEach(pid => { if (pid !== player.PlayerID) partners[pid] = (partners[pid] || 0) + 1; });
+//     oppTeam.forEach(pid => { opponents[pid] = (opponents[pid] || 0) + 1; });
+//   });
+
+//   // Determine which specific rounds were byes, sorted ascending
+//   const byeRounds = [...allRounds]
+//     .filter(r => !roundsPlayed.has(r))
+//     .map(r => parseInt(r) || 0)
+//     .sort((a, b) => a - b);
+
+//   const uniquePartners = Object.keys(partners).length;
+//   const uniqueOpponents = Object.keys(opponents).length;
+//   const maxSamePartner = Math.max(0, ...Object.values(partners));
+//   const maxSameOpponent = Math.max(0, ...Object.values(opponents));
+
+//   container.innerHTML = `
+//     <div class="welcome-banner"><h2>${player.Name || 'Unnamed'} Event Summary</h2></div>
+//     <div class="detail-view-container">
+//       <div class="detail-form-group"><label>Games</label><div class="detail-readonly">${games}</div></div>
+//       <div class="detail-form-group"><label>Byes</label><div class="detail-readonly">${byeRounds.length}</div></div>
+//       <div class="detail-form-group"><label>Bye Rounds</label><div class="detail-readonly">${byeRounds.length > 0 ? byeRounds.join(', ') : 'None'}</div></div>
+//       <div class="detail-form-group"><label>Unique Partners</label><div class="detail-readonly">${uniquePartners}</div></div>
+//       <div class="detail-form-group"><label>Unique Opponents</label><div class="detail-readonly">${uniqueOpponents}</div></div>
+//       <div class="detail-form-group"><label>Max Same Partner</label><div class="detail-readonly">${maxSamePartner}</div></div>
+//       <div class="detail-form-group"><label>Max Same Opponent</label><div class="detail-readonly">${maxSameOpponent}</div></div>
+//     </div>
+//   `;
+// }
+
 function renderPlayerSummaryView() {
   const player = window.cachedUserUniverse.players.find(p => p.PlayerID === window.currentPlayerDetailId);
-  const matches = window.cachedUserUniverse.draw || [];
   const container = document.getElementById('player-detail-content');
   if (!player) return;
 
-  let games = 0;
-  const partners = {}, opponents = {};
-  const allRounds = new Set(matches.map(m => m.Round));
-  const roundsPlayed = new Set();
+  const allPlayerStats = computeAnalyticsPlayerCounts(window.cachedUserUniverse);
+  const myStats = allPlayerStats.find(d => d.player.PlayerID === player.PlayerID);
 
-  matches.forEach(m => {
-    const t1 = [m.Team1Player1, m.Team1Player2, m.Team1Player3, m.Team1Player4].filter(Boolean);
-    const t2 = [m.Team2Player1, m.Team2Player2, m.Team2Player3, m.Team2Player4].filter(Boolean);
-    const onT1 = t1.includes(player.PlayerID);
-    const onT2 = t2.includes(player.PlayerID);
-    if (!onT1 && !onT2) return;
+  if (!myStats) {
+    container.innerHTML = `<div class="no-data-placeholder"><h3>No Match Data Yet</h3></div>`;
+    return;
+  }
 
-    games++;
-    roundsPlayed.add(m.Round);
-    const myTeam = onT1 ? t1 : t2;
-    const oppTeam = onT1 ? t2 : t1;
-    myTeam.forEach(pid => { if (pid !== player.PlayerID) partners[pid] = (partners[pid] || 0) + 1; });
-    oppTeam.forEach(pid => { opponents[pid] = (opponents[pid] || 0) + 1; });
-  });
+  const n = allPlayerStats.length || 1;
+  const avg = {
+    games: allPlayerStats.reduce((s, d) => s + d.roundsPlayed.size, 0) / n,
+    byes: allPlayerStats.reduce((s, d) => s + d.byeRounds.length, 0) / n,
+    uniquePartners: allPlayerStats.reduce((s, d) => s + d.uniquePartners, 0) / n,
+    uniqueOpponents: allPlayerStats.reduce((s, d) => s + d.uniqueOpponents, 0) / n,
+    maxSamePartner: allPlayerStats.reduce((s, d) => s + d.maxSamePartner, 0) / n,
+    maxSameOpponent: allPlayerStats.reduce((s, d) => s + d.maxSameOpponent, 0) / n
+  };
 
-  // Determine which specific rounds were byes, sorted ascending
-  const byeRounds = [...allRounds]
-    .filter(r => !roundsPlayed.has(r))
-    .map(r => parseInt(r) || 0)
-    .sort((a, b) => a - b);
+  const myGames = myStats.roundsPlayed.size;
+  const myByes = myStats.byeRounds.length;
+  const byeRoundsList = [...myStats.byeRounds].sort((a, b) => a - b);
 
-  const uniquePartners = Object.keys(partners).length;
-  const uniqueOpponents = Object.keys(opponents).length;
-  const maxSamePartner = Math.max(0, ...Object.values(partners));
-  const maxSameOpponent = Math.max(0, ...Object.values(opponents));
+  function buildTile(icon, iconBg, label, value, avgValue, direction = 'neutral') {
+    let comparisonHtml = `<span style="color: var(--text-muted);">avg ${avgValue.toFixed(1)}</span>`;
+
+    if (direction !== 'neutral') {
+      const diff = value - avgValue;
+      if (Math.abs(diff) > 0.05) {
+        const isBetter = direction === 'higherIsBetter' ? diff > 0 : diff < 0;
+        const color = isBetter ? '#00E676' : '#ef4444';
+        const arrow = diff > 0 ? '▲' : '▼';
+        comparisonHtml = `<span style="color: ${color};">${arrow} ${Math.abs(diff).toFixed(1)} vs avg</span>`;
+      }
+    }
+
+    return `
+      <div class="stat-tile">
+        <div class="stat-tile-header">
+          <div class="stat-tile-icon" style="background-color: ${iconBg};">${icon}</div>
+          <div class="stat-tile-label">${label}</div>
+        </div>
+        <div class="stat-tile-value">${value}</div>
+        <div class="stat-tile-comparison">${comparisonHtml}</div>
+      </div>
+    `;
+  }
 
   container.innerHTML = `
-    <div class="welcome-banner"><h2>${player.Name || 'Unnamed'} Event Summary</h2></div>
-    <div class="detail-view-container">
-      <div class="detail-form-group"><label>Games</label><div class="detail-readonly">${games}</div></div>
-      <div class="detail-form-group"><label>Byes</label><div class="detail-readonly">${byeRounds.length}</div></div>
-      <div class="detail-form-group"><label>Bye Rounds</label><div class="detail-readonly">${byeRounds.length > 0 ? byeRounds.join(', ') : 'None'}</div></div>
-      <div class="detail-form-group"><label>Unique Partners</label><div class="detail-readonly">${uniquePartners}</div></div>
-      <div class="detail-form-group"><label>Unique Opponents</label><div class="detail-readonly">${uniqueOpponents}</div></div>
-      <div class="detail-form-group"><label>Max Same Partner</label><div class="detail-readonly">${maxSamePartner}</div></div>
-      <div class="detail-form-group"><label>Max Same Opponent</label><div class="detail-readonly">${maxSameOpponent}</div></div>
+    <div class="welcome-banner"><h2>${player.Name || 'Unnamed'} — Summary</h2></div>
+    <div class="stat-dashboard-grid">
+      ${buildTile('🎮', 'rgba(59,130,246,0.2)', 'Games', myGames, avg.games)}
+      ${buildTile('💤', 'rgba(100,116,139,0.2)', 'Byes', myByes, avg.byes)}
+      ${buildTile('🤝', 'rgba(0,230,118,0.2)', 'Unique Partners', myStats.uniquePartners, avg.uniquePartners, 'higherIsBetter')}
+      ${buildTile('⚔️', 'rgba(59,130,246,0.2)', 'Unique Opponents', myStats.uniqueOpponents, avg.uniqueOpponents, 'higherIsBetter')}
+      ${buildTile('🔁', 'rgba(245,158,11,0.2)', 'Max Same Partner', myStats.maxSamePartner, avg.maxSamePartner, 'lowerIsBetter')}
+      ${buildTile('🔁', 'rgba(239,68,68,0.2)', 'Max Same Opponent', myStats.maxSameOpponent, avg.maxSameOpponent, 'lowerIsBetter')}
+
+      <div class="stat-tile stat-tile-wide">
+        <div class="stat-tile-header">
+          <div class="stat-tile-icon" style="background-color: rgba(100,116,139,0.2);">📅</div>
+          <div class="stat-tile-label">Bye Rounds</div>
+        </div>
+        <div class="stat-tile-value" style="font-size: 1.1rem;">${byeRoundsList.length > 0 ? byeRoundsList.join(', ') : 'None'}</div>
+      </div>
     </div>
   `;
 }
@@ -693,85 +766,155 @@ function handlePlayerFieldEdit(field, value) {
   }, 600);
 }
 
-function renderPlayerResultsSummaryView() {
-  const player = window.cachedUserUniverse.players.find(
-    p => p.PlayerID === window.currentPlayerDetailId
-  );
+// function renderPlayerResultsSummaryView() {
+//   const player = window.cachedUserUniverse.players.find(
+//     p => p.PlayerID === window.currentPlayerDetailId
+//   );
 
+//   const container = document.getElementById('player-detail-content');
+//   if (!player) return;
+
+//   const activeEventId = window.cachedUserUniverse.activeEventId;
+//   const activeEvent = window.cachedUserUniverse.events.find(
+//     e => String(e.EventID) === String(activeEventId)
+//   );
+
+//   const matches = window.cachedUserUniverse.draw || [];
+//   const allPlayers = window.cachedUserUniverse.players.filter(
+//     p => String(p.PlayerVersion) === String(activeEvent.CurrentPlayerVersion)
+//   );
+
+//   const ladderScoringMode = activeEvent.LadderScoring || 'Margin';
+
+//   const ranked = rankPlayersByLadderCriteria(
+//     allPlayers,
+//     matches,
+//     ladderScoringMode
+//   ); // CHANGED
+
+//   const rank = ranked.findIndex(
+//     r => r.player.PlayerID === player.PlayerID
+//   ) + 1;
+
+//   const entry = ranked.find(
+//     r => r.player.PlayerID === player.PlayerID
+//   );
+
+//   const stats = entry?.stats || {
+//     games: 0,
+//     wins: 0,
+//     losses: 0,
+//     pointsFor: 0,
+//     pointsAgainst: 0
+//   };
+
+//   const points = entry
+//     ? calculateLadderPoints(entry.stats, ladderScoringMode)
+//     : 0;
+
+//   container.innerHTML = `
+//     <div class="welcome-banner">
+//       <h2>${player.Name || 'Unnamed'} — Results</h2>
+//     </div>
+//     <div class="detail-view-container">
+//       <div class="detail-form-group">
+//         <label>Rank</label>
+//         <div class="detail-readonly">${rank}</div>
+//       </div>
+//       <div class="detail-form-group">
+//         <label>Games Played</label>
+//         <div class="detail-readonly">${stats.games}</div>
+//       </div>
+//       <div class="detail-form-group">
+//         <label>Wins</label>
+//         <div class="detail-readonly">${stats.wins}</div>
+//       </div>
+//       <div class="detail-form-group">
+//         <label>Losses</label>
+//         <div class="detail-readonly">${stats.losses}</div>
+//       </div>
+//       <div class="detail-form-group">
+//         <label>Points For</label>
+//         <div class="detail-readonly">${stats.pointsFor}</div>
+//       </div>
+//       <div class="detail-form-group">
+//         <label>Points Against</label>
+//         <div class="detail-readonly">${stats.pointsAgainst}</div>
+//       </div>
+//       <div class="detail-form-group">
+//         <label>Points</label>
+//         <div class="detail-readonly">${points}</div>
+//       </div>
+//     </div>
+//   `;
+// }
+
+function renderPlayerResultsSummaryView() {
+  const player = window.cachedUserUniverse.players.find(p => p.PlayerID === window.currentPlayerDetailId);
   const container = document.getElementById('player-detail-content');
   if (!player) return;
 
   const activeEventId = window.cachedUserUniverse.activeEventId;
-  const activeEvent = window.cachedUserUniverse.events.find(
-    e => String(e.EventID) === String(activeEventId)
-  );
-
+  const activeEvent = window.cachedUserUniverse.events.find(e => String(e.EventID) === String(activeEventId));
   const matches = window.cachedUserUniverse.draw || [];
   const allPlayers = window.cachedUserUniverse.players.filter(
     p => String(p.PlayerVersion) === String(activeEvent.CurrentPlayerVersion)
   );
 
   const ladderScoringMode = activeEvent.LadderScoring || 'Margin';
+  const ranked = rankPlayersByLadderCriteria(allPlayers, matches, ladderScoringMode);
 
-  const ranked = rankPlayersByLadderCriteria(
-    allPlayers,
-    matches,
-    ladderScoringMode
-  ); // CHANGED
+  const rank = ranked.findIndex(r => r.player.PlayerID === player.PlayerID) + 1;
+  const entry = ranked.find(r => r.player.PlayerID === player.PlayerID);
+  const stats = entry?.stats || { games: 0, wins: 0, losses: 0, pointsFor: 0, pointsAgainst: 0 };
+  const points = entry ? calculateLadderPoints(entry.stats, ladderScoringMode) : 0;
 
-  const rank = ranked.findIndex(
-    r => r.player.PlayerID === player.PlayerID
-  ) + 1;
+  const n = ranked.length || 1;
+  const avgWins = ranked.reduce((s, r) => s + r.stats.wins, 0) / n;
+  const avgPointsFor = ranked.reduce((s, r) => s + r.stats.pointsFor, 0) / n;
+  const avgPointsAgainst = ranked.reduce((s, r) => s + r.stats.pointsAgainst, 0) / n;
 
-  const entry = ranked.find(
-    r => r.player.PlayerID === player.PlayerID
-  );
+  function buildTile(icon, iconBg, label, value, avgValue = null, direction = 'neutral') {
+    let comparisonHtml = '';
+    if (avgValue !== null) {
+      comparisonHtml = `<span style="color: var(--text-muted);">avg ${avgValue.toFixed(1)}</span>`;
+      if (direction !== 'neutral') {
+        const diff = value - avgValue;
+        if (Math.abs(diff) > 0.05) {
+          const isBetter = direction === 'higherIsBetter' ? diff > 0 : diff < 0;
+          const color = isBetter ? '#00E676' : '#ef4444';
+          const arrow = diff > 0 ? '▲' : '▼';
+          comparisonHtml = `<span style="color: ${color};">${arrow} ${Math.abs(diff).toFixed(1)} vs avg</span>`;
+        }
+      }
+    }
 
-  const stats = entry?.stats || {
-    games: 0,
-    wins: 0,
-    losses: 0,
-    pointsFor: 0,
-    pointsAgainst: 0
-  };
-
-  const points = entry
-    ? calculateLadderPoints(entry.stats, ladderScoringMode)
-    : 0;
+    return `
+      <div class="stat-tile">
+        <div class="stat-tile-header">
+          <div class="stat-tile-icon" style="background-color: ${iconBg};">${icon}</div>
+          <div class="stat-tile-label">${label}</div>
+        </div>
+        <div class="stat-tile-value">${value}</div>
+        <div class="stat-tile-comparison">${comparisonHtml}</div>
+      </div>
+    `;
+  }
 
   container.innerHTML = `
-    <div class="welcome-banner">
-      <h2>${player.Name || 'Unnamed'} — Results</h2>
-    </div>
-    <div class="detail-view-container">
-      <div class="detail-form-group">
-        <label>Rank</label>
-        <div class="detail-readonly">${rank}</div>
+    <div class="welcome-banner"><h2>${player.Name || 'Unnamed'} — Results</h2></div>
+    <div class="stat-dashboard-grid">
+      <div class="stat-tile stat-tile-wide" style="align-items: center; text-align: center;">
+        <div class="stat-tile-label">Rank</div>
+        <div class="stat-tile-value" style="font-size: 2.5rem; color: #f59e0b;">#${rank}</div>
       </div>
-      <div class="detail-form-group">
-        <label>Games Played</label>
-        <div class="detail-readonly">${stats.games}</div>
-      </div>
-      <div class="detail-form-group">
-        <label>Wins</label>
-        <div class="detail-readonly">${stats.wins}</div>
-      </div>
-      <div class="detail-form-group">
-        <label>Losses</label>
-        <div class="detail-readonly">${stats.losses}</div>
-      </div>
-      <div class="detail-form-group">
-        <label>Points For</label>
-        <div class="detail-readonly">${stats.pointsFor}</div>
-      </div>
-      <div class="detail-form-group">
-        <label>Points Against</label>
-        <div class="detail-readonly">${stats.pointsAgainst}</div>
-      </div>
-      <div class="detail-form-group">
-        <label>Points</label>
-        <div class="detail-readonly">${points}</div>
-      </div>
+
+      ${buildTile('🎮', 'rgba(59,130,246,0.2)', 'Games Played', stats.games)}
+      ${buildTile('🏆', 'rgba(0,230,118,0.2)', 'Wins', stats.wins, avgWins, 'higherIsBetter')}
+      ${buildTile('❌', 'rgba(239,68,68,0.2)', 'Losses', stats.losses)}
+      ${buildTile('⭐', 'rgba(245,158,11,0.2)', 'Points', points)}
+      ${buildTile('📈', 'rgba(0,230,118,0.2)', 'Points For', stats.pointsFor, avgPointsFor, 'higherIsBetter')}
+      ${buildTile('📉', 'rgba(239,68,68,0.2)', 'Points Against', stats.pointsAgainst, avgPointsAgainst, 'lowerIsBetter')}
     </div>
   `;
 }
