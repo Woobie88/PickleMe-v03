@@ -672,12 +672,15 @@ function renderPlayerSummaryView() {
         </div>
         <div class="stat-tile-value" style="font-size: 1.1rem;">${byeRoundsList.length > 0 ? byeRoundsList.join(', ') : 'None'}</div>
       </div>
-
-      <div style="padding: 16px; height: 400px; position: relative;">
+    </div> 
+    <div class="stat-tile stat-tile-wide">
+      <div class="stat-tile-header">
         <div class="stat-tile-label">Partners & Opponents</div>
+      </div>
+      <div style="padding: 16px; height: 400px; position: relative;">
         <canvas id="player-partner-opponent-chart"></canvas>
       </div>
-    </div>    
+    </div>   
   `;
 
   renderPlayerPartnerOpponentChart(myStats); // NEW
