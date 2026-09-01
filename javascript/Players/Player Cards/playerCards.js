@@ -946,7 +946,7 @@ function renderPlayerResultsSummaryView() {
   const avgPointsFor = ranked.reduce((s, r) => s + r.stats.pointsFor, 0) / n;
   const avgPointsAgainst = ranked.reduce((s, r) => s + r.stats.pointsAgainst, 0) / n;
 
-  function buildTile(icon, iconBg, label, value, avgValue = null, direction = 'neutral') {
+  function buildTile(iconKey, iconColor, iconBg, label, value, avgValue = null, direction = 'neutral') {
     let comparisonHtml = '';
     if (avgValue !== null) {
       comparisonHtml = `<span style="color: var(--text-muted);">avg ${avgValue.toFixed(1)}</span>`;
@@ -964,7 +964,7 @@ function renderPlayerResultsSummaryView() {
     return `
       <div class="stat-tile">
         <div class="stat-tile-header">
-          <div class="stat-tile-icon" style="background-color: ${iconBg};">${icon}</div>
+          <div class="stat-tile-icon" style="background-color: ${iconBg}; color: ${iconColor};">${STAT_ICONS[iconKey]}</div>
           <div class="stat-tile-label">${label}</div>
         </div>
         <div class="stat-tile-value">${value}</div>
@@ -977,16 +977,17 @@ function renderPlayerResultsSummaryView() {
     <div class="welcome-banner"><h2>${player.Name || 'Unnamed'} — Results</h2></div>
     <div class="stat-dashboard-grid">
       <div class="stat-tile stat-tile-wide" style="align-items: center; text-align: center;">
+        <div class="stat-tile-icon" style="background-color: rgba(100,116,139,0.2); color: #f59e0b;">${STAT_ICONS.rank}</div>
         <div class="stat-tile-label">Rank</div>
         <div class="stat-tile-value" style="font-size: 2.5rem; color: #f59e0b;">#${rank}</div>
       </div>
 
-      ${buildTile('🎮', 'rgba(59,130,246,0.2)', 'Games Played', stats.games)}
-      ${buildTile('🏆', 'rgba(0,230,118,0.2)', 'Wins', stats.wins, avgWins, 'higherIsBetter')}
-      ${buildTile('❌', 'rgba(239,68,68,0.2)', 'Losses', stats.losses)}
-      ${buildTile('⭐', 'rgba(245,158,11,0.2)', 'Points', points)}
-      ${buildTile('📈', 'rgba(0,230,118,0.2)', 'Points For', stats.pointsFor, avgPointsFor, 'higherIsBetter')}
-      ${buildTile('📉', 'rgba(239,68,68,0.2)', 'Points Against', stats.pointsAgainst, avgPointsAgainst, 'lowerIsBetter')}
+      ${buildTile('games', '#3b82f6', 'rgba(59,130,246,0.2)', 'Games Played', stats.games)}
+      ${buildTile('points', '#f59e0b', 'rgba(245,158,11,0.2)', 'Points', points)}
+      ${buildTile('wins', '#00E676', 'rgba(0,230,118,0.2)', 'Wins', stats.wins, avgWins, 'higherIsBetter')}
+      ${buildTile('losses', '#ef4444', 'rgba(239,68,68,0.2)', 'Losses', stats.losses)}
+      ${buildTile('pointsFor', '#00E676', 'rgba(0,230,118,0.2)', 'Points For', stats.pointsFor, avgPointsFor, 'higherIsBetter')}
+      ${buildTile('pointsAgainst', '#ef4444', 'rgba(239,68,68,0.2)', 'Points Against', stats.pointsAgainst, avgPointsAgainst, 'lowerIsBetter')}
     </div>
   `;
 }
