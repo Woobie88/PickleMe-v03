@@ -1363,8 +1363,8 @@ body {
 }
 
 .stat-tile-icon {
-  width: 28px;
-  height: 28px;
+  width: 35px;
+  height: 35px;
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -1397,6 +1397,6 @@ body {
 }
 
 .stat-tile-icon svg {
-  width: 18px;
-  height: 18px;
+  width: 28px;
+  height: 28px;
 }
