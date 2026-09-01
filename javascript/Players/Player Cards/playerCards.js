@@ -630,10 +630,12 @@ function renderPlayerSummaryView() {
   const myByes = myStats.byeRounds.length;
   const byeRoundsList = [...myStats.byeRounds].sort((a, b) => a - b);
 
-  function buildTile(icon, iconBg, label, value, avgValue, direction = 'neutral') {
-    let comparisonHtml = `<span style="color: var(--text-muted);">avg ${avgValue.toFixed(1)}</span>`;
+  function buildTile(iconKey, iconColor, iconBg, label, value, avgValue, direction = 'neutral') {
+    let comparisonHtml = avgValue !== null && avgValue !== undefined
+      ? `<span style="color: var(--text-muted);">avg ${avgValue.toFixed(1)}</span>`
+      : '';
 
-    if (direction !== 'neutral') {
+    if (direction !== 'neutral' && avgValue !== null && avgValue !== undefined) {
       const diff = value - avgValue;
       if (Math.abs(diff) > 0.05) {
         const isBetter = direction === 'higherIsBetter' ? diff > 0 : diff < 0;
@@ -646,7 +648,7 @@ function renderPlayerSummaryView() {
     return `
       <div class="stat-tile">
         <div class="stat-tile-header">
-          <div class="stat-tile-icon" style="background-color: ${iconBg};">${icon}</div>
+          <div class="stat-tile-icon" style="background-color: ${iconBg}; color: ${iconColor};">${STAT_ICONS[iconKey]}</div>
           <div class="stat-tile-label">${label}</div>
         </div>
         <div class="stat-tile-value">${value}</div>
@@ -658,16 +660,16 @@ function renderPlayerSummaryView() {
   container.innerHTML = `
     <div class="welcome-banner"><h2>${player.Name || 'Unnamed'} — Summary</h2></div>
     <div class="stat-dashboard-grid">
-      ${buildTile('🎮', 'rgba(59,130,246,0.2)', 'Games', myGames, avg.games)}
-      ${buildTile('💤', 'rgba(100,116,139,0.2)', 'Byes', myByes, avg.byes)}
-      ${buildTile('🤝', 'rgba(0,230,118,0.2)', 'Unique Partners', myStats.uniquePartners, avg.uniquePartners, 'higherIsBetter')}
-      ${buildTile('⚔️', 'rgba(59,130,246,0.2)', 'Unique Opponents', myStats.uniqueOpponents, avg.uniqueOpponents, 'higherIsBetter')}
-      ${buildTile('🔁', 'rgba(245,158,11,0.2)', 'Max Same Partner', myStats.maxSamePartner, avg.maxSamePartner, 'lowerIsBetter')}
-      ${buildTile('🔁', 'rgba(239,68,68,0.2)', 'Max Same Opponent', myStats.maxSameOpponent, avg.maxSameOpponent, 'lowerIsBetter')}
+      ${buildTile('games', '#3b82f6', 'rgba(59,130,246,0.2)', 'Games', myGames, avg.games)}
+      ${buildTile('byes', '#64748b', 'rgba(100,116,139,0.2)', 'Byes', myByes, avg.byes)}
+      ${buildTile('uniquePartners', '#00E676', 'rgba(0,230,118,0.2)', 'Unique Partners', myStats.uniquePartners, avg.uniquePartners, 'higherIsBetter')}
+      ${buildTile('uniqueOpponents', '#3b82f6', 'rgba(59,130,246,0.2)', 'Unique Opponents', myStats.uniqueOpponents, avg.uniqueOpponents, 'higherIsBetter')}
+      ${buildTile('maxPartners', '#f59e0b', 'rgba(245,158,11,0.2)', 'Max Same Partner', myStats.maxSamePartner, avg.maxSamePartner, 'lowerIsBetter')}
+      ${buildTile('maxOpponents', '#ef4444', 'rgba(239,68,68,0.2)', 'Max Same Opponent', myStats.maxSameOpponent, avg.maxSameOpponent, 'lowerIsBetter')}
 
       <div class="stat-tile stat-tile-wide">
         <div class="stat-tile-header">
-          <div class="stat-tile-icon" style="background-color: rgba(100,116,139,0.2);">📅</div>
+          <div class="stat-tile-icon" style="background-color: rgba(100,116,139,0.2); color: #64748b;">${STAT_ICONS.byeRounds}</div>
           <div class="stat-tile-label">Bye Rounds</div>
         </div>
         <div class="stat-tile-value" style="font-size: 1.1rem;">${byeRoundsList.length > 0 ? byeRoundsList.join(', ') : 'None'}</div>

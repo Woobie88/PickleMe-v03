@@ -1395,4 +1395,8 @@ body {
 .stat-tile.stat-tile-wide {
   grid-column: span 2;
 }
-/*  */
+
+.stat-tile-icon svg {
+  width: 18px;
+  height: 18px;
+}
