@@ -867,7 +867,7 @@ function renderPlayerResultsSummaryView() {
     </div>  
   `;
 
-  renderPlayerWinLoss(myStats); // NEW
+  renderPlayerWinLoss(stats); // NEW
 }
 
 function renderPlayerWinLoss(myStats) {
