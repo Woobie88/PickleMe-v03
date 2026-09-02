@@ -641,6 +641,7 @@ function renderPlayerSummaryView() {
 window.playerSummaryChartInstance = null;
 
 function renderPlayerPartnerOpponentChart(myStats) {
+  console.log("renderPlayerPartnerOpponentChart stats are",myStats);
   const canvas = document.getElementById('player-partner-opponent-chart');
   if (!canvas) return;
 
@@ -871,7 +872,7 @@ function renderPlayerResultsSummaryView() {
 }
 
 function renderPlayerWinLoss(myStats) {
-  console.log("stats are",myStats);
+  console.log("renderPlayerWinLoss stats are",myStats);
   const canvas = document.getElementById('player-win-loss-chart');
   if (!canvas) return;
 
