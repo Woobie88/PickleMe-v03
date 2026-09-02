@@ -794,6 +794,16 @@ function renderPlayerResultsSummaryView() {
   const container = document.getElementById('player-detail-content');
   if (!player) return;
 
+  // Added to get Player stats - NOT IN ORIGINAL SCRIPT
+  const allPlayerStats = computeAnalyticsPlayerCounts(window.cachedUserUniverse);
+  const myStats = allPlayerStats.find(d => d.player.PlayerID === player.PlayerID);
+
+  if (!myStats) {
+    container.innerHTML = `<div class="no-data-placeholder"><h3>No Match Data Yet</h3></div>`;
+    return;
+  }
+  // 
+
   const activeEventId = window.cachedUserUniverse.activeEventId;
   const activeEvent = window.cachedUserUniverse.events.find(e => String(e.EventID) === String(activeEventId));
   const matches = window.cachedUserUniverse.draw || [];
@@ -868,7 +878,7 @@ function renderPlayerResultsSummaryView() {
     </div>  
   `;
 
-  renderPlayerWinLoss(stats); // NEW
+  renderPlayerWinLoss(myStats); // NEW
 }
 
 function renderPlayerWinLoss(myStats) {
