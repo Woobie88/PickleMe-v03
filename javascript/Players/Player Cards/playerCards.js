@@ -625,7 +625,7 @@ function renderPlayerSummaryView() {
       </div>
       <div class="stat-tile stat-tile-wide">
         <div class="stat-tile-header">
-          <div class="stat-tile-icon" style="background-color: rgba(100,116,139,0.2); color: #64748b;">${STAT_ICONS.matches}</div>
+          <div class="stat-tile-icon" style="background-color: rgba(59,130,246,0.2); color: #3b82f6;">${STAT_ICONS.matches}</div>
           <div class="stat-tile-label">Partners & Opponents</div>
         </div>
         <div style="padding: 16px; height: 400px; position: relative;">
