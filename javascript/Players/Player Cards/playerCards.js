@@ -871,6 +871,7 @@ function renderPlayerResultsSummaryView() {
 }
 
 function renderPlayerWinLoss(myStats) {
+  console.log("stats are",myStats);
   const canvas = document.getElementById('player-win-loss-chart');
   if (!canvas) return;
 
