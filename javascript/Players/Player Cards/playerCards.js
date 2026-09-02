@@ -552,57 +552,6 @@ function handlePlayerUnavailableToggle(value) {
 }
 
 // Player match summary
-// function renderPlayerSummaryView() {
-//   const player = window.cachedUserUniverse.players.find(p => p.PlayerID === window.currentPlayerDetailId);
-//   const matches = window.cachedUserUniverse.draw || [];
-//   const container = document.getElementById('player-detail-content');
-//   if (!player) return;
-
-//   let games = 0;
-//   const partners = {}, opponents = {};
-//   const allRounds = new Set(matches.map(m => m.Round));
-//   const roundsPlayed = new Set();
-
-//   matches.forEach(m => {
-//     const t1 = [m.Team1Player1, m.Team1Player2, m.Team1Player3, m.Team1Player4].filter(Boolean);
-//     const t2 = [m.Team2Player1, m.Team2Player2, m.Team2Player3, m.Team2Player4].filter(Boolean);
-//     const onT1 = t1.includes(player.PlayerID);
-//     const onT2 = t2.includes(player.PlayerID);
-//     if (!onT1 && !onT2) return;
-
-//     games++;
-//     roundsPlayed.add(m.Round);
-//     const myTeam = onT1 ? t1 : t2;
-//     const oppTeam = onT1 ? t2 : t1;
-//     myTeam.forEach(pid => { if (pid !== player.PlayerID) partners[pid] = (partners[pid] || 0) + 1; });
-//     oppTeam.forEach(pid => { opponents[pid] = (opponents[pid] || 0) + 1; });
-//   });
-
-//   // Determine which specific rounds were byes, sorted ascending
-//   const byeRounds = [...allRounds]
-//     .filter(r => !roundsPlayed.has(r))
-//     .map(r => parseInt(r) || 0)
-//     .sort((a, b) => a - b);
-
-//   const uniquePartners = Object.keys(partners).length;
-//   const uniqueOpponents = Object.keys(opponents).length;
-//   const maxSamePartner = Math.max(0, ...Object.values(partners));
-//   const maxSameOpponent = Math.max(0, ...Object.values(opponents));
-
-//   container.innerHTML = `
-//     <div class="welcome-banner"><h2>${player.Name || 'Unnamed'} Event Summary</h2></div>
-//     <div class="detail-view-container">
-//       <div class="detail-form-group"><label>Games</label><div class="detail-readonly">${games}</div></div>
-//       <div class="detail-form-group"><label>Byes</label><div class="detail-readonly">${byeRounds.length}</div></div>
-//       <div class="detail-form-group"><label>Bye Rounds</label><div class="detail-readonly">${byeRounds.length > 0 ? byeRounds.join(', ') : 'None'}</div></div>
-//       <div class="detail-form-group"><label>Unique Partners</label><div class="detail-readonly">${uniquePartners}</div></div>
-//       <div class="detail-form-group"><label>Unique Opponents</label><div class="detail-readonly">${uniqueOpponents}</div></div>
-//       <div class="detail-form-group"><label>Max Same Partner</label><div class="detail-readonly">${maxSamePartner}</div></div>
-//       <div class="detail-form-group"><label>Max Same Opponent</label><div class="detail-readonly">${maxSameOpponent}</div></div>
-//     </div>
-//   `;
-// }
-
 function renderPlayerSummaryView() {
   const player = window.cachedUserUniverse.players.find(p => p.PlayerID === window.currentPlayerDetailId);
   const container = document.getElementById('player-detail-content');
@@ -838,89 +787,7 @@ function handlePlayerFieldEdit(field, value) {
   }, 600);
 }
 
-// function renderPlayerResultsSummaryView() {
-//   const player = window.cachedUserUniverse.players.find(
-//     p => p.PlayerID === window.currentPlayerDetailId
-//   );
-
-//   const container = document.getElementById('player-detail-content');
-//   if (!player) return;
-
-//   const activeEventId = window.cachedUserUniverse.activeEventId;
-//   const activeEvent = window.cachedUserUniverse.events.find(
-//     e => String(e.EventID) === String(activeEventId)
-//   );
-
-//   const matches = window.cachedUserUniverse.draw || [];
-//   const allPlayers = window.cachedUserUniverse.players.filter(
-//     p => String(p.PlayerVersion) === String(activeEvent.CurrentPlayerVersion)
-//   );
-
-//   const ladderScoringMode = activeEvent.LadderScoring || 'Margin';
-
-//   const ranked = rankPlayersByLadderCriteria(
-//     allPlayers,
-//     matches,
-//     ladderScoringMode
-//   ); // CHANGED
-
-//   const rank = ranked.findIndex(
-//     r => r.player.PlayerID === player.PlayerID
-//   ) + 1;
-
-//   const entry = ranked.find(
-//     r => r.player.PlayerID === player.PlayerID
-//   );
-
-//   const stats = entry?.stats || {
-//     games: 0,
-//     wins: 0,
-//     losses: 0,
-//     pointsFor: 0,
-//     pointsAgainst: 0
-//   };
-
-//   const points = entry
-//     ? calculateLadderPoints(entry.stats, ladderScoringMode)
-//     : 0;
-
-//   container.innerHTML = `
-//     <div class="welcome-banner">
-//       <h2>${player.Name || 'Unnamed'} — Results</h2>
-//     </div>
-//     <div class="detail-view-container">
-//       <div class="detail-form-group">
-//         <label>Rank</label>
-//         <div class="detail-readonly">${rank}</div>
-//       </div>
-//       <div class="detail-form-group">
-//         <label>Games Played</label>
-//         <div class="detail-readonly">${stats.games}</div>
-//       </div>
-//       <div class="detail-form-group">
-//         <label>Wins</label>
-//         <div class="detail-readonly">${stats.wins}</div>
-//       </div>
-//       <div class="detail-form-group">
-//         <label>Losses</label>
-//         <div class="detail-readonly">${stats.losses}</div>
-//       </div>
-//       <div class="detail-form-group">
-//         <label>Points For</label>
-//         <div class="detail-readonly">${stats.pointsFor}</div>
-//       </div>
-//       <div class="detail-form-group">
-//         <label>Points Against</label>
-//         <div class="detail-readonly">${stats.pointsAgainst}</div>
-//       </div>
-//       <div class="detail-form-group">
-//         <label>Points</label>
-//         <div class="detail-readonly">${points}</div>
-//       </div>
-//     </div>
-//   `;
-// }
-
+// Player results
 function renderPlayerResultsSummaryView() {
   const player = window.cachedUserUniverse.players.find(p => p.PlayerID === window.currentPlayerDetailId);
   const container = document.getElementById('player-detail-content');
@@ -989,5 +856,73 @@ function renderPlayerResultsSummaryView() {
       ${buildTile('pointsFor', '#00E676', 'rgba(0,230,118,0.2)', 'Points For', stats.pointsFor, avgPointsFor, 'higherIsBetter')}
       ${buildTile('pointsAgainst', '#ef4444', 'rgba(239,68,68,0.2)', 'Points Against', stats.pointsAgainst, avgPointsAgainst, 'lowerIsBetter')}
     </div>
+    <div class="stat-tile stat-tile-wide">
+      <div class="stat-tile-header">
+        <div class="stat-tile-icon" style="background-color: rgba(100,116,139,0.2); color: #64748b;">${STAT_ICONS.matches}</div>
+        <div class="stat-tile-label">Partners & Opponents</div>
+      </div>
+      <div style="padding: 16px; height: 400px; position: relative;">
+        <canvas id="player-win-loss-chart"></canvas>
+      </div>
+    </div>   
   `;
+
+  renderPlayerWinLoss(myStats); // NEW
+}
+
+function renderPlayerWinLoss(myStats) {
+  const canvas = document.getElementById('player-win-loss-chart');
+  if (!canvas) return;
+
+  if (window.playerSummaryChartInstance) {
+    window.playerSummaryChartInstance.destroy();
+    window.playerSummaryChartInstance = null;
+  }
+
+  // Combine partner + opponent IDs into one label set for the chart
+  const allIds = new Set([...Object.keys(myStats.partnerCounts), ...Object.keys(myStats.opponentCounts)]);
+  const idList = [...allIds];
+
+  if (idList.length === 0) {
+    return; // no partners/opponents yet, nothing to chart
+  }
+
+  const labels = idList.map(pid => {
+    const p = window.cachedUserUniverse.players.find(pl => pl.PlayerID === pid);
+    return p ? (p.FirstName || 'Unnamed') : pid;
+  });
+
+  window.playerSummaryChartInstance = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Partner', data: idList.map(pid => myStats.partnerCounts[pid] || 0), backgroundColor: '#00E676' },
+        { label: 'Opponent', data: idList.map(pid => myStats.opponentCounts[pid] || 0), backgroundColor: '#ef4444' }
+      ]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'top' },
+        tooltip: {
+          callbacks: {
+            label(ctx) {
+              const pid = idList[ctx.dataIndex];
+              const isPartner = ctx.datasetIndex === 0;
+              const rounds = isPartner ? myStats.partnerRounds[pid] : myStats.opponentRounds[pid];
+              return rounds && rounds.length > 0
+                ? rounds.sort((a, b) => a - b).map(r => `Round ${r}`)
+                : ['No games'];
+            }
+          }
+        }
+      },
+      scales: {
+        x: { beginAtZero: true, ticks: { stepSize: 1 } }
+      }
+    }
+  });
 }
