@@ -855,16 +855,16 @@ function renderPlayerResultsSummaryView() {
       ${buildTile('losses', '#ef4444', 'rgba(239,68,68,0.2)', 'Losses', stats.losses)}
       ${buildTile('pointsFor', '#00E676', 'rgba(0,230,118,0.2)', 'Points For', stats.pointsFor, avgPointsFor, 'higherIsBetter')}
       ${buildTile('pointsAgainst', '#ef4444', 'rgba(239,68,68,0.2)', 'Points Against', stats.pointsAgainst, avgPointsAgainst, 'lowerIsBetter')}
-    </div>
-    <div class="stat-tile stat-tile-wide">
-      <div class="stat-tile-header">
-        <div class="stat-tile-icon" style="background-color: rgba(100,116,139,0.2); color: #64748b;">${STAT_ICONS.matches}</div>
-        <div class="stat-tile-label">Partners & Opponents</div>
-      </div>
-      <div style="padding: 16px; height: 400px; position: relative;">
-        <canvas id="player-win-loss-chart"></canvas>
-      </div>
-    </div>   
+      <div class="stat-tile stat-tile-wide">
+        <div class="stat-tile-header">
+          <div class="stat-tile-icon" style="background-color: rgba(100,116,139,0.2); color: #64748b;">${STAT_ICONS.matches}</div>
+          <div class="stat-tile-label">Partners & Opponents</div>
+        </div>
+        <div style="padding: 16px; height: 400px; position: relative;">
+          <canvas id="player-win-loss-chart"></canvas>
+        </div>
+      </div> 
+    </div>  
   `;
 
   renderPlayerWinLoss(myStats); // NEW
