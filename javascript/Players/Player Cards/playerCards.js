@@ -892,7 +892,7 @@ function renderPlayerWinLoss(myStats) {
   }
 
   // Combine partner + opponent IDs into one label set for the chart
-  const allIds = new Set([...Object.keys(myStats.partnerCounts), ...Object.keys(myStats.opponentCounts)]);
+  const allIds = new Set([...Object.keys(myStats.wins), ...Object.keys(myStats.losses)]);
   const idList = [...allIds];
 
   if (idList.length === 0) {
@@ -909,8 +909,8 @@ function renderPlayerWinLoss(myStats) {
     data: {
       labels,
       datasets: [
-        { label: 'Partner', data: idList.map(pid => myStats.partnerCounts[pid] || 0), backgroundColor: '#00E676' },
-        { label: 'Opponent', data: idList.map(pid => myStats.opponentCounts[pid] || 0), backgroundColor: '#ef4444' }
+        { label: 'Wins', data: idList.map(pid => myStats.wins[pid] || 0), backgroundColor: '#00E676' },
+        { label: 'Losses', data: idList.map(pid => myStats.losses[pid] || 0), backgroundColor: '#ef4444' }
       ]
     },
     options: {
