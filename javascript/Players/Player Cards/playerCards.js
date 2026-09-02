@@ -621,7 +621,7 @@ function renderPlayerSummaryView() {
           <div class="stat-tile-icon" style="background-color: rgba(100,116,139,0.2); color: #64748b;">${STAT_ICONS.byeRounds}</div>
           <div class="stat-tile-label">Bye Rounds</div>
         </div>
-        <div class="stat-tile-value" style="font-size: 1.1rem;">${byeRoundsList.length > 0 ? 'Round(s): ' + byeRoundsList.join(', ') : 'None'}</div>
+        <div class="stat-tile-value" style="font-size: 1.1rem;">${byeRoundsList.length > 0 ? 'Round(s) ' + byeRoundsList.join(', ') : 'None'}</div>
       </div>
       <div class="stat-tile stat-tile-wide">
         <div class="stat-tile-header">
