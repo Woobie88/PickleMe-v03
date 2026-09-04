@@ -65,7 +65,7 @@ const ladderRankings = [{
   "rank-20": "https://i.postimg.cc/HLV1fpqs/20.png"
 }];
 
-const byeImage = "https://i.postimg.cc/P5XcYDjc/Bye.png";
+const byeImage = "https://i.postimg.cc/WbDWFbkf/Bye.png";
 
 // Used in player summary and events as icons
 const STAT_ICONS = {
