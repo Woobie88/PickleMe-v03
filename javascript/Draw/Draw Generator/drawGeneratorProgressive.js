@@ -126,26 +126,55 @@ function isRoundComplete(matches, roundNumber) {
 
 // ---------- COURT MOVEMENT VARIANTS ----------
 
-// Standard movement (Kings & Queens, Survivor): winners climb —
-// Court1 = Ct1 Winners + Ct2 Winners
-// Court2 = Ct1 Losers + Ct3 Winners
-// Court3 = Ct2 Losers + Ct3 Losers
-function buildStandardGroups(previousRoundMatches) {
+// Standard movement (Kings & Queens, Survivor): winners climb one court,
+// losers drop one court. Works for any number of courts N:
+//   Court 1   (top)    = Ct1 Winners        + Ct2 Winners
+//   Court i   (middle) = Ct(i-1) Losers     + Ct(i+1) Winners
+//   Court N   (bottom) = Ct(N-1) Losers     + CtN Losers
+function buildStandardGroups(previousRoundMatches, numCourts) {
   const byCourt = {};
   previousRoundMatches.forEach(m => { byCourt[m.Court] = m; });
 
-  const ct1Winners = getMatchWinners(byCourt[1]);
-  const ct1Losers = getMatchLosers(byCourt[1]);
-  const ct2Winners = getMatchWinners(byCourt[2]);
-  const ct2Losers = getMatchLosers(byCourt[2]);
-  const ct3Winners = getMatchWinners(byCourt[3]);
-  const ct3Losers = getMatchLosers(byCourt[3]);
+  // Allow numCourts to be inferred if not passed explicitly
+  const N = numCourts || previousRoundMatches.length;
 
-  return [
-    { court: 1, playerIds: [...ct1Winners, ...ct2Winners], justWonPairs: [ct1Winners, ct2Winners] },
-    { court: 2, playerIds: [...ct1Losers, ...ct3Winners], justWonPairs: [ct3Winners] },
-    { court: 3, playerIds: [...ct2Losers, ...ct3Losers], justWonPairs: [] }
-  ];
+  const winners = {};
+  const losers = {};
+  for (let c = 1; c <= N; c++) {
+    if (!byCourt[c]) {
+      throw new Error(`buildStandardGroups: missing match data for court ${c}`);
+    }
+    winners[c] = getMatchWinners(byCourt[c]);
+    losers[c] = getMatchLosers(byCourt[c]);
+  }
+
+  if (N === 1) {
+    // Nowhere for anyone to move — everyone stays put
+    return [{ court: 1, playerIds: [...winners[1], ...losers[1]], justWonPairs: [winners[1]] }];
+  }
+
+  const groups = [];
+  for (let i = 1; i <= N; i++) {
+    let playerIds, justWonPairs;
+
+    if (i === 1) {
+      // Top court: own winners stay + winners climbing from below
+      playerIds = [...winners[1], ...winners[2]];
+      justWonPairs = [winners[1], winners[2]];
+    } else if (i === N) {
+      // Bottom court: losers dropping from above + own losers stay
+      playerIds = [...losers[N - 1], ...losers[N]];
+      justWonPairs = [];
+    } else {
+      // Middle court: losers dropping from above + winners climbing from below
+      playerIds = [...losers[i - 1], ...winners[i + 1]];
+      justWonPairs = [winners[i + 1]];
+    }
+
+    groups.push({ court: i, playerIds, justWonPairs });
+  }
+
+  return groups;
 }
 
 // Snakes & Ladders: top-court losers drop all the way to the bottom court;
