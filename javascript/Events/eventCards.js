@@ -299,7 +299,7 @@ function enableLongHoldToActivate(containerId) {
 
       }, HOLD_DURATION);
 
-    }, { passive: true });
+    }, { passive: false });
 
 
     // ------------------------------------------------------------
@@ -365,6 +365,15 @@ function enableLongHoldToActivate(containerId) {
 
       isLongHold = false;
 
+    });
+
+
+    // ------------------------------------------------------------
+    // CONTEXT MENU (Android long-press menu)
+    // ------------------------------------------------------------
+
+    card.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
     });
 
   });

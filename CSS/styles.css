@@ -1407,6 +1407,14 @@ body {
     transition: transform 0.15s ease;
 }
 
+.app-card[data-event-id] {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
 .active-event-toast {
   position: fixed;
   bottom: 24px;
