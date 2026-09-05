@@ -485,9 +485,16 @@ function handleFabAction(action) {
     case 'player-available': // NEW
       console.log('Player Available tapped — routing not yet wired up');
       break;
-    case 'result-refresh': // NEW
-      console.log('Draw Refresh tapped — routing not yet wired up');
-      break;
+    case 'result-refresh': {
+        const confirmed = window.confirm(
+          "Refresh this round's matches? This will re-shuffle courts and partners for players in the current round."
+        );
+        if (!confirmed) break;
+
+        await refreshCurrentRoundMatches();
+
+        break;
+      }
     // Add to handleFabAction's switch statement:
     case 'redraw':
       navigateToScreen('redraw');
