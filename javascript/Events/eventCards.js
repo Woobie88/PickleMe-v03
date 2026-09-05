@@ -135,7 +135,7 @@ function renderUserEventCards(payload) {
   }
 
   container.innerHTML = finalHtml;
-  enableDragToActivate('active-events-list', "brett.collins028@gmail.com");
+  enableLongHoldToActivate(containerId, userEmail);
   console.log("Successfully rendered event grid sorted chronologically (ascending).");
 }
 
@@ -160,73 +160,195 @@ function getDayIconUrl(dateString) {
   }
 }
 
-// ---------- TAP-VS-DRAG: VIEW DETAIL OR SET ACTIVE EVENT ----------
+// ---------- TAP-VS-LONG-HOLD: VIEW DETAIL OR SET ACTIVE EVENT ----------
 
 /**
- * Single source of truth for tap-vs-drag handling on event cards.
- * Tap opens the detail view; dragging up sets the event active.
+ * Single source of truth for tap-vs-long-hold handling on event cards.
+ *
+ * Tap       → opens the event detail view
+ * Long hold → sets the event as the active event
+ *
+ * A small amount of finger movement is allowed during the hold so
+ * normal mobile touch movement does not accidentally cancel it.
  */
-function enableDragToActivate(containerId, userEmail) {
+function enableLongHoldToActivate(containerId, userEmail) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
   container.querySelectorAll('.app-card[data-event-id]').forEach(card => {
-    let startY = 0, currentY = 0, isDragging = false;
+
+    let holdTimer = null;
+    let isLongHold = false;
+    let startX = 0;
+    let startY = 0;
+
+    const HOLD_DURATION = 650; // milliseconds
+    const MAX_MOVEMENT = 15;   // pixels allowed while holding
+
+
+    // ------------------------------------------------------------
+    // TOUCH START
+    // ------------------------------------------------------------
 
     card.addEventListener('touchstart', (e) => {
+
+      if (!e.touches || !e.touches.length) return;
+
+      startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
-      isDragging = false;
-    }, { passive: true });
 
-    card.addEventListener('touchmove', (e) => {
-      currentY = e.touches[0].clientY;
-      const deltaY = currentY - startY;
+      isLongHold = false;
 
-      if (deltaY < -25) {
-        isDragging = true;
-        const dragDistance = Math.min(Math.abs(deltaY), 80);
-        card.style.transform = `translateY(${-dragDistance}px)`;
-        card.style.opacity = 1 - (dragDistance / 160);
-      }
-    }, { passive: true });
+      clearTimeout(holdTimer);
 
-    card.addEventListener('touchend', async () => {
-      const deltaY = currentY - startY;
-      card.style.transform = '';
-      card.style.opacity = '';
+      holdTimer = setTimeout(async () => {
 
-      if (isDragging && deltaY < -60) {
+        isLongHold = true;
+
         const eventId = card.dataset.eventId;
 
-        if (String(eventId) === String(window.cachedUserUniverse.activeEventId)) {
-          isDragging = false;
+        // --------------------------------------------------------
+        // Already active — nothing to do
+        // --------------------------------------------------------
+
+        if (
+          String(eventId) ===
+          String(window.cachedUserUniverse.activeEventId)
+        ) {
           return;
         }
 
+        // --------------------------------------------------------
+        // Visual feedback
+        // --------------------------------------------------------
+
+        card.classList.add('long-hold-active');
+
+        // Prevent the subsequent touchend from being interpreted
+        // as a normal tap.
         window.suppressNextCardClick = true;
 
         try {
-          await window.setActiveEventInFirestore(eventId, userEmail);
+
+          // ------------------------------------------------------
+          // Set active event in Firestore
+          // ------------------------------------------------------
+
+          await window.setActiveEventInFirestore(
+            eventId,
+            userEmail
+          );
+
+          // ------------------------------------------------------
+          // Update local active event
+          // ------------------------------------------------------
+
           window.cachedUserUniverse.activeEventId = eventId;
 
-          // Clear stale event-specific data so every screen fetches fresh
+          // ------------------------------------------------------
+          // Clear stale event-specific data
+          // ------------------------------------------------------
+
           window.cachedUserUniverse.players = [];
           window.cachedUserUniverse.draw = [];
 
-          renderUserEventCards(window.cachedUserUniverse);
+          // ------------------------------------------------------
+          // Re-render event cards
+          // ------------------------------------------------------
+
+          renderUserEventCards(
+            window.cachedUserUniverse
+          );
+
+          // ------------------------------------------------------
+          // Refresh all event-scoped views
+          // ------------------------------------------------------
+
           await refreshAllEventScopedViews();
 
         } catch (err) {
-          console.error("Failed to set active event:", err);
+
+          console.error(
+            "Failed to set active event:",
+            err
+          );
+
+        } finally {
+
+          card.classList.remove('long-hold-active');
+
         }
-      } else if (!isDragging) {
-        // Plain tap — open the detail view
+
+      }, HOLD_DURATION);
+
+    }, { passive: true });
+
+
+    // ------------------------------------------------------------
+    // TOUCH MOVE
+    // ------------------------------------------------------------
+
+    card.addEventListener('touchmove', (e) => {
+
+      if (!e.touches || !e.touches.length) return;
+
+      const currentX = e.touches[0].clientX;
+      const currentY = e.touches[0].clientY;
+
+      const deltaX = Math.abs(currentX - startX);
+      const deltaY = Math.abs(currentY - startY);
+
+      // Allow small natural finger movement.
+      // Cancel the hold only if the finger moves too far.
+      if (
+        deltaX > MAX_MOVEMENT ||
+        deltaY > MAX_MOVEMENT
+      ) {
+        clearTimeout(holdTimer);
+        holdTimer = null;
+      }
+
+    }, { passive: true });
+
+
+    // ------------------------------------------------------------
+    // TOUCH END
+    // ------------------------------------------------------------
+
+    card.addEventListener('touchend', () => {
+
+      clearTimeout(holdTimer);
+      holdTimer = null;
+
+      if (!isLongHold) {
+
+        // --------------------------------------------------------
+        // Normal tap → open detail view
+        // --------------------------------------------------------
+
         const eventId = card.dataset.eventId;
+
         updateActiveEvent(eventId);
       }
 
-      isDragging = false;
+      isLongHold = false;
+
     });
+
+
+    // ------------------------------------------------------------
+    // TOUCH CANCEL
+    // ------------------------------------------------------------
+
+    card.addEventListener('touchcancel', () => {
+
+      clearTimeout(holdTimer);
+      holdTimer = null;
+
+      isLongHold = false;
+
+    });
+
   });
 }
 

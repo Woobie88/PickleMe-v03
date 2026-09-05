@@ -1400,3 +1400,9 @@ body {
   width: 28px;
   height: 28px;
 }
+
+/* Visual feedback when an event card is activated by long hold */
+.app-card.long-hold-active {
+    transform: scale(0.97);
+    transition: transform 0.15s ease;
+}
