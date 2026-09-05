@@ -256,9 +256,7 @@ function enableLongHoldToActivate(containerId) {
           // Re-render event cards
           // ------------------------------------------------------
 
-          renderUserEventCards(
-            window.cachedUserUniverse
-          );
+          renderUserEventCards(window.cachedUserUniverse, containerId);
 
           // ------------------------------------------------------
           // Refresh all event-scoped views
@@ -525,7 +523,7 @@ async function updateActiveEventDetails() {
         ...updatedData
       };
     }
-    renderUserEventCards(window.cachedUserUniverse, containerId, userEmail);
+    renderUserEventCards(window.cachedUserUniverse, containerId);
   }
 
   try {
