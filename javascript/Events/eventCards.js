@@ -542,13 +542,14 @@ async function updateActiveEventDetails() {
 
 function preFetchUserUniverseData() {
   const userEmail = window.currentUserEmail;
+  const containerId = 'active-events-list';
 
   return window.fetchEventsFromFirestore(userEmail)
     .then(payload => {
       console.log("Firestore events fetch successful!", payload);
       window.cachedUserUniverse.events = payload.events;
       window.cachedUserUniverse.activeEventId = payload.activeEventId;
-      renderUserEventCards(window.cachedUserUniverse, containerId, userEmail);
+      renderUserEventCards(window.cachedUserUniverse, containerId);
       return payload;
     })
     .catch(err => {
