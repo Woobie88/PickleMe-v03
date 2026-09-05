@@ -264,6 +264,26 @@ function enableLongHoldToActivate(containerId) {
 
           await refreshAllEventScopedViews();
 
+          // ------------------------------------------------------
+          // On-screen confirmation
+          // ------------------------------------------------------
+
+          const activatedEvent = window.cachedUserUniverse.events.find(
+            ev => String(ev.EventID || ev.eventId) === String(eventId)
+          );
+
+          if (activatedEvent) {
+
+            const eventName = activatedEvent.EventName || 'Unnamed Event';
+            const eventLocation = activatedEvent.EventLocation || 'Main Facility';
+            const rawDate = activatedEvent.EventDate || activatedEvent.eventDate || '';
+            const eventDate = rawDate ? rawDate.split('T')[0] : 'Ongoing';
+
+            showActiveEventChangedToast(
+              `Active event changed to ${eventName}, ${eventLocation}, ${eventDate}`
+            );
+          }
+
         } catch (err) {
 
           console.error(
@@ -348,6 +368,20 @@ function enableLongHoldToActivate(containerId) {
     });
 
   });
+}
+
+// ** Active Event Update Message
+function showActiveEventChangedToast(message) {
+  const toast = document.createElement('div');
+  toast.className = 'active-event-toast';
+  toast.textContent = message;
+
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add('fade-out');
+    setTimeout(() => toast.remove(), 300);
+  }, 2500);
 }
 
 /**
