@@ -37,12 +37,12 @@ window.cachedUserUniverse = {
 /**
  * Builds the event elements out of client-side cache
  */
-function renderUserEventCards(payload) {
+function renderUserEventCards(payload, containerId) {
   console.log("renderUserEventCards received payload:", payload);
 
-  const container = document.getElementById('active-events-list');
+  const container = document.getElementById(containerId);
   if (!container) {
-    console.error("DOM Element '#active-events-list' not found!");
+    console.error(`DOM Element '#${containerId}' not found!`);
     return;
   }
 
@@ -135,7 +135,7 @@ function renderUserEventCards(payload) {
   }
 
   container.innerHTML = finalHtml;
-  enableLongHoldToActivate(containerId, userEmail);
+  enableLongHoldToActivate(containerId, window.currentUserEmail);
   console.log("Successfully rendered event grid sorted chronologically (ascending).");
 }
 
@@ -171,7 +171,7 @@ function getDayIconUrl(dateString) {
  * A small amount of finger movement is allowed during the hold so
  * normal mobile touch movement does not accidentally cancel it.
  */
-function enableLongHoldToActivate(containerId, userEmail) {
+function enableLongHoldToActivate(containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
@@ -236,7 +236,7 @@ function enableLongHoldToActivate(containerId, userEmail) {
 
           await window.setActiveEventInFirestore(
             eventId,
-            userEmail
+            window.currentUserEmail
           );
 
           // ------------------------------------------------------
@@ -525,7 +525,7 @@ async function updateActiveEventDetails() {
         ...updatedData
       };
     }
-    renderUserEventCards(window.cachedUserUniverse);
+    renderUserEventCards(window.cachedUserUniverse, containerId, userEmail);
   }
 
   try {
@@ -548,7 +548,7 @@ function preFetchUserUniverseData() {
       console.log("Firestore events fetch successful!", payload);
       window.cachedUserUniverse.events = payload.events;
       window.cachedUserUniverse.activeEventId = payload.activeEventId;
-      renderUserEventCards(window.cachedUserUniverse);
+      renderUserEventCards(window.cachedUserUniverse, containerId, userEmail);
       return payload;
     })
     .catch(err => {
