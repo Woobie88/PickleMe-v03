@@ -135,7 +135,7 @@ function renderUserEventCards(payload, containerId) {
   }
 
   container.innerHTML = finalHtml;
-  enableLongHoldToActivate(containerId, window.currentUserEmail);
+  enableLongHoldToActivate(containerId);
   console.log("Successfully rendered event grid sorted chronologically (ascending).");
 }
 
