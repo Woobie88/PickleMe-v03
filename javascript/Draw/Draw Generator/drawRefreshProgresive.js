@@ -11,6 +11,9 @@ async function refreshCurrentRoundMatches() {
 
   const priorMatches = allMatches.filter(m => parseInt(m.Round) !== currentRound);
   const { partnerCounts, opponentCounts, courtCounts } = buildDrawHistory(priorMatches);
+  console.log('Partner counts in refresh',partnerCounts);
+  console.log('Opponent counts in refresh',opponentCounts);
+  console.log('Opponent counts in refresh',courtCounts);
 
   const thisRoundMatches = allMatches.filter(m => parseInt(m.Round) === currentRound);
 
