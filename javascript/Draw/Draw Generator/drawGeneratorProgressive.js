@@ -319,7 +319,6 @@ function applyProgressiveByeSwaps(groups, byePlayerIdsThisRound, allPlayersById,
       incomingPlayers = incomingPlayers.filter(id => id !== bestCandidate);
     }
   });
-  console.log('Best candidates are',bestCandidate);
   console.log('The new groups are',groups);
 
   return groups;
