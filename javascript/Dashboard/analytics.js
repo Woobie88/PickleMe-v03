@@ -32,7 +32,7 @@ function computeAnalyticsPlayerCounts(payload) {
     let pointsFor = 0;
     let pointsAgainst = 0;
 
-    matchesForStats.forEach(m => {
+    matches.forEach(m => {
       const t1 = [m.Team1Player1, m.Team1Player2, m.Team1Player3, m.Team1Player4].filter(Boolean);
       const t2 = [m.Team2Player1, m.Team2Player2, m.Team2Player3, m.Team2Player4].filter(Boolean);
       const onT1 = t1.includes(player.PlayerID);
