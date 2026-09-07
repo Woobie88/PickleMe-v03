@@ -12,6 +12,13 @@ function computeAnalyticsPlayerCounts(payload) {
 
   const allRounds = [...new Set(matches.map(m => parseInt(m.Round) || 0))].sort((a, b) => a - b);
 
+  const gameProfile = gamesProfile.find(g => g.GameID === activeEvent.GameID); // FIXED — look up THIS event's game
+  const isProgressive = gameProfile?.GamesGroup === 'Progressive'; // FIXED
+
+  const matchesForStats = isProgressive // FIXED — declared once, in scope for everything after
+    ? matches.filter(m => parseInt(m.Round) <= activeEvent.CurrentRound)
+    : matches;
+
   return players.map(player => {
     const partnerCounts = {};
     const opponentCounts = {};
@@ -25,7 +32,7 @@ function computeAnalyticsPlayerCounts(payload) {
     let pointsFor = 0;
     let pointsAgainst = 0;
 
-    matches.forEach(m => {
+    matchesForStats.forEach(m => {
       const t1 = [m.Team1Player1, m.Team1Player2, m.Team1Player3, m.Team1Player4].filter(Boolean);
       const t2 = [m.Team2Player1, m.Team2Player2, m.Team2Player3, m.Team2Player4].filter(Boolean);
       const onT1 = t1.includes(player.PlayerID);
