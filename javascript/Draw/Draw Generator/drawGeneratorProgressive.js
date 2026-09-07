@@ -148,6 +148,8 @@ function buildStandardGroups(previousRoundMatches, numCourts) {
     losers[c] = getMatchLosers(byCourt[c]);
   }
 
+  console.log("Previous round winners are",winners, " & previous round losers",losers);
+
   if (N === 1) {
     // Nowhere for anyone to move — everyone stays put
     return [{ court: 1, playerIds: [...winners[1], ...losers[1]], justWonPairs: [winners[1]] }];
@@ -329,7 +331,7 @@ function advanceProgressiveRound(gameKey, allMatchesSoFar, nextRoundDummyMatches
   }
 
   const byePlayerIdsThisRound = getByePlayersForRound(allPlayers, nextRoundDummyMatches);
-  console.log("The bye players for this round are",byePlayerIdsThisRound);
+  console.log("The bye players for this round are",byePlayerIdsThisRound);          // ADDED THIS FOR TESTING
 
   const allPlayersById = {};
   allPlayers.forEach(p => { allPlayersById[p.PlayerID] = p; });
