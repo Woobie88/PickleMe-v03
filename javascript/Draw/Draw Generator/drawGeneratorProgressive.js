@@ -312,14 +312,12 @@ function applyProgressiveByeSwaps(groups, byePlayerIdsThisRound, allPlayersById,
         if (result.score < bestScore) { bestScore = result.score; bestCandidate = candidateId; }
       });
     }
-    console.log('The incoming players are',incomingPlayers);
 
     if (bestCandidate) {
       group.playerIds[outgoingIndex] = bestCandidate;
       incomingPlayers = incomingPlayers.filter(id => id !== bestCandidate);
     }
   });
-  console.log('The new groups are',groups);
 
   return groups;
 }
