@@ -9,15 +9,21 @@ async function refreshCurrentRoundMatches() {
 
   const allMatches = payload.draw;
 
-  const priorMatches = allMatches.filter(m => parseInt(m.Round) !== currentRound);
-  const { partnerCounts, opponentCounts, courtCounts } = buildDrawHistory(priorMatches);
-  console.log('Partner counts in refresh',partnerCounts);
-  console.log('Opponent counts in refresh',opponentCounts);
-  console.log('Opponent counts in refresh',courtCounts);
+  // History for repeat-avoidance: ONLY rounds actually played before this one —
+  // excludes both the current round AND any future/dummy rounds
+  const historyMatches = allMatches.filter(m => parseInt(m.Round) < currentRound); // CHANGED
+
+  // Everything except the round being replaced — needed to correctly
+  // reconstruct the full local draw cache without losing future rounds
+  const otherRoundsMatches = allMatches.filter(m => parseInt(m.Round) !== currentRound); // NEW — kept as the original logic, just renamed
+
+  const { partnerCounts, opponentCounts, courtCounts } = buildDrawHistory(historyMatches); // CHANGED — uses historyMatches now
+  console.log('Partner counts in refresh', partnerCounts);
+  console.log('Opponent counts in refresh', opponentCounts);
+  console.log('Court counts in refresh', courtCounts);
 
   const thisRoundMatches = allMatches.filter(m => parseInt(m.Round) === currentRound);
 
-  // Remember each court's existing MatchID so the refreshed match can overwrite it
   const oldMatchIdByCourt = {};
   thisRoundMatches.forEach(m => { oldMatchIdByCourt[parseInt(m.Court)] = m.MatchID; });
 
@@ -39,14 +45,12 @@ async function refreshCurrentRoundMatches() {
     currentRound, activeEventId, drawVersion, userEmail
   );
 
-  // Overwrite: reuse the MatchID already assigned to that court this round,
-  // so the save writes over the existing document instead of creating a new one.
   refreshedMatches.forEach(m => {
     const existingId = oldMatchIdByCourt[parseInt(m.Court)];
     if (existingId) m.MatchID = existingId;
   });
 
-  window.cachedUserUniverse.draw = [...priorMatches, ...refreshedMatches];
+  window.cachedUserUniverse.draw = [...otherRoundsMatches, ...refreshedMatches]; // CHANGED — uses otherRoundsMatches, preserves future rounds
 
   await window.saveGeneratedDrawToFirestore(refreshedMatches);
 
