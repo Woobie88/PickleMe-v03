@@ -352,7 +352,9 @@ function advanceProgressiveRound(gameKey, allMatchesSoFar, nextRoundDummyMatches
   const previousRoundMatches = allMatchesSoFar.filter(m => parseInt(m.Round) === roundNumber - 1);
   const groups = rules.buildGroups(previousRoundMatches);
 
-  const { partnerCounts } = buildDrawHistory(allMatchesSoFar); // FULL event history, not just previous round
+  const matchesPlayedSoFar = allMatchesSoFar.filter(m => parseInt(m.Round) <= roundNumber - 1);
+
+  const { partnerCounts } = buildDrawHistory(matchesPlayedSoFar); // FULL event history, not just previous round
 
   applyProgressiveByeSwaps(groups, byePlayerIdsThisRound, allPlayersById, partnerCounts, rules.fixedTeamCourts);
 
