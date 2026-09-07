@@ -295,6 +295,7 @@ function applyProgressiveByeSwaps(groups, byePlayerIdsThisRound, allPlayersById,
     if (fixedTeamCourts.includes(court)) {
       // Fixed-team court — just find the best DUPR-fit replacement for this specific slot,
       // since who they're partnered with isn't a decision here (the team is locked).
+      console.log('This IF part is being used for deciding best candidate court',court);
       const partnerIndex = outgoingIndex % 2 === 0 ? outgoingIndex + 1 : outgoingIndex - 1;
       const partnerDupr = parseFloat(allPlayersById[group.playerIds[partnerIndex]].DUPR) || 0;
 
@@ -304,6 +305,7 @@ function applyProgressiveByeSwaps(groups, byePlayerIdsThisRound, allPlayersById,
       });
     } else {
       // Normal court — full scoring-based selection, same evaluation used for regular pairing
+      console.log('This ELSE part is being used for deciding best candidate court',court);
       incomingPlayers.forEach(candidateId => {
         const testIds = [...group.playerIds];
         testIds[outgoingIndex] = candidateId;
