@@ -148,7 +148,7 @@ function buildStandardGroups(previousRoundMatches, numCourts) {
     losers[c] = getMatchLosers(byCourt[c]);
   }
 
-  console.log("Previous round winners are",winners, " & previous round losers",losers);
+  console.log("Previous round winners are",winners, " & previous round losers",losers);  // ADDED FOR TESTING
 
   if (N === 1) {
     // Nowhere for anyone to move — everyone stays put
@@ -268,6 +268,12 @@ function getByePlayersForRound(allPlayers, roundMatches) {
 }
 
 function applyProgressiveByeSwaps(groups, byePlayerIdsThisRound, allPlayersById, partnerCounts, fixedTeamCourts) {
+  console.log('The groups are',groups);
+  console.log('Bye players this round are',byePlayerIdsThisRound);
+  console.log('All players are',allPlayersById);
+  console.log('Partner counts are',partnerCounts);
+  console.log('Fixed team courts are',fixedTeamCourts);
+
   const outgoing = [];
   groups.forEach(g => {
     g.playerIds.forEach(pid => {
@@ -306,12 +312,15 @@ function applyProgressiveByeSwaps(groups, byePlayerIdsThisRound, allPlayersById,
         if (result.score < bestScore) { bestScore = result.score; bestCandidate = candidateId; }
       });
     }
+    console.log('The incoming players are',incomingPlayers);
 
     if (bestCandidate) {
       group.playerIds[outgoingIndex] = bestCandidate;
       incomingPlayers = incomingPlayers.filter(id => id !== bestCandidate);
     }
   });
+  console.log('Best candidates are',bestCandidate);
+  console.log('The new groups are',groups);
 
   return groups;
 }
