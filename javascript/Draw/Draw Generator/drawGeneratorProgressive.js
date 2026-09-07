@@ -327,6 +327,11 @@ function applyProgressiveByeSwaps(groups, byePlayerIdsThisRound, allPlayersById,
 // ---------- MAIN ENTRY POINT: ADVANCE ONE ROUND ----------
 
 function advanceProgressiveRound(gameKey, allMatchesSoFar, nextRoundDummyMatches, allPlayers, roundNumber, eventId, drawVersion, userEmail) {
+  console.log('The game key is',gameKey);
+  console.log('All matches so far is',allMatchesSoFar);
+  console.log('The next round dummy matches are',nextRoundDummyMatches);
+  console.log('The round number is',roundNumber);
+  
   const rules = PROGRESSIVE_GAME_RULES[gameKey];
   if (!rules) {
     console.error(`No progressive rules defined for game "${gameKey}".`);
