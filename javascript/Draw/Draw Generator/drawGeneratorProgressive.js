@@ -107,18 +107,21 @@ function buildProgressiveDummySchedule(players, numberOfRounds, courtsCount, eve
 // ---------- RESULT HELPERS ----------
 
 function getMatchWinners(match) {
+  console.log("getMatchWinners");
   if (match.Team1WinLoss === 'Win') return [match.Team1Player1, match.Team1Player2];
   if (match.Team2WinLoss === 'Win') return [match.Team2Player1, match.Team2Player2];
   return null;
 }
 
 function getMatchLosers(match) {
+  console.log("getMatchLosers");
   if (match.Team1WinLoss === 'Loss') return [match.Team1Player1, match.Team1Player2];
   if (match.Team2WinLoss === 'Loss') return [match.Team2Player1, match.Team2Player2];
   return null;
 }
 
 function isRoundComplete(matches, roundNumber) {
+  console.log("isRoundComplete");
   const roundMatches = matches.filter(m => parseInt(m.Round) === roundNumber);
   if (roundMatches.length === 0) return false;
   return roundMatches.every(m => m.Team1WinLoss && m.Team2WinLoss);
@@ -132,6 +135,7 @@ function isRoundComplete(matches, roundNumber) {
 //   Court i   (middle) = Ct(i-1) Losers     + Ct(i+1) Winners
 //   Court N   (bottom) = Ct(N-1) Losers     + CtN Losers
 function buildStandardGroups(previousRoundMatches, numCourts) {
+  console.log("buildStandardGroups");
   const byCourt = {};
   previousRoundMatches.forEach(m => { byCourt[m.Court] = m; });
 
@@ -147,8 +151,6 @@ function buildStandardGroups(previousRoundMatches, numCourts) {
     winners[c] = getMatchWinners(byCourt[c]);
     losers[c] = getMatchLosers(byCourt[c]);
   }
-
-  console.log("Previous round winners are",winners, " & previous round losers",losers);  // ADDED FOR TESTING
 
   if (N === 1) {
     // Nowhere for anyone to move — everyone stays put
@@ -225,6 +227,7 @@ function buildSnakesLaddersGroups(previousRoundMatches) {
 // ---------- SHARED PARTNER ALLOCATION SCORER ----------
 
 function bestKingsQueensPairing(fourPlayers, justWonPairIds, partnerCounts) {
+  console.log("bestKingsQueensPairing");
   const [a, b, c, d] = fourPlayers;
   const options = [
     { teamA: [a, b], teamB: [c, d] },
@@ -257,6 +260,7 @@ function bestKingsQueensPairing(fourPlayers, justWonPairIds, partnerCounts) {
 // ---------- BYE HANDLING ----------
 
 function getByePlayersForRound(allPlayers, roundMatches) {
+  console.log("getByePlayersForRound");
   const playingIds = new Set();
   roundMatches.forEach(m => {
     [m.Team1Player1, m.Team1Player2, m.Team1Player3, m.Team1Player4,
@@ -268,11 +272,7 @@ function getByePlayersForRound(allPlayers, roundMatches) {
 }
 
 function applyProgressiveByeSwaps(groups, byePlayerIdsThisRound, allPlayersById, partnerCounts, fixedTeamCourts) {
-  console.log('The groups are',groups);
-  console.log('Bye players this round are',byePlayerIdsThisRound);
-  console.log('All players are',allPlayersById);
-  console.log('Partner counts are',partnerCounts);
-  console.log('Fixed team courts are',fixedTeamCourts);
+  console.log("applyProgressiveByeSwaps");
 
   const outgoing = [];
   groups.forEach(g => {
@@ -295,7 +295,6 @@ function applyProgressiveByeSwaps(groups, byePlayerIdsThisRound, allPlayersById,
     if (fixedTeamCourts.includes(court)) {
       // Fixed-team court — just find the best DUPR-fit replacement for this specific slot,
       // since who they're partnered with isn't a decision here (the team is locked).
-      console.log('This IF part is being used for deciding best candidate court',court);
       const partnerIndex = outgoingIndex % 2 === 0 ? outgoingIndex + 1 : outgoingIndex - 1;
       const partnerDupr = parseFloat(allPlayersById[group.playerIds[partnerIndex]].DUPR) || 0;
 
@@ -305,7 +304,6 @@ function applyProgressiveByeSwaps(groups, byePlayerIdsThisRound, allPlayersById,
       });
     } else {
       // Normal court — full scoring-based selection, same evaluation used for regular pairing
-      console.log('This ELSE part is being used for deciding best candidate court',court);
       incomingPlayers.forEach(candidateId => {
         const testIds = [...group.playerIds];
         testIds[outgoingIndex] = candidateId;
@@ -329,10 +327,7 @@ function applyProgressiveByeSwaps(groups, byePlayerIdsThisRound, allPlayersById,
 // ---------- MAIN ENTRY POINT: ADVANCE ONE ROUND ----------
 
 function advanceProgressiveRound(gameKey, allMatchesSoFar, nextRoundDummyMatches, allPlayers, roundNumber, eventId, drawVersion, userEmail) {
-  console.log('The game key is',gameKey);
-  console.log('All matches so far is',allMatchesSoFar);
-  console.log('The next round dummy matches are',nextRoundDummyMatches);
-  console.log('The round number is',roundNumber);
+  console.log("advanceProgressiveRound");
   
   const rules = PROGRESSIVE_GAME_RULES[gameKey];
   if (!rules) {
@@ -346,7 +341,6 @@ function advanceProgressiveRound(gameKey, allMatchesSoFar, nextRoundDummyMatches
   }
 
   const byePlayerIdsThisRound = getByePlayersForRound(allPlayers, nextRoundDummyMatches);
-  console.log("The bye players for this round are",byePlayerIdsThisRound);          // ADDED THIS FOR TESTING
 
   const allPlayersById = {};
   allPlayers.forEach(p => { allPlayersById[p.PlayerID] = p; });
@@ -356,7 +350,7 @@ function advanceProgressiveRound(gameKey, allMatchesSoFar, nextRoundDummyMatches
 
   const matchesPlayedSoFar = allMatchesSoFar.filter(m => parseInt(m.Round) <= roundNumber - 1);
 
-  const { partnerCounts } = buildDrawHistory(matchesPlayedSoFar); // FULL event history, not just previous round
+  const { partnerCounts } = buildDrawHistory(matchesPlayedSoFar); // History should be based on up to current round. All future rounds are DUMMY
 
   applyProgressiveByeSwaps(groups, byePlayerIdsThisRound, allPlayersById, partnerCounts, rules.fixedTeamCourts);
 
