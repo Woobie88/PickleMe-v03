@@ -329,6 +329,7 @@ function advanceProgressiveRound(gameKey, allMatchesSoFar, nextRoundDummyMatches
   }
 
   const byePlayerIdsThisRound = getByePlayersForRound(allPlayers, nextRoundDummyMatches);
+  console.log("The bye players for this round are",byePlayerIdsThisRound);
 
   const allPlayersById = {};
   allPlayers.forEach(p => { allPlayersById[p.PlayerID] = p; });
