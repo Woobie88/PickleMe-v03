@@ -19,6 +19,7 @@ function computeAnalyticsPlayerCounts(payload) {
     ? matches.filter(m => parseInt(m.Round) <= activeEvent.CurrentRound)
     : matches;
 
+  console.log("The matches for stats",matchesForStats);
   return players.map(player => {
     const partnerCounts = {};
     const opponentCounts = {};
