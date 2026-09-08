@@ -12,19 +12,17 @@ function computeAnalyticsPlayerCounts(payload) {
 
   const allRounds = [...new Set(matches.map(m => parseInt(m.Round) || 0))].sort((a, b) => a - b);
 
-  const gameProfile = gamesProfile.find(g => g.GameID === activeEvent.GameID); // FIXED — look up THIS event's game
-  const isProgressive = gameProfile?.GamesGroup === 'Progressive'; // FIXED
+  // NEW — determine if this is a Progressive game, since dummy/future rounds
+  // need special handling for partner/opponent stats specifically
+  const gameProfile = gamesProfile.find(g => g.GameID === activeEvent.GameID);
+  const isProgressive = gameProfile?.GamesGroup === 'Progressive';
+  const currentRound = parseInt(activeEvent.CurrentRound) || 1;
 
-  const matchesForStats = isProgressive // FIXED — declared once, in scope for everything after
-    ? matches.filter(m => parseInt(m.Round) <= activeEvent.CurrentRound)
-    : matches;
-
-  console.log("The matches for stats",matchesForStats);
   return players.map(player => {
     const partnerCounts = {};
     const opponentCounts = {};
-    const partnerRounds = {}; // NEW — { partnerId: [round, round, ...] }
-    const opponentRounds = {}; // NEW — { opponentId: [round, round, ...] }
+    const partnerRounds = {};
+    const opponentRounds = {};
     const roundResults = {};
     const roundPoints = {};
     const roundsPlayed = new Set();
@@ -43,6 +41,9 @@ function computeAnalyticsPlayerCounts(payload) {
       const myTeam = onT1 ? t1 : t2;
       const oppTeam = onT1 ? t2 : t1;
       const round = parseInt(m.Round) || 0;
+
+      // Byes/Games Played track EVERY round unconditionally — dummy rounds
+      // already correctly encode the fixed bye rotation, so this stays as-is
       roundsPlayed.add(round);
 
       if (onT1) {
@@ -65,17 +66,24 @@ function computeAnalyticsPlayerCounts(payload) {
         roundPoints[round] = { for: forScore, against: againstScore };
       }
 
+      // NEW — for Progressive games, skip partner/opponent tracking for any
+      // round beyond the current one, since those rounds are still just
+      // dummy placeholders whose player assignments will be overwritten
+      // once actually played
+      const isDummyRound = isProgressive && round > currentRound;
+      if (isDummyRound) return;
+
       myTeam.forEach(pid => {
         if (pid !== player.PlayerID) {
           partnerCounts[pid] = (partnerCounts[pid] || 0) + 1;
-          if (!partnerRounds[pid]) partnerRounds[pid] = []; // NEW
-          partnerRounds[pid].push(round); // NEW
+          if (!partnerRounds[pid]) partnerRounds[pid] = [];
+          partnerRounds[pid].push(round);
         }
       });
       oppTeam.forEach(pid => {
         opponentCounts[pid] = (opponentCounts[pid] || 0) + 1;
-        if (!opponentRounds[pid]) opponentRounds[pid] = []; // NEW
-        opponentRounds[pid].push(round); // NEW
+        if (!opponentRounds[pid]) opponentRounds[pid] = [];
+        opponentRounds[pid].push(round);
       });
     });
 
@@ -90,8 +98,8 @@ function computeAnalyticsPlayerCounts(payload) {
       wins, losses, pointsFor, pointsAgainst,
       partnerCounts,
       opponentCounts,
-      partnerRounds, // NEW
-      opponentRounds, // NEW
+      partnerRounds,
+      opponentRounds,
       roundResults,
       roundPoints,
       roundsPlayed,
