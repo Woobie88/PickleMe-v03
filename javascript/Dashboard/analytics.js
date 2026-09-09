@@ -1,5 +1,5 @@
 window.analyticsChartInstance = null;
-window.analyticsScreenIndex = 0; // 0=unique, 1=max, 2=byes by round, 3=wins/losses, 4=points
+window.analyticsScreenIndex = 0; // 0=unique, 1=max, 2=court frequency, 3=byes, 4=wins/losses, 5=points
 window.analyticsRawData = [];
 
 function computeAnalyticsPlayerCounts(payload) {
@@ -12,8 +12,6 @@ function computeAnalyticsPlayerCounts(payload) {
 
   const allRounds = [...new Set(matches.map(m => parseInt(m.Round) || 0))].sort((a, b) => a - b);
 
-  // NEW — determine if this is a Progressive game, since dummy/future rounds
-  // need special handling for partner/opponent stats specifically
   const gameProfile = gamesProfile.find(g => g.GameID === activeEvent.GameID);
   const isProgressive = gameProfile?.GamesGroup === 'Progressive';
   const currentRound = parseInt(activeEvent.CurrentRound) || 1;
@@ -26,6 +24,8 @@ function computeAnalyticsPlayerCounts(payload) {
     const roundResults = {};
     const roundPoints = {};
     const roundsPlayed = new Set();
+    const courtCounts = {}; // NEW — { courtNumber: count }
+    const courtDetails = {}; // NEW — { courtNumber: [{ round, partnerName }, ...] }
     let wins = 0;
     let losses = 0;
     let pointsFor = 0;
@@ -42,8 +42,6 @@ function computeAnalyticsPlayerCounts(payload) {
       const oppTeam = onT1 ? t2 : t1;
       const round = parseInt(m.Round) || 0;
 
-      // Byes/Games Played track EVERY round unconditionally — dummy rounds
-      // already correctly encode the fixed bye rotation, so this stays as-is
       roundsPlayed.add(round);
 
       if (onT1) {
@@ -66,10 +64,6 @@ function computeAnalyticsPlayerCounts(payload) {
         roundPoints[round] = { for: forScore, against: againstScore };
       }
 
-      // NEW — for Progressive games, skip partner/opponent tracking for any
-      // round beyond the current one, since those rounds are still just
-      // dummy placeholders whose player assignments will be overwritten
-      // once actually played
       const isDummyRound = isProgressive && round > currentRound;
       if (isDummyRound) return;
 
@@ -85,6 +79,15 @@ function computeAnalyticsPlayerCounts(payload) {
         if (!opponentRounds[pid]) opponentRounds[pid] = [];
         opponentRounds[pid].push(round);
       });
+
+      // NEW — court frequency tracking, same dummy-round exclusion as partner/opponent
+      const court = parseInt(m.Court) || 0;
+      const partnerId = myTeam.find(pid => pid !== player.PlayerID);
+      const partnerName = partnerId ? getPlayerNameById(partnerId) : 'Bye';
+
+      courtCounts[court] = (courtCounts[court] || 0) + 1;
+      if (!courtDetails[court]) courtDetails[court] = [];
+      courtDetails[court].push({ round, partnerName });
     });
 
     const byeRounds = allRounds.filter(r => !roundsPlayed.has(r));
@@ -103,7 +106,9 @@ function computeAnalyticsPlayerCounts(payload) {
       roundResults,
       roundPoints,
       roundsPlayed,
-      byeRounds
+      byeRounds,
+      courtCounts, // NEW
+      courtDetails // NEW
     };
   });
 }
@@ -147,19 +152,29 @@ function renderAnalyticsCards(payload) {
       { label: 'Max Partner', data: sorted.map(d => d.maxSamePartner), backgroundColor: '#f59e0b' },
       { label: 'Max Opponent', data: sorted.map(d => d.maxSameOpponent), backgroundColor: '#ef4444' }
     ];
-  } else if (window.analyticsScreenIndex === 2) { // CHANGED — Byes reverted to a bar chart, back in the shared builder
+  } else if (window.analyticsScreenIndex === 2) { // NEW — Court Frequency
+    heading = 'Court Frequency';
+    const allCourts = [...new Set(sorted.flatMap(d => Object.keys(d.courtCounts).map(Number)))].sort((a, b) => a - b);
+    const courtColors = ['#00E676', '#3b82f6', '#f59e0b', '#ef4444', '#a78bfa', '#ec4899', '#06b6d4', '#84cc16'];
+
+    datasets = allCourts.map((court, idx) => ({
+      label: `Court ${court}`,
+      data: sorted.map(d => d.courtCounts[court] || 0),
+      backgroundColor: courtColors[idx % courtColors.length]
+    }));
+  } else if (window.analyticsScreenIndex === 3) {
     heading = 'Byes';
     datasets = [
-      { label: 'Games Played', data: sorted.map(d => d.roundsPlayed.size), backgroundColor: '#3b82f6' }, // CHANGED — .length → .size (roundsPlayed is a Set) 
-      { label: 'Byes', data: sorted.map(d => d.byeRounds.length), backgroundColor: '#facc15' } // bright yellow — matches the higher-contrast color from earlier
+      { label: 'Games Played', data: sorted.map(d => d.roundsPlayed.size), backgroundColor: '#3b82f6' },
+      { label: 'Byes', data: sorted.map(d => d.byeRounds.length), backgroundColor: '#facc15' }
     ];
-  } else if (window.analyticsScreenIndex === 3) {
+  } else if (window.analyticsScreenIndex === 4) {
     heading = 'Game Wins & Losses';
     datasets = [
       { label: 'Wins', data: sorted.map(d => d.wins), backgroundColor: '#00E676' },
       { label: 'Losses', data: sorted.map(d => d.losses), backgroundColor: '#ef4444' }
     ];
-  } else if (window.analyticsScreenIndex === 4) {
+  } else if (window.analyticsScreenIndex === 5) {
     heading = 'Game Points For & Against';
     datasets = [
       { label: 'Points For', data: sorted.map(d => d.pointsFor), backgroundColor: '#00E676' },
@@ -199,21 +214,29 @@ function renderAnalyticsCards(payload) {
                   .map(([pid]) => getPlayerNameById(pid));
                 return namesAtMax.length > 0 ? [`${maxValue}x: ${namesAtMax.join(', ')}`] : ['No repeats yet'];
 
-              } else if (window.analyticsScreenIndex === 2) {
-                    if (isFirstDataset) { // NEW — Games Played bar shows which rounds were played
-                        const rounds = [...entry.roundsPlayed].sort((a, b) => a - b);
-                        return rounds.length > 0 ? rounds.map(r => `Round ${r}`) : ['No games yet'];
-                    } else { // Byes bar shows which rounds were byes (unchanged)
-                        return entry.byeRounds.length > 0
-                        ? entry.byeRounds.map(r => `Round ${r}`)
-                        : ['No byes'];
-                    }
+              } else if (window.analyticsScreenIndex === 2) { // NEW — Court Frequency tooltip
+                const court = parseInt(ctx.dataset.label.replace('Court ', ''));
+                const details = entry.courtDetails[court] || [];
+                if (details.length === 0) return ['No games on this court'];
+                return details
+                  .sort((a, b) => a.round - b.round)
+                  .map(d => `Round ${d.round}: with ${d.partnerName}`);
+
               } else if (window.analyticsScreenIndex === 3) {
+                if (isFirstDataset) {
+                  const rounds = [...entry.roundsPlayed].sort((a, b) => a - b);
+                  return rounds.length > 0 ? rounds.map(r => `Round ${r}`) : ['No games yet'];
+                } else {
+                  return entry.byeRounds.length > 0
+                    ? entry.byeRounds.map(r => `Round ${r}`)
+                    : ['No byes'];
+                }
+              } else if (window.analyticsScreenIndex === 4) {
                 const rounds = Object.keys(entry.roundResults).map(Number).sort((a, b) => a - b);
                 const lines = rounds.map(r => `Round ${r}: ${entry.roundResults[r]}`);
                 return lines.length > 0 ? lines : ['No results yet'];
 
-              } else if (window.analyticsScreenIndex === 4) {
+              } else if (window.analyticsScreenIndex === 5) {
                 const rounds = Object.keys(entry.roundPoints).map(Number).sort((a, b) => a - b);
                 const lines = rounds.map(r => `Round ${r}: ${entry.roundPoints[r].for} - ${entry.roundPoints[r].against}`);
                 return lines.length > 0 ? lines : ['No scores yet'];
@@ -249,7 +272,7 @@ function initAnalyticsSwipeHandlers() {
     const deltaY = e.changedTouches[0].screenY - startY;
     if (Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY)) return;
 
-    if (deltaX < 0 && window.analyticsScreenIndex < 4) {
+    if (deltaX < 0 && window.analyticsScreenIndex < 5) { // CHANGED — was < 4
       window.analyticsScreenIndex++;
       renderAnalyticsCards(window.cachedUserUniverse);
     } else if (deltaX > 0 && window.analyticsScreenIndex > 0) {
