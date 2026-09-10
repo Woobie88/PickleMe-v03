@@ -319,7 +319,7 @@ function generateRoundDraw(players, matches, byePlayerIds, roundNumber, courtsCo
 
 // ---------- CLUSTERED ROUND GENERATION (Divisions, Ladder Scramble, Pools, Pool Fusion) ----------
 
-function generateClusteredRoundDraw(players, matches, byesByTeamForThisRound, roundNumber, courtsCount, eventId, drawVersion, numberOfTeams, userEmail, gameProfile) {
+function generateClusteredRoundDraw(players, matches, byesByTeamForThisRound, roundNumber, courtsCount, eventId, drawVersion, numberOfTeams, userEmail, gameProfile, drawBuildVariables) {
   if (courtsCount % numberOfTeams !== 0) {
     console.error(`Cannot generate draw: courtsCount (${courtsCount}) is not evenly divisible by NumberOfTeams (${numberOfTeams}).`);
     return [];
@@ -373,7 +373,7 @@ function generateClusteredRoundDraw(players, matches, byesByTeamForThisRound, ro
 
       const partnerships = roundPlan.partnerPairs.map(([i, j]) => [stableOrder[i], stableOrder[j]]);
 
-      const matchups = generateBestMatchups(partnerships, opponentCounts);
+      const matchups = generateBestMatchups(partnerships, opponentCounts, drawBuildVariables);
       const courted = assignCourts(matchups, courtNumbers, courtCounts);
       teamMatches = courted.map((m, idx) => buildMatchRecord(m, idx, roundNumber, eventId, drawVersion, userEmail));
 
@@ -410,7 +410,7 @@ function generateMultipleRounds(players, existingMatches, byesByRound, startRoun
       Object.keys(byesByRound).forEach(teamKey => {
         byesByTeamForThisRound[teamKey] = byesByRound[teamKey][i] || [];
       });
-      roundMatches = generateClusteredRoundDraw(players, allMatches, byesByTeamForThisRound, roundNumber, courtsCount, eventId, drawVersion, numberOfTeams, userEmail, gameProfile); // ADDED gameProfile
+      roundMatches = generateClusteredRoundDraw(players, allMatches, byesByTeamForThisRound, roundNumber, courtsCount, eventId, drawVersion, numberOfTeams, userEmail, gameProfile, drawBuildVariables); // ADDED gameProfile
     } else {
       const byesForThisRound = byesByRound[roundNumber] || [];
       roundMatches = generateRoundDraw(players, allMatches, byesForThisRound, roundNumber, courtsCount, eventId, drawVersion, userEmail, drawBuildVariables);
