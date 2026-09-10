@@ -173,9 +173,9 @@ function handleGdDrawWeightingChange(value) {
 
 // --- Draw Generation Weighting: slider presets ---
 const penaltyWeightPresets = [
-  { label: 'Maximise partner rotation', duprGapWeight: 10,  frequencyWeight: 100 },
+  { label: 'Maximise partner & opponent rotation', duprGapWeight: 10,  frequencyWeight: 100 },
   { label: 'Balanced draw', duprGapWeight: 50,  frequencyWeight: 50  },
-  { label: 'Minimise DUPR differences',  duprGapWeight: 100, frequencyWeight: 10  }
+  { label: 'Minimise DUPR differences for the match',  duprGapWeight: 100, frequencyWeight: 10  }
 ];
 
 let duprGapWeight;
@@ -188,7 +188,7 @@ function applyPenaltyWeightPreset(index) {
   drawBuildFocus = preset.label;
 
   document.getElementById('penaltyWeightsOutput').textContent =
-    `Draw Build Focus: ${drawBuildFocus}`;
+    `${drawBuildFocus}`;
 
   document.querySelectorAll('.slider-labels span').forEach(el => {
     el.classList.toggle('active', el.dataset.index === String(index));
