@@ -183,11 +183,12 @@ let frequencyWeight;
 
 function applyPenaltyWeightPreset(index) {
   const preset = penaltyWeightPresets[index];
-  duprGapWeight = preset.duprGapWeight;
-  frequencyWeight = preset.frequencyWeight;
+  // duprGapWeight = preset.duprGapWeight;
+  // frequencyWeight = preset.frequencyWeight;
+  drawBuildFocus = preset.label;
 
   document.getElementById('penaltyWeightsOutput').textContent =
-    `Draw Build Focus: ${label}`;
+    `Draw Build Focus: ${drawBuildFocus}`;
 
   document.querySelectorAll('.slider-labels span').forEach(el => {
     el.classList.toggle('active', el.dataset.index === String(index));
