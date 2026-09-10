@@ -173,9 +173,9 @@ function handleGdDrawWeightingChange(value) {
 
 // --- Draw Generation Weighting: slider presets ---
 const penaltyWeightPresets = [
-  { label: 'Weight to Frequency', duprGapWeight: 10,  frequencyWeight: 100 },
-  { label: 'Equal',               duprGapWeight: 50,  frequencyWeight: 50  },
-  { label: 'Weight to DUPR Gap',  duprGapWeight: 100, frequencyWeight: 10  }
+  { label: 'Maximise partner rotation', duprGapWeight: 10,  frequencyWeight: 100 },
+  { label: 'Balanced draw', duprGapWeight: 50,  frequencyWeight: 50  },
+  { label: 'Minimise DUPR differences',  duprGapWeight: 100, frequencyWeight: 10  }
 ];
 
 let duprGapWeight;
@@ -186,8 +186,8 @@ function applyPenaltyWeightPreset(index) {
   duprGapWeight = preset.duprGapWeight;
   frequencyWeight = preset.frequencyWeight;
 
-  // document.getElementById('penaltyWeightsOutput').textContent =
-  //   `duprGapWeight: ${duprGapWeight}  ·  frequencyWeight: ${frequencyWeight}`;
+  document.getElementById('penaltyWeightsOutput').textContent =
+    `Draw Focus: ${label}`;
 
   document.querySelectorAll('.slider-labels span').forEach(el => {
     el.classList.toggle('active', el.dataset.index === String(index));
