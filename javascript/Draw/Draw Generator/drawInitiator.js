@@ -58,6 +58,17 @@ function renderGenerateDrawDetails(payload) {
   document.getElementById('gd-drawWeighting-hidden').value = drawWeightingValue;
   applyPenaltyWeightPreset(drawWeightingValue);
 
+  // Persist the default when the DB doesn't already reflect the correct value
+  if (!drawWeightingSupported && parsedDrawWeighting !== 0) {
+    // Not supported — DB should read 0 (Frequency), but doesn't yet
+    activeEvent.DrawWeighting = 0;
+    saveGdDrawWeighting(0);
+  } else if (drawWeightingSupported && Number.isNaN(parsedDrawWeighting)) {
+    // Supported, but never saved before — DB should read 1 (Equal), the default
+    activeEvent.DrawWeighting = 1;
+    saveGdDrawWeighting(1);
+  }
+
   // --- Number Of Teams / Pools / Divisions ---
   const grouping = gameProfile?.Grouping || 'None';
   const groupingLabels = {
