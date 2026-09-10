@@ -186,8 +186,8 @@ function applyPenaltyWeightPreset(index) {
   duprGapWeight = preset.duprGapWeight;
   frequencyWeight = preset.frequencyWeight;
 
-  document.getElementById('penaltyWeightsOutput').textContent =
-    `duprGapWeight: ${duprGapWeight}  ·  frequencyWeight: ${frequencyWeight}`;
+  // document.getElementById('penaltyWeightsOutput').textContent =
+  //   `duprGapWeight: ${duprGapWeight}  ·  frequencyWeight: ${frequencyWeight}`;
 
   document.querySelectorAll('.slider-labels span').forEach(el => {
     el.classList.toggle('active', el.dataset.index === String(index));
