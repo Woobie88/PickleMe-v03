@@ -187,7 +187,7 @@ function applyPenaltyWeightPreset(index) {
   frequencyWeight = preset.frequencyWeight;
 
   document.getElementById('penaltyWeightsOutput').textContent =
-    `Draw Focus: ${label}`;
+    `Draw Build Focus: ${label}`;
 
   document.querySelectorAll('.slider-labels span').forEach(el => {
     el.classList.toggle('active', el.dataset.index === String(index));
