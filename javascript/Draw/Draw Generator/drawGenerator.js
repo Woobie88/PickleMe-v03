@@ -498,8 +498,6 @@ async function generateNRoundsAndPreview(numberOfRounds) {
   const drawWeightingIndex = parseInt(activeEvent.DrawWeighting) || 0;
   const drawBuildVariables = penaltyWeightPresets[drawWeightingIndex];
 
-  console.log('The draw variables are',drawBuildVariables);
-
   window.gdRedivisionCache = {};
   window.gdTeamByeCache = {};    // NEW
   window.gdIndivByeCache = {};   // NEW
