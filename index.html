@@ -791,6 +791,19 @@
             <input type="hidden" id="gd-teams-hidden" value="2">
           </div>
 
+          <div class="detail-form-group" id="gd-balancing-group" style="display: block;">
+            <label>Draw Generation Weighting</label>
+            <div class="penalty-weight-card">
+              <input type="range" id="penaltyWeightSlider" min="0" max="2" step="1" value="1">
+              <div class="slider-labels">
+                <span data-index="0">Frequency</span>
+                <span data-index="1">Equal</span>
+                <span data-index="2">DUPR Gap</span>
+              </div>
+              <div id="penaltyWeightsOutput"></div>
+            </div>
+          </div>
+
           <div class="form-action-bar">
             <button class="btn-secondary" onclick="navigateToScreen('dashboard')">Cancel</button>
             <button class="btn-primary" id="gd-details-next-btn" onclick="handleDetailsNext()">Next</button>
