@@ -54,8 +54,7 @@ function renderGenerateDrawDetails(payload) {
     const drawWeightingValue = parseInt(activeEvent?.DrawWeighting) ?? 1; // 0=Frequency, 1=Equal, 2=DUPR Gap
     document.getElementById('penaltyWeightSlider').value = drawWeightingValue;
     document.getElementById('gd-drawWeighting-hidden').value = drawWeightingValue;
-    applyPenaltyWeightPreset(drawWeightingValue);
-  } else {
+    } else {
     drawWeightingGroup.style.display = 'none';
 
     const drawWeightingValue = 0; // Frequency — default when the control is hidden
