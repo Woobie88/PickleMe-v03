@@ -47,20 +47,16 @@ function renderGenerateDrawDetails(payload) {
   // --- Draw Weighting ---
   const drawWeightingSupported = gameProfile?.DrawWeighting === 'Yes';
   const drawWeightingGroup = document.getElementById('gd-drawWeighting-group');
+  const parsedDrawWeighting = parseInt(activeEvent?.DrawWeighting);
 
-  if (drawWeightingSupported) {
-    drawWeightingGroup.style.display = 'flex';
+  const drawWeightingValue = drawWeightingSupported
+    ? (Number.isNaN(parsedDrawWeighting) ? 1 : parsedDrawWeighting) // 0=Frequency, 1=Equal, 2=DUPR Gap
+    : 0; // Frequency — default when the control is hidden
 
-    const drawWeightingValue = parseInt(activeEvent?.DrawWeighting) ?? 1; // 0=Frequency, 1=Equal, 2=DUPR Gap
-    document.getElementById('penaltyWeightSlider').value = drawWeightingValue;
-    document.getElementById('gd-drawWeighting-hidden').value = drawWeightingValue;
-    } else {
-    drawWeightingGroup.style.display = 'none';
-
-    const drawWeightingValue = 0; // Frequency — default when the control is hidden
-    document.getElementById('penaltyWeightSlider').value = drawWeightingValue;
-    document.getElementById('gd-drawWeighting-hidden').value = drawWeightingValue;
-  }
+  drawWeightingGroup.style.display = drawWeightingSupported ? 'flex' : 'none';
+  document.getElementById('penaltyWeightSlider').value = drawWeightingValue;
+  document.getElementById('gd-drawWeighting-hidden').value = drawWeightingValue;
+  applyPenaltyWeightPreset(drawWeightingValue);
 
   // --- Number Of Teams / Pools / Divisions ---
   const grouping = gameProfile?.Grouping || 'None';
@@ -167,15 +163,35 @@ function adjustGdLives(direction) {
   saveGdLives(current);
 }
 
-function adjustGdDrawWeighting(direction) {
+function handleGdDrawWeightingChange(value) {
   const current = parseInt(value);
 
-  const hiddenInput = document.getElementById('gd-drawWeighting-hidden');
-  hiddenInput.value = current;
-
-  // applyPenaltyWeightPreset(current); // sets duprGapWeight/frequencyWeight, updates output + active label
-
+  document.getElementById('gd-drawWeighting-hidden').value = current;
+  applyPenaltyWeightPreset(current);
   saveGdDrawWeighting(current);
+}
+
+// --- Draw Generation Weighting: slider presets ---
+const penaltyWeightPresets = [
+  { label: 'Weight to Frequency', duprGapWeight: 10,  frequencyWeight: 100 },
+  { label: 'Equal',               duprGapWeight: 50,  frequencyWeight: 50  },
+  { label: 'Weight to DUPR Gap',  duprGapWeight: 100, frequencyWeight: 10  }
+];
+
+let duprGapWeight;
+let frequencyWeight;
+
+function applyPenaltyWeightPreset(index) {
+  const preset = penaltyWeightPresets[index];
+  duprGapWeight = preset.duprGapWeight;
+  frequencyWeight = preset.frequencyWeight;
+
+  document.getElementById('penaltyWeightsOutput').textContent =
+    `duprGapWeight: ${duprGapWeight}  ·  frequencyWeight: ${frequencyWeight}`;
+
+  document.querySelectorAll('.slider-labels span').forEach(el => {
+    el.classList.toggle('active', el.dataset.index === String(index));
+  });
 }
 
 async function saveGdRounds(value) {

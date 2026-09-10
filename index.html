@@ -792,13 +792,14 @@
           </div>
 
           <div class="detail-form-group" id="gd-drawWeighting-group" style="display: none;">
-            <label>Draw Generation Focus</label>
+            <label>Draw Generation Weighting</label>
             <div class="penalty-weight-card">
-              <input type="range" id="penaltyWeightSlider" min="0" max="2" step="1" value="1">
+              <input type="range" id="penaltyWeightSlider" min="0" max="2" step="1" value="1"
+                    oninput="handleGdDrawWeightingChange(this.value)">
               <div class="slider-labels">
-                <span data-index="0">Unique <br> Partners</span>
-                <span data-index="1">Balanced</span>
-                <span data-index="2">Minimise <br> DUPR Gap</span>
+                <span data-index="0">Frequency</span>
+                <span data-index="1">Equal</span>
+                <span data-index="2">DUPR Gap</span>
               </div>
               <div id="penaltyWeightsOutput"></div>
             </div>
