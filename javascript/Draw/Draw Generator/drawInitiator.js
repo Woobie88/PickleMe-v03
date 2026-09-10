@@ -53,8 +53,8 @@ function renderGenerateDrawDetails(payload) {
 
     const drawWeightingIndex = parseInt(activeEvent?.DrawWeighting) || 1; // 0=Frequency, 1=Equal, 2=DUPR Gap
     const penaltyWeightSlider = document.getElementById('penaltyWeightSlider');
-    penaltyWeightSlider.value = drawWeightingIndex;
-    applyPenaltyWeightPreset(drawWeightingIndex); // sets duprGapWeight/frequencyWeight + updates label highlight/output
+    penaltyWeightSlider.value = drawWeightingIndex || 0;
+    // applyPenaltyWeightPreset(drawWeightingIndex); // sets duprGapWeight/frequencyWeight + updates label highlight/output
   } else {
     drawWeightingGroup.style.display = 'none';
   }
