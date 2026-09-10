@@ -480,8 +480,8 @@ function logPlayerSummary(players, matches, byesByRound) {
 // ---------- TOP-LEVEL ENTRY POINT ----------
 
 async function generateNRoundsAndPreview(numberOfRounds) {
-  console.log('The payload is',payload);
   const payload = window.cachedUserUniverse;
+  console.log('The payload is',payload);
   const activeEventId = payload.activeEventId;
   const activeEvent = payload.events.find(e => String(e.EventID) === String(activeEventId));
   const allPlayers = payload.players && payload.players.length > 0
