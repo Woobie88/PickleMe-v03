@@ -149,13 +149,13 @@ function buildDrawHistory(matches) {
 
 // ---------- PARTNERSHIP GENERATION ----------
 
-function scorePairing(p1, p2, partnerCounts) {
+function scorePairing(p1, p2, partnerCounts, drawBuildVariables) {
   const repeats = (partnerCounts[p1.PlayerID]?.[p2.PlayerID]) || 0;
   const duprGap = Math.abs((parseFloat(p1.DUPR) || 0) - (parseFloat(p2.DUPR) || 0));
-  return repeats * 100 + duprGap * 10;      // Increase partner penalty from 100 to 500
+  return repeats * drawBuildVariables.partnerFrequencyWeight + duprGap * drawBuildVariables.partnerDuprGapWeight;      // Increase partner penalty from 100 to 500
 }
 
-function attemptPartnerships(eligiblePlayers, partnerCounts) {
+function attemptPartnerships(eligiblePlayers, partnerCounts, drawBuildVariables) {
   const pool = shuffle(eligiblePlayers);
   const pairs = [];
   const used = new Set();
@@ -167,7 +167,7 @@ function attemptPartnerships(eligiblePlayers, partnerCounts) {
     let bestPartner = null, bestCost = Infinity;
     for (const p2 of pool) {
       if (p2.PlayerID === p1.PlayerID || used.has(p2.PlayerID)) continue;
-      const c = scorePairing(p1, p2, partnerCounts);
+      const c = scorePairing(p1, p2, partnerCounts, drawBuildVariables);
       if (c < bestCost) { bestCost = c; bestPartner = p2; }
     }
 
@@ -182,10 +182,10 @@ function attemptPartnerships(eligiblePlayers, partnerCounts) {
   return { pairs, cost };
 }
 
-function generateBestPartnerships(eligiblePlayers, partnerCounts, attempts = 300) {
+function generateBestPartnerships(eligiblePlayers, partnerCounts, drawBuildVariables, attempts = 300) {
   let best = null, bestCost = Infinity;
   for (let i = 0; i < attempts; i++) {
-    const result = attemptPartnerships(eligiblePlayers, partnerCounts);
+    const result = attemptPartnerships(eligiblePlayers, partnerCounts, drawBuildVariables);
     if (result.cost < bestCost) { bestCost = result.cost; best = result.pairs; }
   }
   return best;
@@ -193,16 +193,16 @@ function generateBestPartnerships(eligiblePlayers, partnerCounts, attempts = 300
 
 // ---------- MATCHUP GENERATION ----------
 
-function scoreMatchup(teamA, teamB, opponentCounts) {
+function scoreMatchup(teamA, teamB, opponentCounts, drawBuildVariables) {
   let repeats = 0;
   teamA.forEach(p1 => teamB.forEach(p2 => {
     repeats += (opponentCounts[p1.PlayerID]?.[p2.PlayerID]) || 0;
   }));
   const duprGap = Math.abs(teamAvgDupr(teamA) - teamAvgDupr(teamB));
-  return repeats * 100 + duprGap * 10;
+  return repeats * drawBuildVariables.opponentFrequencyWeight + duprGap * drawBuildVariables.opponentDuprGapWeight;
 }
 
-function attemptMatchups(partnerships, opponentCounts) {
+function attemptMatchups(partnerships, opponentCounts, drawBuildVariables) {
   const pool = shuffle(partnerships);
   const matchups = [];
   const used = new Set();
@@ -214,7 +214,7 @@ function attemptMatchups(partnerships, opponentCounts) {
     let bestIdx = -1, bestCost = Infinity;
     for (let b = 0; b < pool.length; b++) {
       if (b === a || used.has(b)) continue;
-      const c = scoreMatchup(pool[a], pool[b], opponentCounts);
+      const c = scoreMatchup(pool[a], pool[b], opponentCounts, drawBuildVariables);
       if (c < bestCost) { bestCost = c; bestIdx = b; }
     }
 
@@ -229,10 +229,10 @@ function attemptMatchups(partnerships, opponentCounts) {
   return { matchups, cost };
 }
 
-function generateBestMatchups(partnerships, opponentCounts, attempts = 300) {
+function generateBestMatchups(partnerships, opponentCounts, drawBuildVariables, attempts = 300) {
   let best = null, bestCost = Infinity;
   for (let i = 0; i < attempts; i++) {
-    const result = attemptMatchups(partnerships, opponentCounts);
+    const result = attemptMatchups(partnerships, opponentCounts, drawBuildVariables);
     if (result.cost < bestCost) { bestCost = result.cost; best = result.matchups; }
   }
   return best;
@@ -299,9 +299,9 @@ function buildMatchRecord(m, idx, roundNumber, eventId, drawVersion, userEmail, 
 
 // ---------- SHARED GROUP GENERATOR ----------
 
-function generateGroupMatches(groupPlayers, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion, userEmail) {
-  const partnerships = generateBestPartnerships(groupPlayers, partnerCounts);
-  const matchups = generateBestMatchups(partnerships, opponentCounts);
+function generateGroupMatches(groupPlayers, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion, userEmail, drawBuildVariables) {
+  const partnerships = generateBestPartnerships(groupPlayers, partnerCounts, drawBuildVariables);
+  const matchups = generateBestMatchups(partnerships, opponentCounts, drawBuildVariables);
   const courted = assignCourts(matchups, courtNumbers, courtCounts);
 
   return courted.map((m, idx) => buildMatchRecord(m, idx, roundNumber, eventId, drawVersion, userEmail));
@@ -309,12 +309,12 @@ function generateGroupMatches(groupPlayers, courtNumbers, partnerCounts, opponen
 
 // ---------- SINGLE ROUND GENERATION (Rotating Partners — one group, all courts) ----------
 
-function generateRoundDraw(players, matches, byePlayerIds, roundNumber, courtsCount, eventId, drawVersion, userEmail) {
+function generateRoundDraw(players, matches, byePlayerIds, roundNumber, courtsCount, eventId, drawVersion, userEmail, drawBuildVariables) {
   const eligible = players.filter(p => !byePlayerIds.includes(p.PlayerID));
   const { partnerCounts, opponentCounts, courtCounts } = buildDrawHistory(matches);
   const courtNumbers = Array.from({ length: courtsCount }, (_, i) => i + 1);
 
-  return generateGroupMatches(eligible, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion, userEmail);
+  return generateGroupMatches(eligible, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion, userEmail, drawBuildVariables);
 }
 
 // ---------- CLUSTERED ROUND GENERATION (Divisions, Ladder Scramble, Pools, Pool Fusion) ----------
@@ -373,7 +373,7 @@ function generateClusteredRoundDraw(players, matches, byesByTeamForThisRound, ro
 
       const partnerships = roundPlan.partnerPairs.map(([i, j]) => [stableOrder[i], stableOrder[j]]);
 
-      const matchups = generateBestMatchups(partnerships, opponentCounts);
+      const matchups = generateBestMatchups(partnerships, opponentCounts, drawBuildVariables);
       const courted = assignCourts(matchups, courtNumbers, courtCounts);
       teamMatches = courted.map((m, idx) => buildMatchRecord(m, idx, roundNumber, eventId, drawVersion, userEmail));
 
@@ -383,7 +383,7 @@ function generateClusteredRoundDraw(players, matches, byesByTeamForThisRound, ro
       const teamPlayers = allPoolPlayers.filter(p => !teamByes.includes(p.PlayerID));
 
       const { partnerCounts } = buildDrawHistory(matches);
-      teamMatches = generateGroupMatches(teamPlayers, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion, userEmail);
+      teamMatches = generateGroupMatches(teamPlayers, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion, userEmail, drawBuildVariables);
     }
 
     allMatches.push(...teamMatches);
@@ -394,7 +394,7 @@ function generateClusteredRoundDraw(players, matches, byesByTeamForThisRound, ro
 
 // ---------- MULTI-ROUND GENERATION ----------
 
-function generateMultipleRounds(players, existingMatches, byesByRound, startRound, numberOfRounds, courtsCount, eventId, drawVersion, gameId, numberOfTeams, userEmail, gameProfile) {
+function generateMultipleRounds(players, existingMatches, byesByRound, startRound, numberOfRounds, courtsCount, eventId, drawVersion, gameId, numberOfTeams, userEmail, gameProfile, drawBuildVariables) {
   let allMatches = [...existingMatches];
   const generatedRounds = [];
 
@@ -413,7 +413,7 @@ function generateMultipleRounds(players, existingMatches, byesByRound, startRoun
       roundMatches = generateClusteredRoundDraw(players, allMatches, byesByTeamForThisRound, roundNumber, courtsCount, eventId, drawVersion, numberOfTeams, userEmail, gameProfile); // ADDED gameProfile
     } else {
       const byesForThisRound = byesByRound[roundNumber] || [];
-      roundMatches = generateRoundDraw(players, allMatches, byesForThisRound, roundNumber, courtsCount, eventId, drawVersion, userEmail);
+      roundMatches = generateRoundDraw(players, allMatches, byesForThisRound, roundNumber, courtsCount, eventId, drawVersion, userEmail, drawBuildVariables);
     }
 
     generatedRounds.push(...roundMatches);
@@ -547,7 +547,7 @@ async function generateNRoundsAndPreview(numberOfRounds) {
     }
     newMatches = generateMultipleRounds(
       players, [], byesByRound, startRound, numberOfRounds, courtsCount,
-      activeEventId, newDrawVersion, gameId, numberOfTeams, userEmail, gameProfile
+      activeEventId, newDrawVersion, gameId, numberOfTeams, userEmail, gameProfile, drawBuildVariables
     );
     console.log(`Generated ${newMatches.length} matches across ${numberOfRounds} round(s) for game type "${gameId}" (DrawVersion ${newDrawVersion}):`, newMatches);
   }
