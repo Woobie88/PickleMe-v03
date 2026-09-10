@@ -51,10 +51,9 @@ function renderGenerateDrawDetails(payload) {
   if (drawWeightingSupported) {
     drawWeightingGroup.style.display = 'flex';
 
-    const drawWeightingIndex = parseInt(activeEvent?.DrawWeighting) || 0; // 0=Frequency, 1=Equal, 2=DUPR Gap
+    const drawWeightingIndex = parseInt(activeEvent?.DrawWeighting) || 1; // 0=Frequency, 1=Equal, 2=DUPR Gap
     const penaltyWeightSlider = document.getElementById('penaltyWeightSlider');
     penaltyWeightSlider.value = drawWeightingIndex;
-    // applyPenaltyWeightPreset(drawWeightingIndex); // sets duprGapWeight/frequencyWeight + updates label highlight/output
   } else {
     drawWeightingGroup.style.display = 'none';
   }
@@ -164,6 +163,17 @@ function adjustGdLives(direction) {
   saveGdLives(current);
 }
 
+function adjustGdDrawWeighting(direction) {
+  const current = parseInt(value);
+
+  const hiddenInput = document.getElementById('gd-drawWeighting-hidden');
+  hiddenInput.value = current;
+
+  // applyPenaltyWeightPreset(current); // sets duprGapWeight/frequencyWeight, updates output + active label
+
+  saveGdDrawWeighting(current);
+}
+
 async function saveGdRounds(value) {
   const activeEventId = window.cachedUserUniverse.activeEventId;
   const activeEvent = window.cachedUserUniverse.events.find(e => String(e.EventID) === String(activeEventId));
@@ -185,6 +195,18 @@ async function saveGdLives(value) {
     await window.updateEventFieldInFirestore(activeEventId, 'Lives', value);
   } catch (err) {
     console.error("Failed to save Lives:", err);
+  }
+}
+
+async function saveGdDrawWeighting(value) {
+  const activeEventId = window.cachedUserUniverse.activeEventId;
+  const activeEvent = window.cachedUserUniverse.events.find(e => String(e.EventID) === String(activeEventId));
+  if (activeEvent) activeEvent.DrawWeighting = value;
+
+  try {
+    await window.updateEventFieldInFirestore(activeEventId, 'DrawWeighting', value);
+  } catch (err) {
+    console.error("Failed to save DrawWeighting:", err);
   }
 }
 
