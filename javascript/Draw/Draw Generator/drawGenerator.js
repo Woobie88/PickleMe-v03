@@ -373,7 +373,7 @@ function generateClusteredRoundDraw(players, matches, byesByTeamForThisRound, ro
 
       const partnerships = roundPlan.partnerPairs.map(([i, j]) => [stableOrder[i], stableOrder[j]]);
 
-      const matchups = generateBestMatchups(partnerships, opponentCounts, drawBuildVariables);
+      const matchups = generateBestMatchups(partnerships, opponentCounts);
       const courted = assignCourts(matchups, courtNumbers, courtCounts);
       teamMatches = courted.map((m, idx) => buildMatchRecord(m, idx, roundNumber, eventId, drawVersion, userEmail));
 
