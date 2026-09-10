@@ -481,7 +481,6 @@ function logPlayerSummary(players, matches, byesByRound) {
 
 async function generateNRoundsAndPreview(numberOfRounds) {
   const payload = window.cachedUserUniverse;
-  console.log('The payload is',payload);
   const activeEventId = payload.activeEventId;
   const activeEvent = payload.events.find(e => String(e.EventID) === String(activeEventId));
   const allPlayers = payload.players && payload.players.length > 0
@@ -495,6 +494,11 @@ async function generateNRoundsAndPreview(numberOfRounds) {
   const gameId = activeEvent.GameID;
   const gameProfile = gamesProfile.find(g => g.GameID === gameId);
   const userEmail = window.currentUserEmail;
+  
+  const drawWeightingIndex = parseInt(activeEvent.DrawWeighting) || 0;
+  const drawBuildVariables = penaltyWeightPresets[drawWeightingIndex];
+
+  console.log('The draw variables are',drawBuildVariables);
 
   window.gdRedivisionCache = {};
   window.gdTeamByeCache = {};    // NEW
