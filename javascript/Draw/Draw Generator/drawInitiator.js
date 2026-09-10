@@ -44,6 +44,21 @@ function renderGenerateDrawDetails(payload) {
     livesGroup.style.display = 'none';
   }
 
+  // --- Draw Weighting ---
+  const drawWeightingSupported = gameProfile?.DrawWeighting === 'Yes';
+  const drawWeightingGroup = document.getElementById('gd-drawWeighting-group');
+
+  if (drawWeightingSupported) {
+    drawWeightingGroup.style.display = 'flex';
+
+    const drawWeightingIndex = parseInt(activeEvent?.DrawWeighting) || 1; // 0=Frequency, 1=Equal, 2=DUPR Gap
+    const penaltyWeightSlider = document.getElementById('penaltyWeightSlider');
+    penaltyWeightSlider.value = drawWeightingIndex;
+    applyPenaltyWeightPreset(drawWeightingIndex); // sets duprGapWeight/frequencyWeight + updates label highlight/output
+  } else {
+    drawWeightingGroup.style.display = 'none';
+  }
+
   // --- Number Of Teams / Pools / Divisions ---
   const grouping = gameProfile?.Grouping || 'None';
   const groupingLabels = {

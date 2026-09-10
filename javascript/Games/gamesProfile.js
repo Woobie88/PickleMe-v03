@@ -8,6 +8,7 @@ const gamesProfile = [
     Rounds: "No",
     CycleRounds: "No",
     Lives: "No",
+    DrawWeighting: "No",
     drawMenuOpt: [{
       Redivisioning: ["No",null],
       AddMatch: "Yes",
@@ -29,6 +30,7 @@ const gamesProfile = [
     Rounds: "No",
     CycleRounds: "No",
     Lives: "No",
+    DrawWeighting: "No",
     drawMenuOpt: [{
       Redivisioning: ["No",null],
       AddMatch: "Yes",
@@ -50,6 +52,7 @@ const gamesProfile = [
     Rounds: "No",
     CycleRounds: "No",
     Lives: "No",
+    DrawWeighting: "No",
     drawMenuOpt: [{
       Redivisioning: ["No",null],
       AddMatch: "Yes",
@@ -71,6 +74,7 @@ const gamesProfile = [
     Rounds: "No",
     CycleRounds: "No",
     Lives: "Yes",
+    DrawWeighting: "No",
     drawMenuOpt: [{
       Redivisioning: ["No",null],
       AddMatch: "Yes",
@@ -92,6 +96,7 @@ const gamesProfile = [
     Rounds: "No",
     CycleRounds: "No",
     Lives: "No",
+    DrawWeighting: "No",
     drawMenuOpt: [{
       Redivisioning: ["No",null],
       AddMatch: "Yes",
@@ -113,6 +118,7 @@ const gamesProfile = [
     Rounds: "No",
     CycleRounds: "No",
     Lives: "No",
+    DrawWeighting: "No",
     drawMenuOpt: [{
       Redivisioning: ["No",null],
       AddMatch: "Yes",
@@ -134,6 +140,7 @@ const gamesProfile = [
     Rounds: "No",
     CycleRounds: "No",
     Lives: "No",
+    DrawWeighting: "No",
     drawMenuOpt: [{
       Redivisioning: ["No",null],
       AddMatch: "Yes",
@@ -155,6 +162,7 @@ const gamesProfile = [
     Rounds: "No",
     CycleRounds: "No",
     Lives: "No",
+    DrawWeighting: "No",
     drawMenuOpt: [{
       Redivisioning: ["No",null],
       AddMatch: "Yes",
@@ -176,6 +184,7 @@ const gamesProfile = [
     Rounds: "Yes",
     CycleRounds: "No",
     Lives: "No",
+    DrawWeighting: "No",
     drawMenuOpt: [{
       Redivisioning: ["No",null],
       AddMatch: "Yes",
@@ -197,6 +206,7 @@ const gamesProfile = [
     Rounds: "Yes",
     CycleRounds: "Yes",
     Lives: "No",
+    DrawWeighting: "No",
     drawMenuOpt: [{
       Redivisioning: ["Yes",100],
       AddMatch: "Yes",
@@ -218,6 +228,7 @@ const gamesProfile = [
     Rounds: "Yes",
     CycleRounds: "No",
     Lives: "No",
+    DrawWeighting: "Yes",
     drawMenuOpt: [{
       Redivisioning: ["No",null],
       AddMatch: "Yes",
@@ -239,6 +250,7 @@ const gamesProfile = [
     Rounds: "Yes",
     CycleRounds: "No",
     Lives: "No",
+    DrawWeighting: "No",
     drawMenuOpt: [{
       Redivisioning: ["No",null],
       AddMatch: "Yes",
@@ -260,6 +272,7 @@ const gamesProfile = [
     Rounds: "Yes",
     CycleRounds: "No",
     Lives: "No",
+    DrawWeighting: "No",
     drawMenuOpt: [{
       Redivisioning: ["No",null],
       AddMatch: "Yes",
@@ -281,6 +294,7 @@ const gamesProfile = [
     Rounds: "Yes",
     CycleRounds: "No",
     Lives: "No",
+    DrawWeighting: "No",
     drawMenuOpt: [{
       Redivisioning: ["No",null],
       AddMatch: "Yes",
@@ -302,6 +316,7 @@ const gamesProfile = [
     Rounds: "Yes",
     CycleRounds: "Yes",
     Lives: "No",
+    DrawWeighting: "No",
     drawMenuOpt: [{
       Redivisioning: ["Yes",100],
       AddMatch: "Yes",
@@ -323,6 +338,7 @@ const gamesProfile = [
     Rounds: "Yes",
     CycleRounds: "Yes",
     Lives: "No",
+    DrawWeighting: "No",
     drawMenuOpt: [{
       Redivisioning: ["Yes",100],
       AddMatch: "Yes",
@@ -344,6 +360,7 @@ const gamesProfile = [
     Rounds: "Yes",
     CycleRounds: "No",
     Lives: "No",
+    DrawWeighting: "No",
     drawMenuOpt: [{
       Redivisioning: ["No",null],
       AddMatch: "Yes",
@@ -365,6 +382,7 @@ const gamesProfile = [
     Rounds: "Yes",
     CycleRounds: "Yes",
     Lives: "No",
+    DrawWeighting: "No",
     drawMenuOpt: [{
       Redivisioning: ["Yes",1],
       AddMatch: "Yes",
@@ -385,6 +403,7 @@ const gamesProfile = [
     Rounds: "Yes",
     CycleRounds: "No",
     Lives: "No",
+    DrawWeighting: "No",
     drawMenuOpt: [{
       Redivisioning: ["No",null],
       AddMatch: "Yes",
