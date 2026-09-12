@@ -569,7 +569,20 @@ function enableGameDragToActivate() {
           // Apply this game's default scoring method
           const gameProfile = gamesProfile.find(g => g.GameID === gameId);
           const scoringDefault = gameProfile?.ScoringDefault || 'Points';
-          await window.updateScoringModeInFirestore(activeEventId, scoringDefault);
+
+          // --- Draw Weighting ---
+          const drawWeightingSupported = gameProfile?.DrawWeighting === 'Yes';
+
+          // Persist the default when the DB doesn't already reflect the correct value
+          if (!drawWeightingSupported) {
+            // Not supported — DB should read 0 (Frequency), but doesn't yet
+            const drawWeighting = 0;
+          } else if (drawWeightingSupported) {
+            // Supported, but never saved before — DB should read 1 (Equal), the default
+            const drawWeighting = 3;
+          }
+
+          await window.updateScoringModeInFirestore(activeEventId, scoringDefault, drawWeighting);
           if (activeEvent) activeEvent.Scoring = scoringDefault;
 
           renderActiveGameHighlight();
