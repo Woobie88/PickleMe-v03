@@ -573,14 +573,9 @@ function enableGameDragToActivate() {
           // --- Draw Weighting ---
           const drawWeightingSupported = gameProfile?.DrawWeighting === 'Yes';
 
-          // Persist the default when the DB doesn't already reflect the correct value
-          if (!drawWeightingSupported) {
-            // Not supported — DB should read 0 (Frequency), but doesn't yet
-            const drawWeighting = 0;
-          } else if (drawWeightingSupported) {
-            // Supported, but never saved before — DB should read 1 (Equal), the default
-            const drawWeighting = 3;
-          }
+          // Not supported — DB should read 0 (Frequency)
+          // Supported, but never saved before — DB should read 1 (Equal), the default
+          const drawWeighting = drawWeightingSupported ? 3 : 0;
 
           await window.updateScoringModeInFirestore(activeEventId, scoringDefault, drawWeighting);
           if (activeEvent) activeEvent.Scoring = scoringDefault;
