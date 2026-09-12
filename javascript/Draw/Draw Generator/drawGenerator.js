@@ -155,6 +155,8 @@ function scorePairing(p1, p2, partnerCounts, drawBuildVariables) {
   return repeats * drawBuildVariables.partnerFrequencyWeight + duprGap * drawBuildVariables.partnerDuprGapWeight;      // Increase partner penalty from 100 to 500
 }
 
+// ---------- PARTNERSHIP GENERATION (hard delta version) ----------
+
 function attemptPartnerships(eligiblePlayers, partnerCounts, drawBuildVariables) {
   const pool = shuffle(eligiblePlayers);
   const pairs = [];
@@ -164,9 +166,20 @@ function attemptPartnerships(eligiblePlayers, partnerCounts, drawBuildVariables)
   for (const p1 of pool) {
     if (used.has(p1.PlayerID)) continue;
 
+    // Stage 1: candidates within the DUPR delta
+    let candidates = pool.filter(p2 =>
+      p2.PlayerID !== p1.PlayerID &&
+      !used.has(p2.PlayerID) &&
+      Math.abs((parseFloat(p1.DUPR) || 0) - (parseFloat(p2.DUPR) || 0)) <= drawBuildVariables.partnerDuprDelta
+    );
+
+    // Stage 2: fall back to full pool only if nobody fits the delta
+    if (candidates.length === 0) {
+      candidates = pool.filter(p2 => p2.PlayerID !== p1.PlayerID && !used.has(p2.PlayerID));
+    }
+
     let bestPartner = null, bestCost = Infinity;
-    for (const p2 of pool) {
-      if (p2.PlayerID === p1.PlayerID || used.has(p2.PlayerID)) continue;
+    for (const p2 of candidates) {
       const c = scorePairing(p1, p2, partnerCounts, drawBuildVariables);
       if (c < bestCost) { bestCost = c; bestPartner = p2; }
     }
@@ -211,9 +224,23 @@ function attemptMatchups(partnerships, opponentCounts, drawBuildVariables) {
   for (let a = 0; a < pool.length; a++) {
     if (used.has(a)) continue;
 
-    let bestIdx = -1, bestCost = Infinity;
+    // Stage 1: candidates within the DUPR delta
+    let candidateIdxs = [];
     for (let b = 0; b < pool.length; b++) {
       if (b === a || used.has(b)) continue;
+      const gap = Math.abs(teamAvgDupr(pool[a]) - teamAvgDupr(pool[b]));
+      if (gap <= drawBuildVariables.opponentDuprDelta) candidateIdxs.push(b);
+    }
+
+    // Stage 2: fall back to full pool only if nobody fits the delta
+    if (candidateIdxs.length === 0) {
+      for (let b = 0; b < pool.length; b++) {
+        if (b !== a && !used.has(b)) candidateIdxs.push(b);
+      }
+    }
+
+    let bestIdx = -1, bestCost = Infinity;
+    for (const b of candidateIdxs) {
       const c = scoreMatchup(pool[a], pool[b], opponentCounts, drawBuildVariables);
       if (c < bestCost) { bestCost = c; bestIdx = b; }
     }
