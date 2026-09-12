@@ -352,8 +352,8 @@ const gamesProfile = [
     ScoringDefault: "Points"
   },
   {
-    GameID: "mid-tier-divisions",
-    GameTitle: "Mid Tier Divisions",
+    GameID: "cross-court-divisions",
+    GameTitle: "Cross Court Divisions",
     GamesGroup: "Tiered Groups",
     Grouping: "Divisions",
     Draft: "No",

@@ -285,8 +285,8 @@ function selectFormat(formatKey) {
       `;
       break;
 
-    case 'mid-tier-divisions':
-      title = "Mid Tier Divisions";
+    case 'cross-court-divisions':
+      title = "Cross Court Divisions";
       htmlContent = `
         <span class="detail-tagline">"Segregate top and bottom players"</span>
         <h3>Game Overview</h3>
