@@ -162,6 +162,7 @@ function attemptPartnerships(eligiblePlayers, partnerCounts, drawBuildVariables)
   const pairs = [];
   const used = new Set();
   let cost = 0;
+  const partnerDuprDelta = drawBuildVariables.partnerDuprDelta ?? Infinity;
 
   for (const p1 of pool) {
     if (used.has(p1.PlayerID)) continue;
@@ -170,7 +171,7 @@ function attemptPartnerships(eligiblePlayers, partnerCounts, drawBuildVariables)
     let candidates = pool.filter(p2 =>
       p2.PlayerID !== p1.PlayerID &&
       !used.has(p2.PlayerID) &&
-      Math.abs((parseFloat(p1.DUPR) || 0) - (parseFloat(p2.DUPR) || 0)) <= drawBuildVariables.partnerDuprDelta
+      Math.abs((parseFloat(p1.DUPR) || 0) - (parseFloat(p2.DUPR) || 0)) <= partnerDuprDelta
     );
 
     // Stage 2: fall back to full pool only if nobody fits the delta
@@ -220,6 +221,7 @@ function attemptMatchups(partnerships, opponentCounts, drawBuildVariables) {
   const matchups = [];
   const used = new Set();
   let cost = 0;
+  const opponentDuprDelta = drawBuildVariables.opponentDuprDelta ?? Infinity;
 
   for (let a = 0; a < pool.length; a++) {
     if (used.has(a)) continue;
@@ -229,7 +231,7 @@ function attemptMatchups(partnerships, opponentCounts, drawBuildVariables) {
     for (let b = 0; b < pool.length; b++) {
       if (b === a || used.has(b)) continue;
       const gap = Math.abs(teamAvgDupr(pool[a]) - teamAvgDupr(pool[b]));
-      if (gap <= drawBuildVariables.opponentDuprDelta) candidateIdxs.push(b);
+      if (gap <= opponentDuprDelta) candidateIdxs.push(b);
     }
 
     // Stage 2: fall back to full pool only if nobody fits the delta
