@@ -265,6 +265,36 @@ function renderAnalyticsCards(payload) {
 
   document.getElementById('analytics-heading').innerText = heading;
 
+  const legendConfig = isQualityScreen
+    ? {
+        display: true,
+        position: 'top',
+        labels: {
+          // NEW — one legend entry per DUPR bucket instead of one per dataset,
+          // since Partners/Opponents for the same bucket should toggle as a pair
+          generateLabels: (chart) => DUPR_GAP_BUCKETS.map(b => {
+            const partnerIdx = chart.data.datasets.findIndex(ds => ds.bucketKey === b.key && ds.metricType === 'partner');
+            return {
+              text: b.label,
+              fillStyle: b.color,
+              strokeStyle: b.color,
+              lineWidth: 0,
+              hidden: !chart.isDatasetVisible(partnerIdx),
+              bucketKey: b.key
+            };
+          })
+        },
+        onClick: (e, legendItem, legend) => {
+          const chart = legend.chart;
+          chart.data.datasets.forEach((ds, idx) => {
+            if (ds.bucketKey === legendItem.bucketKey) {
+              if (chart.isDatasetVisible(idx)) chart.hide(idx); else chart.show(idx);
+            }
+          });
+        }
+      }
+    : { display: true, position: 'top' };
+
   window.analyticsChartInstance = new Chart(canvas, {
     type: 'bar',
     data: { labels, datasets },
@@ -273,7 +303,7 @@ function renderAnalyticsCards(payload) {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { display: true, position: 'top' },
+        legend: legendConfig,
         tooltip: {
           callbacks: {
             label(ctx) {
