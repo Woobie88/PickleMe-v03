@@ -270,7 +270,7 @@ function renderAnalyticsCards(payload) {
         display: true,
         position: 'top',
         labels: {
-          color: Chart.defaults.color, // NEW — match the text color every other legend on the page uses
+          color: getComputedStyle(document.documentElement).getPropertyValue('--text-main').trim() || '#f8fafc', // NEW — match the theme's text color directly from CSS
           // NEW — one legend entry per DUPR bucket instead of one per dataset,
           // since Partners/Opponents for the same bucket should toggle as a pair.
           // Visibility is tracked in window.qualityBucketHidden rather than via
