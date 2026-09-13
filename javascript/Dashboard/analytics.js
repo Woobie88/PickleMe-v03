@@ -206,7 +206,7 @@ function renderAnalyticsCards(payload) {
       { label: 'Max Opponent', data: sorted.map(d => d.maxSameOpponent), backgroundColor: '#ef4444' }
     ];
   } else if (window.analyticsScreenIndex === 2) { // NEW — Draw Quality: DUPR Gap Distribution
-    heading = 'DUPR Gap Analysis';
+    heading = 'DUPR Gap Quality Analysis';
     datasets = [];
 
     // Partner stack — solid bucket colors
