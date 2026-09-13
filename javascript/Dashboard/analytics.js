@@ -271,26 +271,31 @@ function renderAnalyticsCards(payload) {
         position: 'top',
         labels: {
           // NEW — one legend entry per DUPR bucket instead of one per dataset,
-          // since Partners/Opponents for the same bucket should toggle as a pair
-          generateLabels: (chart) => DUPR_GAP_BUCKETS.map(b => {
-            const partnerIdx = chart.data.datasets.findIndex(ds => ds.bucketKey === b.key && ds.metricType === 'partner');
-            return {
-              text: b.label,
-              fillStyle: b.color,
-              strokeStyle: b.color,
-              lineWidth: 0,
-              hidden: !chart.isDatasetVisible(partnerIdx),
-              bucketKey: b.key
-            };
-          })
+          // since Partners/Opponents for the same bucket should toggle as a pair.
+          // Visibility is tracked in window.qualityBucketHidden rather than via
+          // chart.isDatasetVisible(), since that method isn't reliable across
+          // every Chart.js version and a thrown error here blanks the legend text.
+          generateLabels: () => DUPR_GAP_BUCKETS.map(b => ({
+            text: b.label,
+            fillStyle: b.color,
+            strokeStyle: b.color,
+            lineWidth: 1,
+            hidden: !!(window.qualityBucketHidden && window.qualityBucketHidden[b.key]),
+            bucketKey: b.key
+          }))
         },
         onClick: (e, legendItem, legend) => {
           const chart = legend.chart;
+          window.qualityBucketHidden = window.qualityBucketHidden || {};
+          const key = legendItem.bucketKey;
+          window.qualityBucketHidden[key] = !window.qualityBucketHidden[key];
+
           chart.data.datasets.forEach((ds, idx) => {
-            if (ds.bucketKey === legendItem.bucketKey) {
-              if (chart.isDatasetVisible(idx)) chart.hide(idx); else chart.show(idx);
+            if (ds.bucketKey === key) {
+              if (window.qualityBucketHidden[key]) chart.hide(idx); else chart.show(idx);
             }
           });
+          chart.update();
         }
       }
     : { display: true, position: 'top' };
