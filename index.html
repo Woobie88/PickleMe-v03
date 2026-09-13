@@ -794,12 +794,13 @@
           <div class="detail-form-group" id="gd-drawWeighting-group" style="display: none;">
             <label>Draw Build Focus</label>
             <div class="penalty-weight-card">
-              <input type="range" id="penaltyWeightSlider" min="0" max="2" step="1" value="1"
+              <input type="range" id="penaltyWeightSlider" min="0" max="3" step="1" value="1"
                     oninput="handleGdDrawWeightingChange(this.value)">
               <div class="slider-labels">
-                <span data-index="0">Frequency</span>
+                <span data-index="0">Max Rotation</span>
                 <span data-index="1">Balanced</span>
-                <span data-index="2">DUPR Gap</span>
+                <span data-index="2">Competitive</span>
+                <span data-index="3">Even Matches</span>
               </div>
               <div id="penaltyWeightsOutput"></div>
             </div>
