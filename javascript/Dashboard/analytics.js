@@ -1,6 +1,33 @@
 window.analyticsChartInstance = null;
-window.analyticsScreenIndex = 0; // 0=unique, 1=max, 2=court frequency, 3=byes, 4=wins/losses, 5=points
+window.analyticsScreenIndex = 0; // 0=unique, 1=max, 2=draw quality (DUPR gap), 3=court frequency, 4=byes, 5=wins/losses, 6=points
 window.analyticsRawData = [];
+
+// ---------- DUPR GAP CLASSIFICATION (Draw Quality) ----------
+// NEW — shared bucket definitions so compute + render + tooltip all agree on
+// the same boundaries, labels, and colors. Boundaries follow the same
+// competitiveness bands used to reason about the draw generator's deltas:
+// ~0.2 = coin-flip, ~0.4 = competitive, ~0.8 = favors stronger side, above = lopsided.
+const DUPR_GAP_BUCKETS = [
+  { key: 'coinflip',    max: 0.2,      label: 'Coin-flip (≤0.2)',            color: '#00E676' },
+  { key: 'competitive', max: 0.4,      label: 'Competitive (0.2–0.4)',       color: '#3b82f6' },
+  { key: 'favors',      max: 0.8,      label: 'Favors stronger side (0.4–0.8)', color: '#f59e0b' },
+  { key: 'lopsided',    max: Infinity, label: 'Lopsided (0.8+)',             color: '#ef4444' }
+];
+
+function classifyDuprGap(gap) {
+  return DUPR_GAP_BUCKETS.find(b => gap <= b.max) || DUPR_GAP_BUCKETS[DUPR_GAP_BUCKETS.length - 1];
+}
+
+function initGapBuckets() {
+  const obj = {};
+  DUPR_GAP_BUCKETS.forEach(b => { obj[b.key] = { count: 0, rounds: [] }; });
+  return obj;
+}
+
+function teamAvgDuprFromIds(ids, playersById) {
+  const vals = ids.map(pid => parseFloat(playersById[pid]?.DUPR) || 0);
+  return vals.reduce((a, b) => a + b, 0) / (vals.length || 1);
+}
 
 function computeAnalyticsPlayerCounts(payload) {
   const activeEventId = payload.activeEventId;
@@ -9,6 +36,9 @@ function computeAnalyticsPlayerCounts(payload) {
   const players = payload.players.filter(
     p => String(p.PlayerVersion) === String(activeEvent.CurrentPlayerVersion) && p.playerExclude !== 'Yes'
   );
+
+  const playersById = {}; // NEW — lookup for DUPR values when classifying gaps
+  payload.players.forEach(p => { playersById[p.PlayerID] = p; });
 
   const allRounds = [...new Set(matches.map(m => parseInt(m.Round) || 0))].sort((a, b) => a - b);
 
@@ -24,8 +54,10 @@ function computeAnalyticsPlayerCounts(payload) {
     const roundResults = {};
     const roundPoints = {};
     const roundsPlayed = new Set();
-    const courtCounts = {}; // NEW — { courtNumber: count }
-    const courtDetails = {}; // NEW — { courtNumber: [{ round, partnerName }, ...] }
+    const courtCounts = {}; // { courtNumber: count }
+    const courtDetails = {}; // { courtNumber: [{ round, partnerName }, ...] }
+    const partnerGapBuckets = initGapBuckets(); // NEW
+    const opponentGapBuckets = initGapBuckets(); // NEW
     let wins = 0;
     let losses = 0;
     let pointsFor = 0;
@@ -80,7 +112,7 @@ function computeAnalyticsPlayerCounts(payload) {
         opponentRounds[pid].push(round);
       });
 
-      // NEW — court frequency tracking, same dummy-round exclusion as partner/opponent
+      // court frequency tracking, same dummy-round exclusion as partner/opponent
       const court = parseInt(m.Court) || 0;
       const partnerId = myTeam.find(pid => pid !== player.PlayerID);
       const partnerName = partnerId ? getPlayerNameById(partnerId) : 'Bye';
@@ -88,6 +120,24 @@ function computeAnalyticsPlayerCounts(payload) {
       courtCounts[court] = (courtCounts[court] || 0) + 1;
       if (!courtDetails[court]) courtDetails[court] = [];
       courtDetails[court].push({ round, partnerName });
+
+      // NEW — DUPR gap classification for draw-quality analysis.
+      // Partner gap: individual-to-individual, same basis as the draw
+      // generator's partnerDuprGapWeight. Opponent gap: team-average-to-
+      // team-average, same basis as opponentDuprGapWeight.
+      if (partnerId) {
+        const myDupr = parseFloat(player.DUPR) || 0;
+        const partnerDupr = parseFloat(playersById[partnerId]?.DUPR) || 0;
+        const partnerBucket = classifyDuprGap(Math.abs(myDupr - partnerDupr));
+        partnerGapBuckets[partnerBucket.key].count++;
+        partnerGapBuckets[partnerBucket.key].rounds.push(round);
+      }
+
+      const myTeamDupr = teamAvgDuprFromIds(myTeam, playersById);
+      const oppTeamDupr = teamAvgDuprFromIds(oppTeam, playersById);
+      const opponentBucket = classifyDuprGap(Math.abs(myTeamDupr - oppTeamDupr));
+      opponentGapBuckets[opponentBucket.key].count++;
+      opponentGapBuckets[opponentBucket.key].rounds.push(round);
     });
 
     const byeRounds = allRounds.filter(r => !roundsPlayed.has(r));
@@ -107,8 +157,10 @@ function computeAnalyticsPlayerCounts(payload) {
       roundPoints,
       roundsPlayed,
       byeRounds,
-      courtCounts, // NEW
-      courtDetails // NEW
+      courtCounts,
+      courtDetails,
+      partnerGapBuckets, // NEW
+      opponentGapBuckets // NEW
     };
   });
 }
@@ -139,6 +191,7 @@ function renderAnalyticsCards(payload) {
   }
 
   let datasets, heading;
+  const isQualityScreen = window.analyticsScreenIndex === 2; // NEW
 
   if (window.analyticsScreenIndex === 0) {
     heading = 'Unique Partners & Opponents';
@@ -152,7 +205,35 @@ function renderAnalyticsCards(payload) {
       { label: 'Max Partner', data: sorted.map(d => d.maxSamePartner), backgroundColor: '#f59e0b' },
       { label: 'Max Opponent', data: sorted.map(d => d.maxSameOpponent), backgroundColor: '#ef4444' }
     ];
-  } else if (window.analyticsScreenIndex === 2) { // NEW — Court Frequency
+  } else if (window.analyticsScreenIndex === 2) { // NEW — Draw Quality: DUPR Gap Distribution
+    heading = 'Draw Quality — DUPR Gap Distribution';
+    datasets = [];
+
+    // Partner stack — solid bucket colors
+    DUPR_GAP_BUCKETS.forEach(b => {
+      datasets.push({
+        label: `Partners: ${b.label}`,
+        data: sorted.map(d => d.partnerGapBuckets[b.key].count),
+        backgroundColor: b.color,
+        stack: 'partners',
+        bucketKey: b.key,
+        metricType: 'partner'
+      });
+    });
+
+    // Opponent stack — same bucket colors at reduced opacity, so the two
+    // stacks read as a matched pair per player while staying visually distinct
+    DUPR_GAP_BUCKETS.forEach(b => {
+      datasets.push({
+        label: `Opponents: ${b.label}`,
+        data: sorted.map(d => d.opponentGapBuckets[b.key].count),
+        backgroundColor: `${b.color}99`,
+        stack: 'opponents',
+        bucketKey: b.key,
+        metricType: 'opponent'
+      });
+    });
+  } else if (window.analyticsScreenIndex === 3) { // CHANGED — was 2, shifted for new Draw Quality screen
     heading = 'Court Frequency';
     const allCourts = [...new Set(sorted.flatMap(d => Object.keys(d.courtCounts).map(Number)))].sort((a, b) => a - b);
     const courtColors = ['#00E676', '#3b82f6', '#f59e0b', '#ef4444', '#a78bfa', '#ec4899', '#06b6d4', '#84cc16'];
@@ -162,19 +243,19 @@ function renderAnalyticsCards(payload) {
       data: sorted.map(d => d.courtCounts[court] || 0),
       backgroundColor: courtColors[idx % courtColors.length]
     }));
-  } else if (window.analyticsScreenIndex === 3) {
+  } else if (window.analyticsScreenIndex === 4) { // CHANGED — was 3
     heading = 'Byes';
     datasets = [
       { label: 'Games Played', data: sorted.map(d => d.roundsPlayed.size), backgroundColor: '#3b82f6' },
       { label: 'Byes', data: sorted.map(d => d.byeRounds.length), backgroundColor: '#facc15' }
     ];
-  } else if (window.analyticsScreenIndex === 4) {
+  } else if (window.analyticsScreenIndex === 5) { // CHANGED — was 4
     heading = 'Game Wins & Losses';
     datasets = [
       { label: 'Wins', data: sorted.map(d => d.wins), backgroundColor: '#00E676' },
       { label: 'Losses', data: sorted.map(d => d.losses), backgroundColor: '#ef4444' }
     ];
-  } else if (window.analyticsScreenIndex === 5) {
+  } else if (window.analyticsScreenIndex === 6) { // CHANGED — was 5
     heading = 'Game Points For & Against';
     datasets = [
       { label: 'Points For', data: sorted.map(d => d.pointsFor), backgroundColor: '#00E676' },
@@ -214,7 +295,14 @@ function renderAnalyticsCards(payload) {
                   .map(([pid]) => getPlayerNameById(pid));
                 return namesAtMax.length > 0 ? [`${maxValue}x: ${namesAtMax.join(', ')}`] : ['No repeats yet'];
 
-              } else if (window.analyticsScreenIndex === 2) { // NEW — Court Frequency tooltip
+              } else if (window.analyticsScreenIndex === 2) { // NEW — Draw Quality tooltip: round numbers in this gap bucket
+                const bucketKey = ctx.dataset.bucketKey;
+                const metricType = ctx.dataset.metricType;
+                const buckets = metricType === 'partner' ? entry.partnerGapBuckets : entry.opponentGapBuckets;
+                const rounds = (buckets[bucketKey]?.rounds || []).slice().sort((a, b) => a - b);
+                return rounds.length > 0 ? rounds.map(r => `Round ${r}`) : ['No matches in this range'];
+
+              } else if (window.analyticsScreenIndex === 3) { // CHANGED — was 2
                 const court = parseInt(ctx.dataset.label.replace('Court ', ''));
                 const details = entry.courtDetails[court] || [];
                 if (details.length === 0) return ['No games on this court'];
@@ -222,7 +310,7 @@ function renderAnalyticsCards(payload) {
                   .sort((a, b) => a.round - b.round)
                   .map(d => `Round ${d.round}: with ${d.partnerName}`);
 
-              } else if (window.analyticsScreenIndex === 3) {
+              } else if (window.analyticsScreenIndex === 4) { // CHANGED — was 3
                 if (isFirstDataset) {
                   const rounds = [...entry.roundsPlayed].sort((a, b) => a - b);
                   return rounds.length > 0 ? rounds.map(r => `Round ${r}`) : ['No games yet'];
@@ -231,12 +319,12 @@ function renderAnalyticsCards(payload) {
                     ? entry.byeRounds.map(r => `Round ${r}`)
                     : ['No byes'];
                 }
-              } else if (window.analyticsScreenIndex === 4) {
+              } else if (window.analyticsScreenIndex === 5) { // CHANGED — was 4
                 const rounds = Object.keys(entry.roundResults).map(Number).sort((a, b) => a - b);
                 const lines = rounds.map(r => `Round ${r}: ${entry.roundResults[r]}`);
                 return lines.length > 0 ? lines : ['No results yet'];
 
-              } else if (window.analyticsScreenIndex === 5) {
+              } else if (window.analyticsScreenIndex === 6) { // CHANGED — was 5
                 const rounds = Object.keys(entry.roundPoints).map(Number).sort((a, b) => a - b);
                 const lines = rounds.map(r => `Round ${r}: ${entry.roundPoints[r].for} - ${entry.roundPoints[r].against}`);
                 return lines.length > 0 ? lines : ['No scores yet'];
@@ -250,7 +338,11 @@ function renderAnalyticsCards(payload) {
       scales: {
         x: {
           beginAtZero: true,
-          ticks: { stepSize: 1 }
+          ticks: { stepSize: 1 },
+          stacked: isQualityScreen // NEW
+        },
+        y: {
+          stacked: isQualityScreen // NEW
         }
       }
     }
@@ -272,7 +364,7 @@ function initAnalyticsSwipeHandlers() {
     const deltaY = e.changedTouches[0].screenY - startY;
     if (Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY)) return;
 
-    if (deltaX < 0 && window.analyticsScreenIndex < 5) { // CHANGED — was < 4
+    if (deltaX < 0 && window.analyticsScreenIndex < 6) { // CHANGED — was < 5, now 7 screens (0-6)
       window.analyticsScreenIndex++;
       renderAnalyticsCards(window.cachedUserUniverse);
     } else if (deltaX > 0 && window.analyticsScreenIndex > 0) {
