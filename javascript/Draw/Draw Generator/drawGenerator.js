@@ -147,22 +147,43 @@ function buildDrawHistory(matches) {
   return { partnerCounts, opponentCounts, courtCounts };
 }
 
-// ---------- PARTNERSHIP GENERATION ----------
+// ---------- SCORER FACTORY ----------
+// NEW — builds scorePairing/scoreMatchup with drawBuildVariables baked in via
+// closure, since the weights/deltas are fixed for the life of one draw run.
+// Downstream functions take `scorers` instead of re-threading drawBuildVariables
+// and reaching into its fields at every level.
 
-function scorePairing(p1, p2, partnerCounts, drawBuildVariables) {
-  const repeats = (partnerCounts[p1.PlayerID]?.[p2.PlayerID]) || 0;
-  const duprGap = Math.abs((parseFloat(p1.DUPR) || 0) - (parseFloat(p2.DUPR) || 0));
-  return repeats * drawBuildVariables.partnerFrequencyWeight + duprGap * drawBuildVariables.partnerDuprGapWeight;      // Increase partner penalty from 100 to 500
+function makeScorers(drawBuildVariables) {
+  function scorePairing(p1, p2, partnerCounts) {
+    const repeats = (partnerCounts[p1.PlayerID]?.[p2.PlayerID]) || 0;
+    const duprGap = Math.abs((parseFloat(p1.DUPR) || 0) - (parseFloat(p2.DUPR) || 0));
+    return repeats * drawBuildVariables.partnerFrequencyWeight + duprGap * drawBuildVariables.partnerDuprGapWeight;
+  }
+
+  function scoreMatchup(teamA, teamB, opponentCounts) {
+    let repeats = 0;
+    teamA.forEach(p1 => teamB.forEach(p2 => {
+      repeats += (opponentCounts[p1.PlayerID]?.[p2.PlayerID]) || 0;
+    }));
+    const duprGap = Math.abs(teamAvgDupr(teamA) - teamAvgDupr(teamB));
+    return repeats * drawBuildVariables.opponentFrequencyWeight + duprGap * drawBuildVariables.opponentDuprGapWeight;
+  }
+
+  return {
+    scorePairing,
+    scoreMatchup,
+    partnerDuprDelta: drawBuildVariables.partnerDuprDelta ?? Infinity,
+    opponentDuprDelta: drawBuildVariables.opponentDuprDelta ?? Infinity
+  };
 }
 
 // ---------- PARTNERSHIP GENERATION (hard delta version) ----------
 
-function attemptPartnerships(eligiblePlayers, partnerCounts, drawBuildVariables) {
+function attemptPartnerships(eligiblePlayers, partnerCounts, scorers) {
   const pool = shuffle(eligiblePlayers);
   const pairs = [];
   const used = new Set();
   let cost = 0;
-  const partnerDuprDelta = drawBuildVariables.partnerDuprDelta ?? Infinity;
 
   for (const p1 of pool) {
     if (used.has(p1.PlayerID)) continue;
@@ -171,7 +192,7 @@ function attemptPartnerships(eligiblePlayers, partnerCounts, drawBuildVariables)
     let candidates = pool.filter(p2 =>
       p2.PlayerID !== p1.PlayerID &&
       !used.has(p2.PlayerID) &&
-      Math.abs((parseFloat(p1.DUPR) || 0) - (parseFloat(p2.DUPR) || 0)) <= partnerDuprDelta
+      Math.abs((parseFloat(p1.DUPR) || 0) - (parseFloat(p2.DUPR) || 0)) <= scorers.partnerDuprDelta
     );
 
     // Stage 2: fall back to full pool only if nobody fits the delta
@@ -181,7 +202,7 @@ function attemptPartnerships(eligiblePlayers, partnerCounts, drawBuildVariables)
 
     let bestPartner = null, bestCost = Infinity;
     for (const p2 of candidates) {
-      const c = scorePairing(p1, p2, partnerCounts, drawBuildVariables);
+      const c = scorers.scorePairing(p1, p2, partnerCounts);
       if (c < bestCost) { bestCost = c; bestPartner = p2; }
     }
 
@@ -196,32 +217,22 @@ function attemptPartnerships(eligiblePlayers, partnerCounts, drawBuildVariables)
   return { pairs, cost };
 }
 
-function generateBestPartnerships(eligiblePlayers, partnerCounts, drawBuildVariables, attempts = 300) {
+function generateBestPartnerships(eligiblePlayers, partnerCounts, scorers, attempts = 300) {
   let best = null, bestCost = Infinity;
   for (let i = 0; i < attempts; i++) {
-    const result = attemptPartnerships(eligiblePlayers, partnerCounts, drawBuildVariables);
+    const result = attemptPartnerships(eligiblePlayers, partnerCounts, scorers);
     if (result.cost < bestCost) { bestCost = result.cost; best = result.pairs; }
   }
   return best;
 }
 
-// ---------- MATCHUP GENERATION ----------
+// ---------- MATCHUP GENERATION (hard delta version) ----------
 
-function scoreMatchup(teamA, teamB, opponentCounts, drawBuildVariables) {
-  let repeats = 0;
-  teamA.forEach(p1 => teamB.forEach(p2 => {
-    repeats += (opponentCounts[p1.PlayerID]?.[p2.PlayerID]) || 0;
-  }));
-  const duprGap = Math.abs(teamAvgDupr(teamA) - teamAvgDupr(teamB));
-  return repeats * drawBuildVariables.opponentFrequencyWeight + duprGap * drawBuildVariables.opponentDuprGapWeight;
-}
-
-function attemptMatchups(partnerships, opponentCounts, drawBuildVariables) {
+function attemptMatchups(partnerships, opponentCounts, scorers) {
   const pool = shuffle(partnerships);
   const matchups = [];
   const used = new Set();
   let cost = 0;
-  const opponentDuprDelta = drawBuildVariables.opponentDuprDelta ?? Infinity;
 
   for (let a = 0; a < pool.length; a++) {
     if (used.has(a)) continue;
@@ -231,7 +242,7 @@ function attemptMatchups(partnerships, opponentCounts, drawBuildVariables) {
     for (let b = 0; b < pool.length; b++) {
       if (b === a || used.has(b)) continue;
       const gap = Math.abs(teamAvgDupr(pool[a]) - teamAvgDupr(pool[b]));
-      if (gap <= opponentDuprDelta) candidateIdxs.push(b);
+      if (gap <= scorers.opponentDuprDelta) candidateIdxs.push(b);
     }
 
     // Stage 2: fall back to full pool only if nobody fits the delta
@@ -243,7 +254,7 @@ function attemptMatchups(partnerships, opponentCounts, drawBuildVariables) {
 
     let bestIdx = -1, bestCost = Infinity;
     for (const b of candidateIdxs) {
-      const c = scoreMatchup(pool[a], pool[b], opponentCounts, drawBuildVariables);
+      const c = scorers.scoreMatchup(pool[a], pool[b], opponentCounts);
       if (c < bestCost) { bestCost = c; bestIdx = b; }
     }
 
@@ -258,10 +269,10 @@ function attemptMatchups(partnerships, opponentCounts, drawBuildVariables) {
   return { matchups, cost };
 }
 
-function generateBestMatchups(partnerships, opponentCounts, drawBuildVariables, attempts = 300) {
+function generateBestMatchups(partnerships, opponentCounts, scorers, attempts = 300) {
   let best = null, bestCost = Infinity;
   for (let i = 0; i < attempts; i++) {
-    const result = attemptMatchups(partnerships, opponentCounts, drawBuildVariables);
+    const result = attemptMatchups(partnerships, opponentCounts, scorers);
     if (result.cost < bestCost) { bestCost = result.cost; best = result.matchups; }
   }
   return best;
@@ -328,9 +339,9 @@ function buildMatchRecord(m, idx, roundNumber, eventId, drawVersion, userEmail, 
 
 // ---------- SHARED GROUP GENERATOR ----------
 
-function generateGroupMatches(groupPlayers, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion, userEmail, drawBuildVariables) {
-  const partnerships = generateBestPartnerships(groupPlayers, partnerCounts, drawBuildVariables);
-  const matchups = generateBestMatchups(partnerships, opponentCounts, drawBuildVariables);
+function generateGroupMatches(groupPlayers, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion, userEmail, scorers) {
+  const partnerships = generateBestPartnerships(groupPlayers, partnerCounts, scorers);
+  const matchups = generateBestMatchups(partnerships, opponentCounts, scorers);
   const courted = assignCourts(matchups, courtNumbers, courtCounts);
 
   return courted.map((m, idx) => buildMatchRecord(m, idx, roundNumber, eventId, drawVersion, userEmail));
@@ -338,17 +349,17 @@ function generateGroupMatches(groupPlayers, courtNumbers, partnerCounts, opponen
 
 // ---------- SINGLE ROUND GENERATION (Rotating Partners — one group, all courts) ----------
 
-function generateRoundDraw(players, matches, byePlayerIds, roundNumber, courtsCount, eventId, drawVersion, userEmail, drawBuildVariables) {
+function generateRoundDraw(players, matches, byePlayerIds, roundNumber, courtsCount, eventId, drawVersion, userEmail, scorers) {
   const eligible = players.filter(p => !byePlayerIds.includes(p.PlayerID));
   const { partnerCounts, opponentCounts, courtCounts } = buildDrawHistory(matches);
   const courtNumbers = Array.from({ length: courtsCount }, (_, i) => i + 1);
 
-  return generateGroupMatches(eligible, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion, userEmail, drawBuildVariables);
+  return generateGroupMatches(eligible, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion, userEmail, scorers);
 }
 
 // ---------- CLUSTERED ROUND GENERATION (Divisions, Ladder Scramble, Pools, Pool Fusion) ----------
 
-function generateClusteredRoundDraw(players, matches, byesByTeamForThisRound, roundNumber, courtsCount, eventId, drawVersion, numberOfTeams, userEmail, gameProfile, drawBuildVariables) {
+function generateClusteredRoundDraw(players, matches, byesByTeamForThisRound, roundNumber, courtsCount, eventId, drawVersion, numberOfTeams, userEmail, gameProfile, scorers) {
   if (courtsCount % numberOfTeams !== 0) {
     console.error(`Cannot generate draw: courtsCount (${courtsCount}) is not evenly divisible by NumberOfTeams (${numberOfTeams}).`);
     return [];
@@ -402,7 +413,7 @@ function generateClusteredRoundDraw(players, matches, byesByTeamForThisRound, ro
 
       const partnerships = roundPlan.partnerPairs.map(([i, j]) => [stableOrder[i], stableOrder[j]]);
 
-      const matchups = generateBestMatchups(partnerships, opponentCounts, drawBuildVariables);
+      const matchups = generateBestMatchups(partnerships, opponentCounts, scorers);
       const courted = assignCourts(matchups, courtNumbers, courtCounts);
       teamMatches = courted.map((m, idx) => buildMatchRecord(m, idx, roundNumber, eventId, drawVersion, userEmail));
 
@@ -412,7 +423,7 @@ function generateClusteredRoundDraw(players, matches, byesByTeamForThisRound, ro
       const teamPlayers = allPoolPlayers.filter(p => !teamByes.includes(p.PlayerID));
 
       const { partnerCounts } = buildDrawHistory(matches);
-      teamMatches = generateGroupMatches(teamPlayers, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion, userEmail, drawBuildVariables);
+      teamMatches = generateGroupMatches(teamPlayers, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion, userEmail, scorers);
     }
 
     allMatches.push(...teamMatches);
@@ -423,7 +434,7 @@ function generateClusteredRoundDraw(players, matches, byesByTeamForThisRound, ro
 
 // ---------- MULTI-ROUND GENERATION ----------
 
-function generateMultipleRounds(players, existingMatches, byesByRound, startRound, numberOfRounds, courtsCount, eventId, drawVersion, gameId, numberOfTeams, userEmail, gameProfile, drawBuildVariables) {
+function generateMultipleRounds(players, existingMatches, byesByRound, startRound, numberOfRounds, courtsCount, eventId, drawVersion, gameId, numberOfTeams, userEmail, gameProfile, scorers) {
   let allMatches = [...existingMatches];
   const generatedRounds = [];
 
@@ -439,10 +450,10 @@ function generateMultipleRounds(players, existingMatches, byesByRound, startRoun
       Object.keys(byesByRound).forEach(teamKey => {
         byesByTeamForThisRound[teamKey] = byesByRound[teamKey][i] || [];
       });
-      roundMatches = generateClusteredRoundDraw(players, allMatches, byesByTeamForThisRound, roundNumber, courtsCount, eventId, drawVersion, numberOfTeams, userEmail, gameProfile, drawBuildVariables); // ADDED gameProfile
+      roundMatches = generateClusteredRoundDraw(players, allMatches, byesByTeamForThisRound, roundNumber, courtsCount, eventId, drawVersion, numberOfTeams, userEmail, gameProfile, scorers); // ADDED gameProfile
     } else {
       const byesForThisRound = byesByRound[roundNumber] || [];
-      roundMatches = generateRoundDraw(players, allMatches, byesForThisRound, roundNumber, courtsCount, eventId, drawVersion, userEmail, drawBuildVariables);
+      roundMatches = generateRoundDraw(players, allMatches, byesForThisRound, roundNumber, courtsCount, eventId, drawVersion, userEmail, scorers);
     }
 
     generatedRounds.push(...roundMatches);
@@ -523,9 +534,10 @@ async function generateNRoundsAndPreview(numberOfRounds) {
   const gameId = activeEvent.GameID;
   const gameProfile = gamesProfile.find(g => g.GameID === gameId);
   const userEmail = window.currentUserEmail;
-  
+
   const drawWeightingIndex = parseInt(activeEvent.DrawWeighting) || 0;
   const drawBuildVariables = penaltyWeightPresets[drawWeightingIndex];
+  const scorers = makeScorers(drawBuildVariables); // NEW — build once per run, threaded instead of drawBuildVariables
 
   window.gdRedivisionCache = {};
   window.gdTeamByeCache = {};    // NEW
@@ -576,7 +588,7 @@ async function generateNRoundsAndPreview(numberOfRounds) {
     }
     newMatches = generateMultipleRounds(
       players, [], byesByRound, startRound, numberOfRounds, courtsCount,
-      activeEventId, newDrawVersion, gameId, numberOfTeams, userEmail, gameProfile, drawBuildVariables
+      activeEventId, newDrawVersion, gameId, numberOfTeams, userEmail, gameProfile, scorers
     );
     console.log(`Generated ${newMatches.length} matches across ${numberOfRounds} round(s) for game type "${gameId}" (DrawVersion ${newDrawVersion}):`, newMatches);
   }
