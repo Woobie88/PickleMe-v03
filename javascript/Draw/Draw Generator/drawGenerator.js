@@ -537,6 +537,7 @@ async function generateNRoundsAndPreview(numberOfRounds) {
 
   const drawWeightingIndex = parseInt(activeEvent.DrawWeighting) || 0;
   const drawBuildVariables = penaltyWeightPresets[drawWeightingIndex];
+  alert("The drawBuildVariables used are",drawBuildVariables);
   const scorers = makeScorers(drawBuildVariables); // NEW — build once per run, threaded instead of drawBuildVariables
 
   window.gdRedivisionCache = {};
