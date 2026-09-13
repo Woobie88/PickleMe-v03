@@ -265,40 +265,13 @@ function renderAnalyticsCards(payload) {
 
   document.getElementById('analytics-heading').innerText = heading;
 
+  // CHANGED — canvas-drawn legend text was rendering near-black regardless of
+  // the configured color (confirmed via pixel inspection: config said #f8fafc,
+  // actual drawn pixels were near-black), so the built-in legend is hidden for
+  // this screen and replaced with a real HTML legend below, which has no such
+  // dependency on Chart.js's internal text-color handling.
   const legendConfig = isQualityScreen
-    ? {
-        display: true,
-        position: 'top',
-        labels: {
-          color: '#f8fafc', // NEW — matches --text-main from styles.css directly, no runtime CSS lookup
-          // NEW — one legend entry per DUPR bucket instead of one per dataset,
-          // since Partners/Opponents for the same bucket should toggle as a pair.
-          // Visibility is tracked in window.qualityBucketHidden rather than via
-          // chart.isDatasetVisible(), since that method isn't reliable across
-          // every Chart.js version and a thrown error here blanks the legend text.
-          generateLabels: () => DUPR_GAP_BUCKETS.map(b => ({
-            text: b.label,
-            fillStyle: b.color,
-            strokeStyle: b.color,
-            lineWidth: 1,
-            hidden: !!(window.qualityBucketHidden && window.qualityBucketHidden[b.key]),
-            bucketKey: b.key
-          }))
-        },
-        onClick: (e, legendItem, legend) => {
-          const chart = legend.chart;
-          window.qualityBucketHidden = window.qualityBucketHidden || {};
-          const key = legendItem.bucketKey;
-          window.qualityBucketHidden[key] = !window.qualityBucketHidden[key];
-
-          chart.data.datasets.forEach((ds, idx) => {
-            if (ds.bucketKey === key) {
-              if (window.qualityBucketHidden[key]) chart.hide(idx); else chart.show(idx);
-            }
-          });
-          chart.update();
-        }
-      }
+    ? { display: false }
     : { display: true, position: 'top' };
 
   window.analyticsChartInstance = new Chart(canvas, {
@@ -376,13 +349,92 @@ function renderAnalyticsCards(payload) {
           beginAtZero: true,
           ticks: { stepSize: 1 },
           stacked: isQualityScreen // NEW
-        },
-        y: {
-          stacked: isQualityScreen // NEW
         }
+        // y-axis intentionally left unstacked — it's the category (player) axis
+        // here, and marking it stacked caused the Partners/Opponents bars to
+        // overlap instead of rendering as two separate grouped bars per player
       }
     }
   });
+
+  // NEW — HTML legend for the Draw Quality screen, replacing the canvas-drawn
+  // one whose text color wasn't rendering correctly
+  if (isQualityScreen) {
+    renderQualityLegendHTML(window.analyticsChartInstance);
+  } else {
+    hideQualityLegendHTML();
+  }
+}
+
+// ---------- HTML LEGEND (Draw Quality screen) ----------
+// NEW — plain DOM legend, styled with real CSS instead of canvas-drawn text,
+// so it always matches --text-main with no dependency on Chart.js internals.
+
+function renderQualityLegendHTML(chart) {
+  const canvas = document.getElementById('analytics-chart-canvas');
+  if (!canvas) return;
+
+  let legendEl = document.getElementById('analytics-quality-legend');
+  if (!legendEl) {
+    legendEl = document.createElement('div');
+    legendEl.id = 'analytics-quality-legend';
+    legendEl.style.display = 'flex';
+    legendEl.style.flexWrap = 'wrap';
+    legendEl.style.gap = '10px 16px';
+    legendEl.style.marginBottom = '10px';
+    legendEl.style.fontSize = '0.8rem';
+    canvas.parentNode.insertBefore(legendEl, canvas);
+  }
+
+  legendEl.innerHTML = '';
+  window.qualityBucketHidden = window.qualityBucketHidden || {};
+
+  DUPR_GAP_BUCKETS.forEach(b => {
+    const isHidden = !!window.qualityBucketHidden[b.key];
+
+    const item = document.createElement('div');
+    item.style.display = 'flex';
+    item.style.alignItems = 'center';
+    item.style.gap = '6px';
+    item.style.cursor = 'pointer';
+    item.style.color = 'var(--text-main)';
+    item.style.opacity = isHidden ? '0.4' : '1';
+    item.style.userSelect = 'none';
+
+    const swatch = document.createElement('span');
+    swatch.style.display = 'inline-block';
+    swatch.style.width = '12px';
+    swatch.style.height = '12px';
+    swatch.style.borderRadius = '3px';
+    swatch.style.backgroundColor = b.color;
+    swatch.style.flexShrink = '0';
+
+    const label = document.createElement('span');
+    label.textContent = b.label;
+
+    item.appendChild(swatch);
+    item.appendChild(label);
+
+    item.addEventListener('click', () => {
+      window.qualityBucketHidden[b.key] = !window.qualityBucketHidden[b.key];
+      chart.data.datasets.forEach((ds, idx) => {
+        if (ds.bucketKey === b.key) {
+          if (window.qualityBucketHidden[b.key]) chart.hide(idx); else chart.show(idx);
+        }
+      });
+      chart.update();
+      renderQualityLegendHTML(chart); // refresh dimmed/active styling
+    });
+
+    legendEl.appendChild(item);
+  });
+
+  legendEl.style.display = 'flex';
+}
+
+function hideQualityLegendHTML() {
+  const legendEl = document.getElementById('analytics-quality-legend');
+  if (legendEl) legendEl.style.display = 'none';
 }
 
 function initAnalyticsSwipeHandlers() {
