@@ -270,6 +270,7 @@ function renderAnalyticsCards(payload) {
         display: true,
         position: 'top',
         labels: {
+          color: Chart.defaults.color, // NEW — match the text color every other legend on the page uses
           // NEW — one legend entry per DUPR bucket instead of one per dataset,
           // since Partners/Opponents for the same bucket should toggle as a pair.
           // Visibility is tracked in window.qualityBucketHidden rather than via
