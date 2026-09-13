@@ -575,7 +575,7 @@ function enableGameDragToActivate() {
 
           // Not supported — DB should read 0 (Frequency)
           // Supported, but never saved before — DB should read 1 (Equal), the default
-          const drawWeighting = drawWeightingSupported ? 3 : 0;
+          const drawWeighting = drawWeightingSupported ? 2 : 0;
 
           await window.updateScoringModeInFirestore(activeEventId, scoringDefault, drawWeighting);
           if (activeEvent) activeEvent.Scoring = scoringDefault;
