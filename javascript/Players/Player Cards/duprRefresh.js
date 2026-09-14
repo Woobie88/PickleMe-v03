@@ -1,32 +1,40 @@
-function playerDUPRrefresh() {
-    // Get the event players
-    const players = window.cachedUserUniverse.players;
-    console.log('The players payload is', players);
+async function playerDUPRrefresh() {
+  const activeEventId = window.cachedUserUniverse.activeEventId;
+  const activeEvent = window.cachedUserUniverse.events.find(e => String(e.EventID) === String(activeEventId));
+  const currentPlayerVersion = activeEvent.CurrentPlayerVersion;
 
-    // Get DUPR data
-    const duprData = window.fetchDuprDatabaseFromFirestore();
-    console.log('DUPR database is', duprData);
+  const players = window.cachedUserUniverse.players.filter(
+    p => String(p.PlayerVersion) === String(currentPlayerVersion)
+  );
 
-    // Get current DUPR rating for each player
-    players.forEach(player => {
-        console.log(
-            'The player name is',
-            player.Name,
-            'DUPR ID',
-            player.DUPRId
-        );
+  const duprDatabase = window.cachedUserUniverse.dupr && window.cachedUserUniverse.dupr.length > 0
+    ? window.cachedUserUniverse.dupr
+    : await window.fetchDuprDatabaseFromFirestore();
+  window.cachedUserUniverse.dupr = duprDatabase;
 
-        const currentDUPRRate = duprData.find(
-            e => String(e.DUPRId) === String(player.DUPRId)
-        );
+  let updatedCount = 0;
+  const updates = [];
 
-        console.log(
-            'Their current rating is',
-            currentDUPRRate ? currentDUPRRate["DUPR Rating"] : 'No DUPR rating found'
-        );
-    });
+  players.forEach(player => {
+    if (!player.DUPRId || player.DUPRId === 'Not Found') return; // nothing to look up for these
 
-    // Update date Firestore
+    const duprRecord = duprDatabase.find(d => d.DUPRId === player.DUPRId);
+    if (!duprRecord) return;
 
-    // Re render players screen
+    const newRating = parseFloat(duprRecord['DUPR Rating']) || player.DUPR;
+    if (newRating !== player.DUPR) {
+      player.DUPR = newRating;
+      updates.push(window.updatePlayerFieldInFirestore(player.PlayerID, 'DUPR', newRating));
+      updatedCount++;
+    }
+  });
+
+  try {
+    await Promise.all(updates);
+    alert(`DUPR ratings refreshed for ${updatedCount} player(s).`);
+    renderPlayerCards(window.cachedUserUniverse);
+  } catch (err) {
+    console.error("Failed to refresh DUPR ratings:", err);
+    alert("Failed to refresh DUPR ratings — check the console for details.");
+  }
 }
