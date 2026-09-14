@@ -1,7 +1,7 @@
 function playerDUPRrefresh() {
     // Get the event players
-    const payload = window.cachedUserUniverse;
-    console.log('The payload is',payload);
+    const players = window.cachedUserUniverse.players;
+    console.log('The players payload is',players);
     const duprData = window.fetchDuprDatabaseFromFirestore();
     console.log('DUPR database is',duprData);
 
