@@ -566,6 +566,7 @@ async function updateActiveEventDetails() {
         ...updatedData
       };
     }
+    const containerId = 'active-events-list';
     renderUserEventCards(window.cachedUserUniverse, containerId);
   }
 
