@@ -206,7 +206,7 @@ function renderAnalyticsCards(payload) {
       { label: 'Max Opponent', data: sorted.map(d => d.maxSameOpponent), backgroundColor: '#ef4444' }
     ];
   } else if (window.analyticsScreenIndex === 2) { // NEW — Draw Quality: DUPR Gap Distribution
-    heading = 'DUPR Gap Quality Analysis';
+    heading = 'Draw Quality — DUPR Gap Distribution';
     datasets = [];
 
     // Partner stack — solid bucket colors
@@ -285,6 +285,16 @@ function renderAnalyticsCards(payload) {
         legend: legendConfig,
         tooltip: {
           callbacks: {
+            title(items) { // NEW — shows player name + Partner/Opponent on the Draw Quality screen
+              if (!items.length) return '';
+              if (window.analyticsScreenIndex === 2) {
+                const item = items[0];
+                const entry = sorted[item.dataIndex];
+                const metricLabel = item.dataset.metricType === 'partner' ? 'Partner' : 'Opponent';
+                return `${entry.player.FirstName || 'Unnamed'} — ${metricLabel}`;
+              }
+              return items[0].label; // preserves the default category-label title everywhere else
+            },
             label(ctx) {
               const entry = sorted[ctx.dataIndex];
               const isFirstDataset = ctx.datasetIndex === 0;
@@ -304,12 +314,15 @@ function renderAnalyticsCards(payload) {
                   .map(([pid]) => getPlayerNameById(pid));
                 return namesAtMax.length > 0 ? [`${maxValue}x: ${namesAtMax.join(', ')}`] : ['No repeats yet'];
 
-              } else if (window.analyticsScreenIndex === 2) { // NEW — Draw Quality tooltip: round numbers in this gap bucket
+              } else if (window.analyticsScreenIndex === 2) { // Draw Quality tooltip: bucket range + round numbers in this gap bucket
                 const bucketKey = ctx.dataset.bucketKey;
                 const metricType = ctx.dataset.metricType;
                 const buckets = metricType === 'partner' ? entry.partnerGapBuckets : entry.opponentGapBuckets;
+                const bucketLabel = DUPR_GAP_BUCKETS.find(b => b.key === bucketKey)?.label || '';
                 const rounds = (buckets[bucketKey]?.rounds || []).slice().sort((a, b) => a - b);
-                return rounds.length > 0 ? rounds.map(r => `Round ${r}`) : ['No matches in this range'];
+                return rounds.length > 0
+                  ? [bucketLabel, ...rounds.map(r => `Round ${r}`)]
+                  : [bucketLabel, 'No matches in this range'];
 
               } else if (window.analyticsScreenIndex === 3) { // CHANGED — was 2
                 const court = parseInt(ctx.dataset.label.replace('Court ', ''));
