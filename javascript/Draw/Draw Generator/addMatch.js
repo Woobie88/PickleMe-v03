@@ -11,6 +11,15 @@
 window.amConfig = { round: 1, totalCourts: 1, courtIndex: 0, selectionsPerCourt: [] };
 window.amCurrentSelection = [];
 
+// Field names on an existing match record, used to pre-highlight players
+// when a round being edited already has matches. Adjust these if your
+// Firestore match schema uses different field names.
+const AM_MATCH_PLAYER_FIELDS = {
+  team1: ['Team1Player1', 'Team1Player2'],
+  team2: ['Team2Player1', 'Team2Player2'],
+  court: 'Court'
+};
+
 // ---------- SCREEN: Round Selection ----------
 
 function renderAddMatchRoundScreen(payload) {
@@ -81,7 +90,7 @@ function renderAddMatchPlayersScreen(payload) {
 
   document.getElementById('am-players-heading').innerText = `Select Players — Court ${window.amConfig.courtIndex + 1}`;
 
-  window.amCurrentSelection = [];
+  window.amCurrentSelection = getAmPrefillSelectionForCourt(matches, alreadySelectedIds);
 
   const container = document.getElementById('am-players-list');
   container.innerHTML = availablePlayers.length === 0
@@ -102,7 +111,39 @@ function renderAddMatchPlayersScreen(payload) {
       }).join('');
 
   enableAddMatchLongPress();
+  applyAmSelectionHighlights();
   updateAddMatchNextButton();
+}
+
+// Looks at the round's existing matches (if any) and returns the player IDs
+// already assigned to the current court, in team order, so the player
+// selection screen opens with that match pre-highlighted instead of blank.
+// Skips any player already locked in for a different court in this session.
+function getAmPrefillSelectionForCourt(allMatches, alreadySelectedIds) {
+  const courtNumber = window.amConfig.courtIndex + 1;
+  const existingMatch = allMatches.find(
+    m => parseInt(m.Round) === window.amConfig.round && parseInt(m[AM_MATCH_PLAYER_FIELDS.court]) === courtNumber
+  );
+  if (!existingMatch) return [];
+
+  const prefillIds = [...AM_MATCH_PLAYER_FIELDS.team1, ...AM_MATCH_PLAYER_FIELDS.team2]
+    .map(field => existingMatch[field])
+    .filter(Boolean);
+
+  return prefillIds.filter(pid => !alreadySelectedIds.includes(pid));
+}
+
+// Applies the am-pair-1 / am-pair-2 highlight classes to whichever cards
+// correspond to window.amCurrentSelection. Shared by initial render (for
+// pre-filled matches) and by toggleAmPlayerSelection (for manual picks).
+function applyAmSelectionHighlights() {
+  document.querySelectorAll('#am-players-list .app-card').forEach(c => {
+    c.classList.remove('am-pair-1', 'am-pair-2');
+  });
+  window.amCurrentSelection.forEach((pid, i) => {
+    const cardEl = document.querySelector(`#am-players-list .app-card[data-card-id="${pid}"]`);
+    if (cardEl) cardEl.classList.add(i < 2 ? 'am-pair-1' : 'am-pair-2');
+  });
 }
 
 function enableAddMatchLongPress() {
@@ -135,14 +176,7 @@ function toggleAmPlayerSelection(card) {
     window.amCurrentSelection.push(playerId);
   }
 
-  document.querySelectorAll('#am-players-list .app-card').forEach(c => {
-    c.classList.remove('am-pair-1', 'am-pair-2');
-  });
-  window.amCurrentSelection.forEach((pid, i) => {
-    const cardEl = document.querySelector(`#am-players-list .app-card[data-card-id="${pid}"]`);
-    if (cardEl) cardEl.classList.add(i < 2 ? 'am-pair-1' : 'am-pair-2');
-  });
-
+  applyAmSelectionHighlights();
   updateAddMatchNextButton();
 }
 
@@ -172,6 +206,20 @@ function handleAddMatchPlayersNext() {
     window.amConfig.courtIndex++;
     renderAddMatchPlayersScreen(window.cachedUserUniverse);
   }
+}
+
+// Steps back exactly one screen: from court N (N > 1) back to court N-1
+// (restoring whatever was selected there), or from court 1 back to the
+// round screen. Wire this to the players screen's back button.
+function handleAddMatchPlayersBack() {
+  if (window.amConfig.courtIndex === 0) {
+    navigateToScreen('add-match-round');
+    return;
+  }
+
+  window.amConfig.courtIndex--;
+  window.amConfig.selectionsPerCourt.pop();
+  renderAddMatchPlayersScreen(window.cachedUserUniverse);
 }
 
 // ---------- COMMIT: create or replace the round's matches ----------
