@@ -2,8 +2,12 @@ function playerDUPRrefresh() {
     // Get the event players
     const payload = window.cachedUserUniverse;
     console.log('The payload is',payload);
-    const duprDatabase = window.cachedUserUniverse.dupr || [];
-    console.log('The DUPR data is',window.fetchDuprDatabaseFromFirestore());
+    if (!window.cachedUserUniverse.dupr || window.cachedUserUniverse.dupr.length === 0) {
+        window.fetchDuprDatabaseFromFirestore().then(db => {
+            window.cachedUserUniverse.dupr = db;
+        });
+    }
+    console.log('DUPR database is',window.cachedUserUniverse.dupr);
 
     // Get DUPR data
 
