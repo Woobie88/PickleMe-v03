@@ -3,7 +3,7 @@ function playerDUPRrefresh() {
     const payload = window.cachedUserUniverse;
     console.log('The payload is',payload);
     const duprDatabase = window.cachedUserUniverse.dupr || [];
-    console.log('The DUPR data is',duprDatabase);
+    console.log('The DUPR data is',window.fetchDuprDatabaseFromFirestore());
 
     // Get DUPR data
 
