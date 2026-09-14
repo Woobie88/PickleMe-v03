@@ -8,8 +8,8 @@ function playerDUPRrefresh() {
     // Get DUPR data
     players.forEach(player => {
         console.log('The player name is',player.Name,'DUPR ID',player.DUPRId);
-        let currentDUPRRate = duprData["DUPR Rating"].find(e => String(e.DUPRId) === String(DUPRId));
-        console.log('Their current rating is',currentDUPRRate);
+        let currentDUPRRate = duprData.find(e => String(e.DUPRId) === String(DUPRId));
+        console.log('Their current rating is',currentDUPRRate["DUPR Rating"]);
     });
 
     // Update date Firestore
