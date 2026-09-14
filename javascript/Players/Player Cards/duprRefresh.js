@@ -6,6 +6,10 @@ function playerDUPRrefresh() {
     console.log('DUPR database is',duprData);
 
     // Get DUPR data
+    players.forEach(player => {
+        console.log('The player name is',player.Name);
+    
+    });
 
     // Update date Firestore
 
