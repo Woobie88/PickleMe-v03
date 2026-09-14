@@ -4,7 +4,7 @@ function playerDUPRrefresh() {
     console.log('The players payload is', players);
 
     // Get DUPR data
-    const duprData = await window.fetchDuprDatabaseFromFirestore();
+    const duprData = window.fetchDuprDatabaseFromFirestore();
     console.log('DUPR database is', duprData);
 
     // Get current DUPR rating for each player
