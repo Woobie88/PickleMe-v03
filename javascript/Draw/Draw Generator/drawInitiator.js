@@ -118,7 +118,7 @@ function updateDetailsNextButtonLabel() {
   const gameProfile = gamesProfile.find(g => g.GameID === activeEvent?.GameID);
 
   const grouping = gameProfile?.Grouping || 'None';
-  const needsTeamsScreen = ['Teams', 'Pools', 'Pairs', 'Divisions', 'Flex'].includes(grouping);
+  const needsTeamsScreen = ['Teams', 'Pools', 'Pairs', 'Divisions'].includes(grouping);
 
   const btn = document.getElementById('gd-details-next-btn'); // needs an id on the button — see HTML note below
   if (!btn) return;
@@ -133,16 +133,6 @@ function updateDetailsNextButtonLabel() {
 async function ensureTeamsDefaultForGame(activeEventId, gameProfile) {
   const grouping = gameProfile?.Grouping || 'None';
   const groupingRequiresField = ['Teams', 'Pools', 'Divisions'].includes(grouping);
-
-  // Flex is a fixed structure — Core Group 1 / Flex Group / Core Group 2
-  if (grouping === 'Flex') {
-    const activeEvent = window.cachedUserUniverse.events.find(e => String(e.EventID) === String(activeEventId));
-    if (activeEvent && activeEvent.NumberOfTeams !== FLEX_GROUP_COUNT) {
-      activeEvent.NumberOfTeams = FLEX_GROUP_COUNT;
-      await window.updateEventFieldInFirestore(activeEventId, 'NumberOfTeams', FLEX_GROUP_COUNT);
-    }
-    return;
-  }
 
   if (!groupingRequiresField) {
     const activeEvent = window.cachedUserUniverse.events.find(e => String(e.EventID) === String(activeEventId));
@@ -271,9 +261,7 @@ function handleDetailsNext() {
   const grouping = gameProfile?.Grouping || 'None';
   const needsTeamsScreen = ['Teams', 'Pools', 'Pairs', 'Divisions'].includes(grouping);
 
-  if (grouping === 'Flex') {
-    navigateToScreen('generate-draw-crosscourt');
-  } else if (needsTeamsScreen) {
+  if (needsTeamsScreen) {
     navigateToScreen('generate-draw-teams');
   } else {
     routeToAvailabilityOrBuild();
@@ -290,15 +278,6 @@ function routeToAvailabilityOrBuild() {
 
 // RENDER TEAMS / DIVISIONS
 window.gdDraftType = '3rr'; // default, per spec
-
-// --- Flex / Cross Court Divisions -----------------------------------------
-// Fixed 3-group structure. Group number persisted to player.Team matches
-// on-screen order: 1 = Core Group 1, 2 = Flex Group, 3 = Core Group 2.
-// Capping each core at 4 is what guarantees a fillable draw for any random bye.
-const FLEX_GROUP_COUNT = 3;
-const FLEX_CORE_MAX = 4;
-const FLEX_GROUP_LABELS = ['Core Group 1', 'Flex Group', 'Core Group 2'];
-const FLEX_GROUP_CAPACITIES = [FLEX_CORE_MAX, null, FLEX_CORE_MAX]; // null = unlimited
 
 function computePlayersPerGroup(numPlayers, numGroups) {
   const base = Math.floor(numPlayers / numGroups);
@@ -380,9 +359,7 @@ function renderGenerateDrawTeams(payload, ids = {}) {
 
   const numberOfGroups = grouping === 'Pairs'
     ? Math.floor(duprSorted.length / 2)
-    : grouping === 'Flex'
-      ? FLEX_GROUP_COUNT
-      : (parseInt(activeEvent?.NumberOfTeams) || 2);
+    : (parseInt(activeEvent?.NumberOfTeams) || 2);
 
   const headingEl = document.getElementById(headingId);
   if (headingEl) headingEl.innerText = groupLabel + 's';
@@ -400,28 +377,7 @@ function renderGenerateDrawTeams(payload, ids = {}) {
   const playersPerGroup = computePlayersPerGroup(duprSorted.length, numberOfGroups);
   const groups = Array.from({ length: numberOfGroups }, () => []);
 
-  if (grouping === 'Flex') {
-    // Everyone starts under Flex Group (index 1); restore prior drags if the
-    // user has already been on this screen, so Back/Next doesn't wipe them.
-    const hasPriorAssignment = duprSorted.some(p => {
-      const team = parseInt(p.Team);
-      return team >= 1 && team <= FLEX_GROUP_COUNT;
-    });
-
-    if (hasPriorAssignment) {
-      duprSorted.forEach(player => {
-        const team = parseInt(player.Team);
-        const groupIdx = (team >= 1 && team <= FLEX_GROUP_COUNT) ? team - 1 : 1;
-        groups[groupIdx].push(player);
-      });
-      // Defensive: spill any stale over-cap assignment back to Flex Group
-      [0, 2].forEach(coreIdx => {
-        groups[1] = groups[1].concat(groups[coreIdx].splice(FLEX_CORE_MAX));
-      });
-    } else {
-      groups[1] = duprSorted.slice();
-    }
-  } else if (grouping === 'Pairs') {
+  if (grouping === 'Pairs') {
     const pairs = buildTopBottomPairs(duprSorted);
     pairs.forEach((pair, idx) => { groups[idx] = pair; });
   } else if (draftSupported) {
@@ -435,30 +391,9 @@ function renderGenerateDrawTeams(payload, ids = {}) {
     });
   }
 
-  renderGroupsUI(groups, groupLabel, players, {
-    groupsListId,
-    nextBtnId,
-    allPlayersPresentVar,
-    groupLabels: grouping === 'Flex' ? FLEX_GROUP_LABELS : null,
-    groupCapacities: grouping === 'Flex' ? FLEX_GROUP_CAPACITIES : null
-  });
+  renderGroupsUI(groups, groupLabel, players, { groupsListId, nextBtnId, allPlayersPresentVar });
 
   // heading/draft-toggle already handled above; headingId already set
-}
-
-// Cross Court Divisions screen — same render path, its own container IDs
-function renderGenerateDrawCrossCourt(payload) {
-  renderGenerateDrawTeams(payload, {
-    headingId: 'gd-crosscourt-screen-heading',
-    draftToggleBlockId: 'gd-crosscourt-draft-toggle-block',
-    draftToggleId: 'gd-crosscourt-draft-toggle',
-    groupsListId: 'gd-crosscourt-groups-list',
-    nextBtnId: 'gd-crosscourt-next-btn'
-  });
-}
-
-function handleCrossCourtNext() {
-  routeToAvailabilityOrBuild();
 }
 
 function updateTeamsNextButtonLabel() {
@@ -474,9 +409,7 @@ function handleTeamsNext() {
 }
 
 // Generalized N-group drag engine
-function enableTeamsDragDrop(numberOfGroups, groupsListId = 'gd-teams-groups-list', options = {}) {
-  const { groupCapacities = null } = options;
-
+function enableTeamsDragDrop(numberOfGroups, groupsListId = 'gd-teams-groups-list') {
   const groupContainers = [];
   for (let i = 1; i <= numberOfGroups; i++) {
     const el = document.getElementById(`${groupsListId}-group-${i}`);
@@ -534,23 +467,6 @@ function enableTeamsDragDrop(numberOfGroups, groupsListId = 'gd-teams-groups-lis
         const targetContainer = elBelow?.closest(containerSelector);
         if (!targetContainer) return;
 
-        // Capacity guard — the dragged card is detached to document.body and the
-        // placeholder carries no data-card-id, so this is true post-drop occupancy.
-        if (groupCapacities) {
-          const targetGroupNumber = parseInt(targetContainer.dataset.groupNumber);
-          const capacity = groupCapacities[targetGroupNumber - 1];
-          const alreadyInTarget = placeholder && placeholder.parentNode === targetContainer;
-
-          if (capacity != null && !alreadyInTarget) {
-            const occupancy = targetContainer.querySelectorAll('.app-card[data-card-id]').length;
-            if (occupancy >= capacity) {
-              targetContainer.classList.add('drop-rejected');
-              return; // leave the placeholder put — drop refused
-            }
-          }
-        }
-        groupContainers.forEach(c => c.classList.remove('drop-rejected'));
-
         const targetCard = elBelow.closest('.app-card[data-card-id]');
         if (targetCard && targetCard !== placeholder) {
           const box = targetCard.getBoundingClientRect();
@@ -580,27 +496,11 @@ function enableTeamsDragDrop(numberOfGroups, groupsListId = 'gd-teams-groups-lis
           placeholder.remove();
         }
 
-        groupContainers.forEach(c => c.classList.remove('drop-rejected'));
-
         window.suppressNextCardClick = true;
         commitTeamsAssignment(numberOfGroups, groupsListId);
-        if (groupCapacities) updateGroupCounts(numberOfGroups, groupsListId, groupCapacities);
       });
     });
   });
-}
-
-// Keeps the "n / 4" counters in the section titles live after each drag
-function updateGroupCounts(numberOfGroups, groupsListId, groupCapacities) {
-  for (let i = 1; i <= numberOfGroups; i++) {
-    const container = document.getElementById(`${groupsListId}-group-${i}`);
-    const countEl = document.getElementById(`${groupsListId}-count-${i}`);
-    if (!container || !countEl) continue;
-
-    const occupancy = container.querySelectorAll('.app-card[data-card-id]').length;
-    const capacity = groupCapacities[i - 1];
-    countEl.innerText = capacity == null ? `${occupancy}` : `${occupancy} / ${capacity}`;
-  }
 }
 
 async function commitTeamsAssignment(numberOfGroups, groupsListId = 'gd-teams-groups-list') {
@@ -743,13 +643,7 @@ async function togglePlayerExclude(playerId, refreshFn) {
 }
 
 function renderGroupsUI(groups, groupLabel, allPlayersForSeedLookup, ids) {
-  const {
-    groupsListId,
-    nextBtnId,
-    allPlayersPresentVar,
-    groupLabels = null,      // per-group names; falls back to `${groupLabel} ${n}`
-    groupCapacities = null   // per-group max; null entry = unlimited
-  } = ids;
+  const { groupsListId, nextBtnId, allPlayersPresentVar } = ids;
 
   window.gdGroupAssignment = groups;
 
@@ -764,15 +658,8 @@ function renderGroupsUI(groups, groupLabel, allPlayersForSeedLookup, ids) {
 
   groups.forEach((groupPlayers, idx) => {
     const groupNumber = idx + 1;
-    const groupTitle = groupLabels ? groupLabels[idx] : `${groupLabel} ${groupNumber}`;
-    const capacity = groupCapacities ? groupCapacities[idx] : null;
-
-    const countHtml = groupCapacities
-      ? ` <span class="group-count" id="${groupsListId}-count-${groupNumber}">${groupPlayers.length}${capacity === null ? '' : ' / ' + capacity}</span>`
-      : '';
-
-    html += `<div class="event-section-title current">${groupTitle}${countHtml}</div>`;
-    html += `<div class="card-grid${groupCapacities ? ' drop-zone' : ''}" id="${groupsListId}-group-${groupNumber}" data-group-number="${groupNumber}">`;
+    html += `<div class="event-section-title current">${groupLabel} ${groupNumber}</div>`;
+    html += `<div class="card-grid" id="${groupsListId}-group-${groupNumber}" data-group-number="${groupNumber}">`;
     groupPlayers.forEach(player => {
       const seedNumber = duprSorted.findIndex(p => p.PlayerID === player.PlayerID) + 1;
       const seedUrl = playerSeeds[0]['seed-' + seedNumber];
@@ -789,7 +676,7 @@ function renderGroupsUI(groups, groupLabel, allPlayersForSeedLookup, ids) {
 
   container.innerHTML = html || `<div class="no-data-placeholder"><h3>No Players Found</h3></div>`;
 
-  enableTeamsDragDrop(groups.length, groupsListId, { groupCapacities });
+  enableTeamsDragDrop(groups.length, groupsListId);
   commitTeamsAssignment(groups.length, groupsListId);
 
   const btn = document.getElementById(nextBtnId);
