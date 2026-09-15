@@ -86,6 +86,9 @@ function navigateToScreen(screenId) {
     case 'generate-draw-teams':
       renderGenerateDrawTeams(window.cachedUserUniverse);
       break;
+    case 'generate-draw-flex':
+      renderFlexGroupsScreen(window.cachedUserUniverse);
+      break;
     case 'generate-draw-available':
       renderPlayerAvailabilityList(window.cachedUserUniverse);
       break;

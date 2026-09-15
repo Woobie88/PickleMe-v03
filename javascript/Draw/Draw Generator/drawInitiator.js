@@ -259,9 +259,10 @@ function handleDetailsNext() {
   const gameProfile = gamesProfile.find(g => g.GameID === activeEvent?.GameID);
 
   const grouping = gameProfile?.Grouping || 'None';
-  const needsTeamsScreen = ['Teams', 'Pools', 'Pairs', 'Divisions'].includes(grouping);
 
-  if (needsTeamsScreen) {
+  if (grouping === 'Flex') { // NEW
+    navigateToScreen('generate-draw-flex');
+  } else if (['Teams', 'Pools', 'Pairs', 'Divisions'].includes(grouping)) {
     navigateToScreen('generate-draw-teams');
   } else {
     routeToAvailabilityOrBuild();
@@ -683,4 +684,202 @@ function renderGroupsUI(groups, groupLabel, allPlayersForSeedLookup, ids) {
   if (btn) {
     btn.innerText = window[allPlayersPresentVar] === 'Yes' ? 'Build Draw' : 'Next';
   }
+}
+
+// Flex screens
+const FLEX_TEAM_NUMBERS = { core1: 1, flex: 2, core2: 3 };
+const FLEX_CONTAINER_IDS = { core1: 'gd-flex-core1-list', flex: 'gd-flex-list', core2: 'gd-flex-core2-list' };
+const FLEX_CAPPED_KEYS = ['core1', 'core2'];
+
+function renderFlexGroupsScreen(payload) {
+  const activeEventId = payload.activeEventId;
+  const activeEvent = payload.events.find(e => String(e.EventID) === String(activeEventId));
+  const currentPlayerVersion = activeEvent.CurrentPlayerVersion;
+
+  const players = (payload.players || [])
+    .filter(p => String(p.PlayerVersion) === String(currentPlayerVersion))
+    .filter(p => p.playerExclude !== 'Yes');
+
+  const duprSorted = [...players].sort((a, b) => {
+    const duprDiff = (parseFloat(b.DUPR) || 0) - (parseFloat(a.DUPR) || 0);
+    if (duprDiff !== 0) return duprDiff;
+    return (parseFloat(a.RandomNumber) || 0) - (parseFloat(b.RandomNumber) || 0);
+  });
+
+  // Group by EXISTING Team field — defaults everyone to Flex (Team 2) if unset
+  const groupsByKey = { core1: [], flex: [], core2: [] };
+  players.forEach(p => {
+    const team = parseInt(p.Team);
+    if (team === FLEX_TEAM_NUMBERS.core1) groupsByKey.core1.push(p);
+    else if (team === FLEX_TEAM_NUMBERS.core2) groupsByKey.core2.push(p);
+    else groupsByKey.flex.push(p); // default — covers Team 2, null, or anything unrecognized
+  });
+
+  // Ensure anyone with no Team assignment gets defaulted to Flex (Team 2) in Firestore
+  const needsDefault = players.filter(p => parseInt(p.Team) !== 1 && parseInt(p.Team) !== 2 && parseInt(p.Team) !== 3);
+  if (needsDefault.length > 0) {
+    needsDefault.forEach(p => { p.Team = FLEX_TEAM_NUMBERS.flex; });
+    Promise.all(needsDefault.map(p => window.updatePlayerTeamInFirestore(p.PlayerID, FLEX_TEAM_NUMBERS.flex)))
+      .catch(err => console.error("Failed to default players to Flex:", err));
+  }
+
+  function buildFlexCard(player) {
+    const seedNumber = duprSorted.findIndex(p => p.PlayerID === player.PlayerID) + 1;
+    const seedUrl = playerSeeds[0]['seed-' + seedNumber];
+    const iconAsset = seedUrl || '🎾';
+    const contentHtml = `
+      <h3>${player.Name || 'Unnamed Player'}</h3>
+      <p class="card-meta-line">${player.DUPRId || 'N/A'} ${player.DUPR ? ' || DUPR ' + player.DUPR : '0'}</p>
+    `;
+    return buildCardMarkup({ iconAsset, contentHtml, cardId: player.PlayerID });
+  }
+
+  Object.keys(groupsByKey).forEach(key => {
+    const container = document.getElementById(FLEX_CONTAINER_IDS[key]);
+    container.innerHTML = groupsByKey[key].map(buildFlexCard).join('')
+      || `<div class="no-data-placeholder"><h3>Nil</h3></div>`;
+  });
+
+  document.getElementById('gd-flex-core1-count').innerText = groupsByKey.core1.length;
+  document.getElementById('gd-flex-core2-count').innerText = groupsByKey.core2.length;
+
+  enableFlexDragDrop();
+
+  const btn = document.getElementById('gd-flex-next-btn');
+  if (btn) btn.innerText = window.gdAllPlayersPresentValue === 'Yes' ? 'Build Draw' : 'Next';
+}
+
+function enableFlexDragDrop() {
+  const containerIds = Object.values(FLEX_CONTAINER_IDS);
+  const containerSelector = containerIds.map(id => `#${id}`).join(', ');
+
+  containerIds.forEach(id => {
+    const container = document.getElementById(id);
+    container.querySelectorAll('.app-card[data-card-id]').forEach(card => {
+      let isDragging = false, longPressTimer = null;
+      let placeholder = null;
+
+      card.addEventListener('touchstart', () => {
+        longPressTimer = setTimeout(() => {
+          isDragging = true;
+          card.classList.add('dragging');
+          if (navigator.vibrate) navigator.vibrate(30);
+
+          const rect = card.getBoundingClientRect();
+          placeholder = document.createElement('div');
+          placeholder.className = 'app-card';
+          placeholder.style.opacity = '0.2';
+          placeholder.style.height = card.offsetHeight + 'px';
+          card.parentNode.insertBefore(placeholder, card.nextSibling);
+
+          document.body.appendChild(card);
+          card.style.position = 'fixed';
+          card.style.width = rect.width + 'px';
+          card.style.left = rect.left + 'px';
+          card.style.top = rect.top + 'px';
+          card.style.zIndex = 1000;
+        }, 350);
+      }, { passive: true });
+
+      card.addEventListener('touchmove', (e) => {
+        if (!isDragging) { clearTimeout(longPressTimer); return; }
+        e.preventDefault();
+        const touch = e.touches[0];
+        card.style.left = (touch.clientX - card.offsetWidth / 2) + 'px';
+        card.style.top = (touch.clientY - card.offsetHeight / 2) + 'px';
+
+        const scrollContainer = document.querySelector('.app-container');
+        const edgeThreshold = 80;
+        const scrollSpeed = 12;
+        if (scrollContainer) {
+          if (touch.clientY < edgeThreshold) scrollContainer.scrollTop -= scrollSpeed;
+          else if (touch.clientY > window.innerHeight - edgeThreshold) scrollContainer.scrollTop += scrollSpeed;
+        }
+
+        card.style.display = 'none';
+        const elBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+        card.style.display = '';
+
+        const targetContainer = elBelow?.closest(containerSelector);
+        if (!targetContainer) return;
+
+        // NEW — cap enforcement: reject the drop target entirely if it's a capped
+        // group already holding 4 REAL cards (placeholder doesn't count)
+        const targetKey = Object.keys(FLEX_CONTAINER_IDS).find(k => FLEX_CONTAINER_IDS[k] === targetContainer.id);
+        if (FLEX_CAPPED_KEYS.includes(targetKey)) {
+          const realCardCount = targetContainer.querySelectorAll('.app-card[data-card-id]').length;
+          const placeholderAlreadyHere = targetContainer.contains(placeholder);
+          if (realCardCount >= 4 && !placeholderAlreadyHere) {
+            return; // full — refuse to move the placeholder here
+          }
+        }
+
+        const targetCard = elBelow.closest('.app-card[data-card-id]');
+        if (targetCard && targetCard !== placeholder) {
+          const box = targetCard.getBoundingClientRect();
+          const midY = box.top + box.height / 2;
+          if (touch.clientY < midY) targetContainer.insertBefore(placeholder, targetCard);
+          else targetContainer.insertBefore(placeholder, targetCard.nextSibling);
+        } else if (!targetContainer.querySelector('.app-card[data-card-id]')) {
+          targetContainer.innerHTML = '';
+          targetContainer.appendChild(placeholder);
+        }
+      }, { passive: false });
+
+      card.addEventListener('touchend', () => {
+        clearTimeout(longPressTimer);
+        if (!isDragging) return;
+        isDragging = false;
+
+        card.classList.remove('dragging');
+        card.style.position = '';
+        card.style.left = '';
+        card.style.top = '';
+        card.style.width = '';
+        card.style.zIndex = '';
+
+        if (placeholder && placeholder.parentNode) {
+          placeholder.parentNode.insertBefore(card, placeholder);
+          placeholder.remove();
+        }
+
+        window.suppressNextCardClick = true;
+        commitFlexAssignment();
+      });
+    });
+  });
+}
+
+async function commitFlexAssignment() {
+  const payload = window.cachedUserUniverse;
+  const updates = [];
+
+  Object.keys(FLEX_CONTAINER_IDS).forEach(key => {
+    const container = document.getElementById(FLEX_CONTAINER_IDS[key]);
+    const teamNumber = FLEX_TEAM_NUMBERS[key];
+    const cardIds = Array.from(container.querySelectorAll('.app-card[data-card-id]')).map(c => c.dataset.cardId);
+
+    cardIds.forEach(pid => {
+      const player = payload.players.find(p => p.PlayerID === pid);
+      if (player) player.Team = teamNumber;
+      updates.push(window.updatePlayerTeamInFirestore(pid, teamNumber));
+    });
+  });
+
+  try {
+    await Promise.all(updates);
+    console.log("Flex group assignments saved to Firestore.");
+  } catch (err) {
+    console.error("Failed to save flex group assignments:", err);
+  }
+
+  // Refresh counts after any drop
+  document.getElementById('gd-flex-core1-count').innerText =
+    document.getElementById('gd-flex-core1-list').querySelectorAll('.app-card[data-card-id]').length;
+  document.getElementById('gd-flex-core2-count').innerText =
+    document.getElementById('gd-flex-core2-list').querySelectorAll('.app-card[data-card-id]').length;
+}
+
+function handleFlexNext() {
+  routeToAvailabilityOrBuild(); // reuses the same routing already built for Teams
 }

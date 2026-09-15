@@ -844,6 +844,28 @@
         </div>
       </section>
 
+      <!-- Draw Flex Screen -->
+      <section id="screen-generate-draw-flex" class="app-screen">
+        <div class="welcome-banner">
+          <h2>Flex Groups</h2>
+          <p>Move players into Core Groups (max 4 each) — everyone else stays Flex</p>
+        </div>
+
+        <div class="event-section-title current">Core Group 1 (<span id="gd-flex-core1-count">0</span>/4)</div>
+        <div id="gd-flex-core1-list" class="card-grid"></div>
+
+        <div class="event-section-title other">Flex Group</div>
+        <div id="gd-flex-list" class="card-grid"></div>
+
+        <div class="event-section-title current">Core Group 2 (<span id="gd-flex-core2-count">0</span>/4)</div>
+        <div id="gd-flex-core2-list" class="card-grid"></div>
+
+        <div class="form-action-bar">
+          <button class="btn-secondary" onclick="navigateToScreen('generate-draw')">Back</button>
+          <button class="btn-primary" id="gd-flex-next-btn" onclick="handleFlexNext()">Next</button>
+        </div>
+      </section> 
+
       <!-- Available screen -->
       <section id="screen-generate-draw-available" class="app-screen">
         <div class="welcome-banner">
