@@ -355,7 +355,7 @@ const gamesProfile = [
     GameID: "cross-court-divisions",
     GameTitle: "Cross Court Divisions",
     GamesGroup: "Tiered Groups",
-    Grouping: "Divisions",
+    Grouping: "Flex",
     Draft: "No",
     Rounds: "Yes",
     CycleRounds: "No",
