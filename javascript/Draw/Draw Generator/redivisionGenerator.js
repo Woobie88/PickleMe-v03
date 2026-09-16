@@ -9,6 +9,10 @@ async function handleRedivisionBuild() {
   const numberOfRounds = window.rdConfig.numberOfRounds;
   const startRound = window.rdConfig.startRound;
 
+  const drawWeightingIndex = parseInt(activeEvent.DrawWeighting) || 0;
+  const drawBuildVariables = penaltyWeightPresets[drawWeightingIndex];
+  const scorers = makeScorers(drawBuildVariables); // NEW — build once per run, threaded instead of drawBuildVariables
+
   const allPlayers = window.cachedUserUniverse.players;
   const players = allPlayers.filter(p => p.playerExclude !== 'Yes');
   const courtsCount = Math.min(parseInt(activeEvent.NumberofCourts) || 1, Math.floor(players.length / 4) || 1);
@@ -59,7 +63,7 @@ async function handleRedivisionBuild() {
 
     newMatches = generateMultipleRounds(
       players, historyBeforeRedivision, byesByRound, startRound, numberOfRounds, courtsCount,
-      activeEventId, drawVersion, gameId, numberOfTeams, userEmail, gameProfile // ADDED gameProfile
+      activeEventId, drawVersion, gameId, numberOfTeams, userEmail, gameProfile, scorers // ADDED gameProfile
     );
   }
 
