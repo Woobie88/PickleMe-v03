@@ -539,9 +539,6 @@ async function generateNRoundsAndPreview(numberOfRounds) {
   const drawBuildVariables = penaltyWeightPresets[drawWeightingIndex];
   const scorers = makeScorers(drawBuildVariables); // NEW — build once per run, threaded instead of drawBuildVariables
 
-  // TESTING — shows the active weighting preset at draw-generation time. Remove once confirmed.
-  // alert(`Draw Build Variables (index ${drawWeightingIndex}):\n\n${JSON.stringify(drawBuildVariables, null, 2)}`);
-
   window.gdRedivisionCache = {};
   window.gdTeamByeCache = {};    // NEW
   window.gdIndivByeCache = {};   // NEW
