@@ -705,23 +705,15 @@ function renderFlexGroupsScreen(payload) {
     if (duprDiff !== 0) return duprDiff;
     return (parseFloat(a.RandomNumber) || 0) - (parseFloat(b.RandomNumber) || 0);
   });
+  console.log('The sorted players are',duprSorted);
 
   // Group by EXISTING Team field — defaults everyone to Flex (Team 2) if unset
   const groupsByKey = { core1: [], flex: [], core2: [] };
   players.forEach(p => {
     const team = parseInt(p.Team);
-    if (team === FLEX_TEAM_NUMBERS.core1) groupsByKey.core1.push(p);
-    else if (team === FLEX_TEAM_NUMBERS.core2) groupsByKey.core2.push(p);
-    else groupsByKey.flex.push(p); // default — covers Team 2, null, or anything unrecognized
+    groupsByKey.flex.push(p); // default — covers Team 2, null, or anything unrecognized
   });
-
-  // Ensure anyone with no Team assignment gets defaulted to Flex (Team 2) in Firestore
-  const needsDefault = players.filter(p => parseInt(p.Team) !== 1 && parseInt(p.Team) !== 2 && parseInt(p.Team) !== 3);
-  if (needsDefault.length > 0) {
-    needsDefault.forEach(p => { p.Team = FLEX_TEAM_NUMBERS.flex; });
-    Promise.all(needsDefault.map(p => window.updatePlayerTeamInFirestore(p.PlayerID, FLEX_TEAM_NUMBERS.flex)))
-      .catch(err => console.error("Failed to default players to Flex:", err));
-  }
+  console.log('The grouped players',groupsByKey);
 
   function buildFlexCard(player) {
     const seedNumber = duprSorted.findIndex(p => p.PlayerID === player.PlayerID) + 1;
