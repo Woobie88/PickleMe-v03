@@ -279,9 +279,10 @@ function enableLongHoldToActivate(containerId) {
             const rawDate = activatedEvent.EventDate || activatedEvent.eventDate || '';
             const eventDate = rawDate ? rawDate.split('T')[0] : 'Ongoing';
 
-            showActiveEventChangedToast(
-              `Active event changed to ${eventName}, ${eventLocation}, ${eventDate}`
-            );
+            // showActiveEventChangedToast(
+            //   `Active event changed to ${eventName}, ${eventLocation}, ${eventDate}`
+            // );
+            alert(`Active event changed to ${eventName}, ${eventLocation}, ${eventDate}`);
           }
 
         } catch (err) {
