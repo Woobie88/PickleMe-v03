@@ -262,8 +262,13 @@ async function handleRedrawBuild() {
   const activeEvent = window.cachedUserUniverse.events.find(e => String(e.EventID) === String(activeEventId));
   const gameId = activeEvent.GameID;
   const drawVersion = activeEvent.CurrentDrawVersion; // unchanged — no version bump for redraw
+  const gameProfile = gamesProfile.find(g => g.GameID === gameId);
 
   const startRound = window.rwConfig.startRound;
+
+  const drawWeightingIndex = parseInt(activeEvent.DrawWeighting) || 0;
+  const drawBuildVariables = penaltyWeightPresets[drawWeightingIndex];
+  const scorers = makeScorers(drawBuildVariables); // NEW — build once per run, threaded instead of drawBuildVariables
 
   const allPlayers = window.cachedUserUniverse.players;
   const players = allPlayers.filter(p => p.playerExclude !== 'Yes');
@@ -338,8 +343,8 @@ async function handleRedrawBuild() {
     }
 
     newMatches = generateMultipleRounds(
-      players, historyBeforeRedraw, byesByRound, startRound, numberOfRounds, courtsCount,
-      activeEventId, drawVersion, gameId, numberOfTeams, userEmail
+      players, historyBeforeRedivision, byesByRound, startRound, numberOfRounds, courtsCount,
+      activeEventId, drawVersion, gameId, numberOfTeams, userEmail, gameProfile, scorers // ADDED gameProfile
     );
   }
 

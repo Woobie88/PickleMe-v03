@@ -5,6 +5,7 @@ async function handleRedivisionBuild() {
   const activeEvent = window.cachedUserUniverse.events.find(e => String(e.EventID) === String(activeEventId));
   const gameId = activeEvent.GameID;
   const drawVersion = activeEvent.CurrentDrawVersion;
+  const gameProfile = gamesProfile.find(g => g.GameID === gameId);
 
   const numberOfRounds = window.rdConfig.numberOfRounds;
   const startRound = window.rdConfig.startRound;
