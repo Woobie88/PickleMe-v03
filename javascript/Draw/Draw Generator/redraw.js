@@ -343,7 +343,7 @@ async function handleRedrawBuild() {
     }
 
     newMatches = generateMultipleRounds(
-      players, historyBeforeRedivision, byesByRound, startRound, numberOfRounds, courtsCount,
+      players, historyBeforeRedraw, byesByRound, startRound, numberOfRounds, courtsCount,
       activeEventId, drawVersion, gameId, numberOfTeams, userEmail, gameProfile, scorers // ADDED gameProfile
     );
   }
