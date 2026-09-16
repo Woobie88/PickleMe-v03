@@ -432,6 +432,89 @@ function generateClusteredRoundDraw(players, matches, byesByTeamForThisRound, ro
   return allMatches;
 }
 
+// ---------- FLEX ROUND GENERATION (Cross Court Divisions) ----------
+//
+// Three groups set on the Cross Court Divisions screen, persisted to player.Team:
+//   1 = Core Group 1  (max 4)   2 = Flex Group (unlimited)   3 = Core Group 2 (max 4)
+//
+// Group membership decides who can play with/against whom: Core Group 1 only
+// ever partners or opposes Core Group 1 or Flex players, Core Group 2 only
+// Core Group 2 or Flex, and the two cores never meet. Which physical court a
+// match happens on is unrelated to that and is decided the same way every
+// other game type here decides it — via assignCourts, balancing each
+// player's court history — so court assignment flexes freely with courtCount.
+//
+// Capping each core at 4 (one court's worth) is what makes the byes safe to
+// draw at random: whichever k courts end up "Core 1 + Flex" for the round,
+// Core 1 always fits inside them no matter who sits out, and likewise for
+// Core 2 on the other k' courts — so a valid split always exists.
+
+const FLEX_CORE_GROUP_1 = 1;
+const FLEX_GROUP = 2;
+const FLEX_CORE_GROUP_2 = 3;
+const FLEX_CORE_MAX = 4;
+
+// How many of courtsCount courts run as "Core 1 + Flex" this round (the rest
+// run "Core 2 + Flex"). Returns every k that fits exactly, given Flex players
+// bridge whichever side is short.
+function feasibleFlexSplits(core1Count, flexCount, core2Count, courtsCount) {
+  const feasible = [];
+  for (let k = 0; k <= courtsCount; k++) {
+    const topDemand = k * 4;
+    const bottomDemand = (courtsCount - k) * 4;
+    const bridgeToTop = topDemand - core1Count;
+    const bridgeToBottom = bottomDemand - core2Count;
+    if (bridgeToTop >= 0 && bridgeToBottom >= 0 && bridgeToTop + bridgeToBottom === flexCount) {
+      feasible.push({ k, bridgeToTop, bridgeToBottom });
+    }
+  }
+  return feasible;
+}
+
+function generateFlexRoundDraw(players, matches, byePlayerIds, roundNumber, courtsCount, eventId, drawVersion, userEmail, scorers) {
+  const eligible = players.filter(p => !byePlayerIds.includes(p.PlayerID));
+  const { partnerCounts, opponentCounts, courtCounts } = buildDrawHistory(matches);
+
+  const coreGroup1 = eligible.filter(p => parseInt(p.Team) === FLEX_CORE_GROUP_1);
+  const flexGroup = shuffle(eligible.filter(p => parseInt(p.Team) === FLEX_GROUP));
+  const coreGroup2 = eligible.filter(p => parseInt(p.Team) === FLEX_CORE_GROUP_2);
+
+  if (coreGroup1.length > FLEX_CORE_MAX || coreGroup2.length > FLEX_CORE_MAX) {
+    console.error(`Cannot generate Cross Court draw: core groups are capped at ${FLEX_CORE_MAX} (Core Group 1 has ${coreGroup1.length}, Core Group 2 has ${coreGroup2.length}).`);
+    return [];
+  }
+
+  if (eligible.length !== courtsCount * 4) {
+    console.error(`Cannot generate Cross Court draw for round ${roundNumber}: ${eligible.length} eligible players cannot fill ${courtsCount} courts.`);
+    return [];
+  }
+
+  const splits = feasibleFlexSplits(coreGroup1.length, flexGroup.length, coreGroup2.length, courtsCount);
+  if (splits.length === 0) {
+    console.error(`Cannot generate Cross Court draw for round ${roundNumber}: no court split fits this group composition.`);
+    return [];
+  }
+
+  // Any feasible k works — pick randomly among them so the mix of Core1-heavy
+  // vs Core2-heavy rounds varies rather than always favoring one.
+  const { bridgeToTop, bridgeToBottom } = splits[Math.floor(Math.random() * splits.length)];
+
+  const topPool = coreGroup1.concat(flexGroup.slice(0, bridgeToTop));
+  const bottomPool = coreGroup2.concat(flexGroup.slice(bridgeToTop, bridgeToTop + bridgeToBottom));
+
+  const topPartnerships = generateBestPartnerships(topPool, partnerCounts, scorers);
+  const bottomPartnerships = generateBestPartnerships(bottomPool, partnerCounts, scorers);
+
+  const topMatchups = generateBestMatchups(topPartnerships, opponentCounts, scorers);
+  const bottomMatchups = generateBestMatchups(bottomPartnerships, opponentCounts, scorers);
+
+  const allMatchups = topMatchups.concat(bottomMatchups);
+  const courtNumbers = Array.from({ length: courtsCount }, (_, i) => i + 1);
+  const courted = assignCourts(allMatchups, courtNumbers, courtCounts);
+
+  return courted.map((m, idx) => buildMatchRecord(m, idx, roundNumber, eventId, drawVersion, userEmail));
+}
+
 // ---------- MULTI-ROUND GENERATION ----------
 
 function generateMultipleRounds(players, existingMatches, byesByRound, startRound, numberOfRounds, courtsCount, eventId, drawVersion, gameId, numberOfTeams, userEmail, gameProfile, scorers) {
@@ -440,12 +523,16 @@ function generateMultipleRounds(players, existingMatches, byesByRound, startRoun
 
   const clusteredGames = ['divisions', 'ladder-scramble', 'pools', 'pool-fusion'];
   const isClustered = clusteredGames.includes(gameId);
+  const isFlex = gameProfile?.Grouping === 'Flex';
 
   for (let i = 0; i < numberOfRounds; i++) {
     const roundNumber = startRound + i;
 
     let roundMatches;
-    if (isClustered) {
+    if (isFlex) {
+      const byesForThisRound = byesByRound[roundNumber] || [];
+      roundMatches = generateFlexRoundDraw(players, allMatches, byesForThisRound, roundNumber, courtsCount, eventId, drawVersion, userEmail, scorers);
+    } else if (isClustered) {
       const byesByTeamForThisRound = {};
       Object.keys(byesByRound).forEach(teamKey => {
         byesByTeamForThisRound[teamKey] = byesByRound[teamKey][i] || [];
@@ -539,6 +626,9 @@ async function generateNRoundsAndPreview(numberOfRounds) {
   const drawBuildVariables = penaltyWeightPresets[drawWeightingIndex];
   const scorers = makeScorers(drawBuildVariables); // NEW — build once per run, threaded instead of drawBuildVariables
 
+  // TESTING — shows the active weighting preset at draw-generation time. Remove once confirmed.
+  // alert(`Draw Build Variables (index ${drawWeightingIndex}):\n\n${JSON.stringify(drawBuildVariables, null, 2)}`);
+
   window.gdRedivisionCache = {};
   window.gdTeamByeCache = {};    // NEW
   window.gdIndivByeCache = {};   // NEW
@@ -575,8 +665,9 @@ async function generateNRoundsAndPreview(numberOfRounds) {
     const numberOfTeams = parseInt(activeEvent.NumberOfTeams) || 1;
     const clusteredGames = ['divisions', 'ladder-scramble', 'pools', 'pool-fusion'];
     const isClustered = clusteredGames.includes(gameId);
+    const isFlex = gameProfile?.Grouping === 'Flex';
     let byesByRound;
-    if (isClustered) {
+    if (isClustered && !isFlex) {
       const courtsPerTeam = courtsCount / numberOfTeams;
       byesByRound = generateByeScheduleByTeam(players, numberOfRounds, courtsPerTeam);
     } else {
