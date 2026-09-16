@@ -736,6 +736,7 @@ function renderFlexGroupsScreen(payload) {
   document.getElementById('gd-flex-core2-count').innerText = groupsByKey.core2.length;
 
   enableFlexDragDrop();
+  commitFlexAssignment();
 
   const btn = document.getElementById('gd-flex-next-btn');
   if (btn) btn.innerText = window.gdAllPlayersPresentValue === 'Yes' ? 'Build Draw' : 'Next';
