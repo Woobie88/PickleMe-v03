@@ -709,7 +709,7 @@ function renderFlexGroupsScreen(payload) {
 
   // Group by EXISTING Team field — defaults everyone to Flex (Team 2) if unset
   const groupsByKey = { core1: [], flex: [], core2: [] };
-  players.forEach(p => {
+  duprSorted.forEach(p => {
     const team = parseInt(p.Team);
     groupsByKey.flex.push(p); // default — covers Team 2, null, or anything unrecognized
   });
