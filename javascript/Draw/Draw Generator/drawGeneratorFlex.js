@@ -34,6 +34,7 @@ function feasibleFlexSplits(core1Count, flexCount, core2Count, courtsCount) {
       feasible.push({ k, bridgeToTop, bridgeToBottom });
     }
   }
+  console.log('The feasible splits are',feasible);
   return feasible;
 }
 
