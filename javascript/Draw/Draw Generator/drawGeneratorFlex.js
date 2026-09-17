@@ -41,44 +41,20 @@ function feasibleFlexSplits(core1Count, flexCount, core2Count, courtsCount) {
 // pool. Mirrors attemptPartnerships/attemptMatchups — a single candidate,
 // scored, for generateBestFlexRound to compare across many of.
 function attemptFlexRound(coreGroup1, flexGroup, coreGroup2, courtsCount, partnerCounts, opponentCounts, scorers) {
-//   const splits = feasibleFlexSplits(coreGroup1.length, flexGroup.length, coreGroup2.length, courtsCount);
-//   if (splits.length === 0) return null;
+  const splits = feasibleFlexSplits(coreGroup1.length, flexGroup.length, coreGroup2.length, courtsCount);
+  if (splits.length === 0) return null;
 
-//   const { bridgeToTop, bridgeToBottom } = splits[Math.floor(Math.random() * splits.length)];
-//   const shuffledFlex = shuffle(flexGroup);
+  const { bridgeToTop, bridgeToBottom } = splits[Math.floor(Math.random() * splits.length)];
+  const shuffledFlex = shuffle(flexGroup);
 
-//   const topPool = coreGroup1.concat(shuffledFlex.slice(0, bridgeToTop));
-//   const bottomPool = coreGroup2.concat(shuffledFlex.slice(bridgeToTop, bridgeToTop + bridgeToBottom));
+  const topPool = coreGroup1.concat(shuffledFlex.slice(0, bridgeToTop));
+  const bottomPool = coreGroup2.concat(shuffledFlex.slice(bridgeToTop, bridgeToTop + bridgeToBottom));
 
-  for (var partnerGroup = 0; partnerGroup < 5; partnerGroup++) {
-    switch (partnerGroup) {
-        case 0:
-           const partnerships = attemptPartnerships(coreGroup1, partnerCounts, scorers); 
-           console.log('Core Group 1',partnerships );
-           break;
-        case 1:
-           const partnerships = attemptPartnerships(coreGroup2, partnerCounts, scorers); 
-           console.log('Core Group 2',partnerships );
-           break;
-        case 2:
-           const partnerships = attemptPartnerships(flexGroup, partnerCounts, scorers); 
-           console.log('Flex Group',partnerships );
-           break;
-        case 3:
-           const partnerships = attemptPartnerships(coreGroup1.concat(flexGroup), partnerCounts, scorers); 
-           console.log('Core Group 1 + Flex Group',partnerships );
-           break;
-        case 4:
-           const partnerships = attemptPartnerships(coreGroup2.concat(flexGroup), partnerCounts, scorers); 
-           console.log('Core Group 2 + Flex Group',partnerships );
-           break;
-    }
-  }
-//   const topPartnerships = attemptPartnerships(topPool, partnerCounts, scorers);
-//   const bottomPartnerships = attemptPartnerships(bottomPool, partnerCounts, scorers);
+  const topPartnerships = attemptPartnerships(topPool, partnerCounts, scorers);
+  const bottomPartnerships = attemptPartnerships(bottomPool, partnerCounts, scorers);
 
-//   const topMatchups = attemptMatchups(topPartnerships.pairs, opponentCounts, scorers);
-//   const bottomMatchups = attemptMatchups(bottomPartnerships.pairs, opponentCounts, scorers);
+  const topMatchups = attemptMatchups(topPartnerships.pairs, opponentCounts, scorers);
+  const bottomMatchups = attemptMatchups(bottomPartnerships.pairs, opponentCounts, scorers);
 
   return {
     matchups: topMatchups.matchups.concat(bottomMatchups.matchups),
