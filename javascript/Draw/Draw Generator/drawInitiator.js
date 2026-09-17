@@ -705,7 +705,6 @@ function renderFlexGroupsScreen(payload) {
     if (duprDiff !== 0) return duprDiff;
     return (parseFloat(a.RandomNumber) || 0) - (parseFloat(b.RandomNumber) || 0);
   });
-  console.log('The sorted players are',duprSorted);
 
   // Group by EXISTING Team field — defaults everyone to Flex (Team 2) if unset
   const groupsByKey = { core1: [], flex: [], core2: [] };
@@ -713,7 +712,6 @@ function renderFlexGroupsScreen(payload) {
     const team = parseInt(p.Team);
     groupsByKey.flex.push(p); // default — covers Team 2, null, or anything unrecognized
   });
-  console.log('The grouped players',groupsByKey);
 
   function buildFlexCard(player) {
     const seedNumber = duprSorted.findIndex(p => p.PlayerID === player.PlayerID) + 1;
