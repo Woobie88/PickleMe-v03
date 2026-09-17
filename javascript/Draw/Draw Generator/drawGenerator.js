@@ -594,6 +594,7 @@ async function generateNRoundsAndPreview(numberOfRounds) {
         byesByRound[startRound + parseInt(i)] = byeSchedule[i];
       });
     }
+    console.log('The byes are',byesByRound);
     newMatches = generateMultipleRounds(
       players, [], byesByRound, startRound, numberOfRounds, courtsCount,
       activeEventId, newDrawVersion, gameId, numberOfTeams, userEmail, gameProfile, scorers
