@@ -49,8 +49,6 @@ function attemptFlexRound(coreGroup1, flexGroup, coreGroup2, courtsCount, partne
 
   const topPool = coreGroup1.concat(shuffledFlex.slice(0, bridgeToTop));
   const bottomPool = coreGroup2.concat(shuffledFlex.slice(bridgeToTop, bridgeToTop + bridgeToBottom));
-  console.log('The top pool',topPool);
-  console.log('The bottom pool',bottomPool);
 
   const topPartnerships = attemptPartnerships(topPool, partnerCounts, scorers);
   const bottomPartnerships = attemptPartnerships(bottomPool, partnerCounts, scorers);
@@ -85,6 +83,10 @@ function generateFlexRoundDraw(players, matches, byePlayerIds, roundNumber, cour
   const coreGroup1 = eligible.filter(p => parseInt(p.Team) === FLEX_CORE_GROUP_1);
   const flexGroup = eligible.filter(p => parseInt(p.Team) === FLEX_GROUP);
   const coreGroup2 = eligible.filter(p => parseInt(p.Team) === FLEX_CORE_GROUP_2);
+
+  console.log('Core Group1',coreGroup1);
+  console.log('Core Group2',coreGroup2);
+  console.log('Flex Group',flexGroup);
 
   if (coreGroup1.length > FLEX_CORE_MAX || coreGroup2.length > FLEX_CORE_MAX) {
     console.error(`Cannot generate Cross Court draw: core groups are capped at ${FLEX_CORE_MAX} (Core Group 1 has ${coreGroup1.length}, Core Group 2 has ${coreGroup2.length}).`);
