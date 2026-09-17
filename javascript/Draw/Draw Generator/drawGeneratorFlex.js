@@ -34,7 +34,6 @@ function feasibleFlexSplits(core1Count, flexCount, core2Count, courtsCount) {
       feasible.push({ k, bridgeToTop, bridgeToBottom });
     }
   }
-  console.log('The feasible splits are',feasible);
   return feasible;
 }
 
@@ -50,6 +49,8 @@ function attemptFlexRound(coreGroup1, flexGroup, coreGroup2, courtsCount, partne
 
   const topPool = coreGroup1.concat(shuffledFlex.slice(0, bridgeToTop));
   const bottomPool = coreGroup2.concat(shuffledFlex.slice(bridgeToTop, bridgeToTop + bridgeToBottom));
+  console.log('The top pool',topPool);
+  console.log('The bottom pool',bottomPool);
 
   const topPartnerships = attemptPartnerships(topPool, partnerCounts, scorers);
   const bottomPartnerships = attemptPartnerships(bottomPool, partnerCounts, scorers);
