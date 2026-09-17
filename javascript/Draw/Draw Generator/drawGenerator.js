@@ -471,12 +471,51 @@ function feasibleFlexSplits(core1Count, flexCount, core2Count, courtsCount) {
   return feasible;
 }
 
+// One attempt: pick a feasible split, bridge Flex players, and pair off each
+// pool. Mirrors attemptPartnerships/attemptMatchups — a single candidate,
+// scored, for generateBestFlexRound to compare across many of.
+function attemptFlexRound(coreGroup1, flexGroup, coreGroup2, courtsCount, partnerCounts, opponentCounts, scorers) {
+  const splits = feasibleFlexSplits(coreGroup1.length, flexGroup.length, coreGroup2.length, courtsCount);
+  if (splits.length === 0) return null;
+
+  const { bridgeToTop, bridgeToBottom } = splits[Math.floor(Math.random() * splits.length)];
+  const shuffledFlex = shuffle(flexGroup);
+
+  const topPool = coreGroup1.concat(shuffledFlex.slice(0, bridgeToTop));
+  const bottomPool = coreGroup2.concat(shuffledFlex.slice(bridgeToTop, bridgeToTop + bridgeToBottom));
+
+  const topPartnerships = attemptPartnerships(topPool, partnerCounts, scorers);
+  const bottomPartnerships = attemptPartnerships(bottomPool, partnerCounts, scorers);
+
+  const topMatchups = attemptMatchups(topPartnerships.pairs, opponentCounts, scorers);
+  const bottomMatchups = attemptMatchups(bottomPartnerships.pairs, opponentCounts, scorers);
+
+  return {
+    matchups: topMatchups.matchups.concat(bottomMatchups.matchups),
+    cost: topPartnerships.cost + bottomPartnerships.cost + topMatchups.cost + bottomMatchups.cost
+  };
+}
+
+// Tries many splits and pairings and keeps the lowest-cost combination —
+// this is what stops the smaller core group getting stuck repartnering
+// itself: a split that bridges a Flex player in to break up a repeat will
+// score lower and win, rather than the split being decided before scoring
+// ever happens.
+function generateBestFlexRound(coreGroup1, flexGroup, coreGroup2, courtsCount, partnerCounts, opponentCounts, scorers, attempts = 300) {
+  let best = null, bestCost = Infinity;
+  for (let i = 0; i < attempts; i++) {
+    const result = attemptFlexRound(coreGroup1, flexGroup, coreGroup2, courtsCount, partnerCounts, opponentCounts, scorers);
+    if (result && result.cost < bestCost) { bestCost = result.cost; best = result.matchups; }
+  }
+  return best;
+}
+
 function generateFlexRoundDraw(players, matches, byePlayerIds, roundNumber, courtsCount, eventId, drawVersion, userEmail, scorers) {
   const eligible = players.filter(p => !byePlayerIds.includes(p.PlayerID));
   const { partnerCounts, opponentCounts, courtCounts } = buildDrawHistory(matches);
 
   const coreGroup1 = eligible.filter(p => parseInt(p.Team) === FLEX_CORE_GROUP_1);
-  const flexGroup = shuffle(eligible.filter(p => parseInt(p.Team) === FLEX_GROUP));
+  const flexGroup = eligible.filter(p => parseInt(p.Team) === FLEX_GROUP);
   const coreGroup2 = eligible.filter(p => parseInt(p.Team) === FLEX_CORE_GROUP_2);
 
   if (coreGroup1.length > FLEX_CORE_MAX || coreGroup2.length > FLEX_CORE_MAX) {
@@ -489,28 +528,14 @@ function generateFlexRoundDraw(players, matches, byePlayerIds, roundNumber, cour
     return [];
   }
 
-  const splits = feasibleFlexSplits(coreGroup1.length, flexGroup.length, coreGroup2.length, courtsCount);
-  if (splits.length === 0) {
+  const bestMatchups = generateBestFlexRound(coreGroup1, flexGroup, coreGroup2, courtsCount, partnerCounts, opponentCounts, scorers);
+  if (!bestMatchups) {
     console.error(`Cannot generate Cross Court draw for round ${roundNumber}: no court split fits this group composition.`);
     return [];
   }
 
-  // Any feasible k works — pick randomly among them so the mix of Core1-heavy
-  // vs Core2-heavy rounds varies rather than always favoring one.
-  const { bridgeToTop, bridgeToBottom } = splits[Math.floor(Math.random() * splits.length)];
-
-  const topPool = coreGroup1.concat(flexGroup.slice(0, bridgeToTop));
-  const bottomPool = coreGroup2.concat(flexGroup.slice(bridgeToTop, bridgeToTop + bridgeToBottom));
-
-  const topPartnerships = generateBestPartnerships(topPool, partnerCounts, scorers);
-  const bottomPartnerships = generateBestPartnerships(bottomPool, partnerCounts, scorers);
-
-  const topMatchups = generateBestMatchups(topPartnerships, opponentCounts, scorers);
-  const bottomMatchups = generateBestMatchups(bottomPartnerships, opponentCounts, scorers);
-
-  const allMatchups = topMatchups.concat(bottomMatchups);
   const courtNumbers = Array.from({ length: courtsCount }, (_, i) => i + 1);
-  const courted = assignCourts(allMatchups, courtNumbers, courtCounts);
+  const courted = assignCourts(bestMatchups, courtNumbers, courtCounts);
 
   return courted.map((m, idx) => buildMatchRecord(m, idx, roundNumber, eventId, drawVersion, userEmail));
 }
