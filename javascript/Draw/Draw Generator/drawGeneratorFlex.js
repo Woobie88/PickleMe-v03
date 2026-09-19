@@ -20,62 +20,69 @@ const FLEX_GROUP = 2;
 const FLEX_CORE_GROUP_2 = 3;
 const FLEX_CORE_MAX = 4;
 
-// How many of courtsCount courts run as "Core 1 + Flex" this round (the rest
-// run "Core 2 + Flex"). Returns every k that fits exactly, given Flex players
-// bridge whichever side is short.
-function feasibleFlexSplits(core1Count, flexCount, core2Count, courtsCount) {
-  const feasible = [];
-  for (let k = 0; k <= courtsCount; k++) {
-    const topDemand = k * 4;
-    const bottomDemand = (courtsCount - k) * 4;
-    const bridgeToTop = topDemand - core1Count;
-    const bridgeToBottom = bottomDemand - core2Count;
-    if (bridgeToTop >= 0 && bridgeToBottom >= 0 && bridgeToTop + bridgeToBottom === flexCount) {
-      feasible.push({ k, bridgeToTop, bridgeToBottom });
-    }
-  }
-  return feasible;
-}
-
+// ---------- PARTNERSHIP & MATCHUP GENERATION ---------- 
 // One attempt: pick a feasible split, bridge Flex players, and pair off each
 // pool. Mirrors attemptPartnerships/attemptMatchups — a single candidate,
 // scored, for generateBestFlexRound to compare across many of.
-function attemptFlexRound(coreGroup1, flexGroup, coreGroup2, courtsCount, partnerCounts, opponentCounts, scorers) {
-  const splits = feasibleFlexSplits(coreGroup1.length, flexGroup.length, coreGroup2.length, courtsCount);
-  if (splits.length === 0) return null;
+function isCrossCoreGroupPartnership(pair, coreGroup1, coreGroup2) {
+  const [playerA, playerB] = pair;
 
-  const { bridgeToTop, bridgeToBottom } = splits[Math.floor(Math.random() * splits.length)];
-  const shuffledFlex = shuffle(flexGroup);
+  const aInGroup1 = coreGroup1.includes(playerA);
+  const aInGroup2 = coreGroup2.includes(playerA);
+  const bInGroup1 = coreGroup1.includes(playerB);
+  const bInGroup2 = coreGroup2.includes(playerB);
 
-  const topPool = coreGroup1.concat(shuffledFlex.slice(0, bridgeToTop));
-  const bottomPool = coreGroup2.concat(shuffledFlex.slice(bridgeToTop, bridgeToTop + bridgeToBottom));
+  // Flag it if one partner is in coreGroup1 and the other is in coreGroup2,
+  // regardless of which side each player is on
+  return (aInGroup1 && bInGroup2) || (aInGroup2 && bInGroup1);
+}
 
-  const topPartnerships = attemptPartnerships(topPool, partnerCounts, scorers);
-  const bottomPartnerships = attemptPartnerships(bottomPool, partnerCounts, scorers);
+function containsCrossCoreGroupPlayers(matchup, coreGroup1, coreGroup2) {
+  const hasGroup1Player = matchup.some(player => coreGroup1.includes(player));
+  const hasGroup2Player = matchup.some(player => coreGroup2.includes(player));
 
-  const topMatchups = attemptMatchups(topPartnerships.pairs, opponentCounts, scorers);
-  const bottomMatchups = attemptMatchups(bottomPartnerships.pairs, opponentCounts, scorers);
+  // Flag the matchup if it mixes players from both core groups at all,
+  // whether as partners or as opponents
+  return hasGroup1Player && hasGroup2Player;
+}
+
+function attemptFlexRound(coreGroup1, flexGroup, coreGroup2, eligible, courtsCount, partnerCounts, opponentCounts, scorers) {
+  const shuffledPlayers = shuffle(eligible);
+  
+  const flexPartnerships = attemptPartnerships(shuffledPlayers, partnerCounts, scorers);
+  flexPartnerships.pairs = flexPartnerships.pairs.filter(
+    pair => !isCrossCoreGroupPartnership(pair, coreGroup1, coreGroup2)
+  );
+  
+
+  const flexMatchups = attemptMatchups(flexPartnerships.pairs, opponentCounts, scorers);
+  flexMatchups.matchups = flexMatchups.matchups.filter(
+    matchup => !containsCrossCoreGroupPlayers(matchup, coreGroup1, coreGroup2)
+  );
 
   return {
-    matchups: topMatchups.matchups.concat(bottomMatchups.matchups),
-    cost: topPartnerships.cost + bottomPartnerships.cost + topMatchups.cost + bottomMatchups.cost
+    matchups: flexMatchups.matchups,
+    cost: flexPartnerships.cost + flexMatchups.cost
   };
 }
 
+// ---------- MATCHUP GENERATION ----------
 // Tries many splits and pairings and keeps the lowest-cost combination —
 // this is what stops the smaller core group getting stuck repartnering
 // itself: a split that bridges a Flex player in to break up a repeat will
 // score lower and win, rather than the split being decided before scoring
 // ever happens.
-function generateBestFlexRound(coreGroup1, flexGroup, coreGroup2, courtsCount, partnerCounts, opponentCounts, scorers, attempts = 300) {
+function generateBestFlexRound(coreGroup1, flexGroup, coreGroup2, eligible, courtsCount, partnerCounts, opponentCounts, scorers, attempts = 300) {
   let best = null, bestCost = Infinity;
   for (let i = 0; i < attempts; i++) {
-    const result = attemptFlexRound(coreGroup1, flexGroup, coreGroup2, courtsCount, partnerCounts, opponentCounts, scorers);
+    const result = attemptFlexRound(coreGroup1, flexGroup, coreGroup2, eligible, courtsCount, partnerCounts, opponentCounts, scorers);
     if (result && result.cost < bestCost) { bestCost = result.cost; best = result.matchups; }
   }
   return best;
 }
 
+// ---------- CORE FLEX DRAW GENERATION ----------
+// Drives building the flex draw
 function generateFlexRoundDraw(players, matches, byePlayerIds, roundNumber, courtsCount, eventId, drawVersion, userEmail, scorers) {
   const eligible = players.filter(p => !byePlayerIds.includes(p.PlayerID));
   const { partnerCounts, opponentCounts, courtCounts } = buildDrawHistory(matches);
@@ -94,7 +101,7 @@ function generateFlexRoundDraw(players, matches, byePlayerIds, roundNumber, cour
     return [];
   }
 
-  const bestMatchups = generateBestFlexRound(coreGroup1, flexGroup, coreGroup2, courtsCount, partnerCounts, opponentCounts, scorers);
+  const bestMatchups = generateBestFlexRound(coreGroup1, flexGroup, coreGroup2, eligible, courtsCount, partnerCounts, opponentCounts, scorers);
   if (!bestMatchups) {
     console.error(`Cannot generate Cross Court draw for round ${roundNumber}: no court split fits this group composition.`);
     return [];
