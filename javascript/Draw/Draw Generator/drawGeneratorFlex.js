@@ -50,6 +50,7 @@ function attemptFlexRound(coreGroup1, flexGroup, coreGroup2, eligible, courtsCou
   const shuffledPlayers = shuffle(eligible);
   
   const flexPartnerships = attemptPartnerships(shuffledPlayers, partnerCounts, scorers);
+  console.log('flexPartnerships',flexPartnerships);
   flexPartnerships.pairs = flexPartnerships.pairs.filter(
     pair => !isCrossCoreGroupPartnership(pair, coreGroup1, coreGroup2)
   );
