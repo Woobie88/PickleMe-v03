@@ -341,7 +341,6 @@ function buildMatchRecord(m, idx, roundNumber, eventId, drawVersion, userEmail, 
 
 function generateGroupMatches(groupPlayers, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion, userEmail, scorers) {
   const partnerships = generateBestPartnerships(groupPlayers, partnerCounts, scorers);
-  console.log(`For round ${roundNumber}, the partnerships are ${JSON.stringify(partnerships)}`);
   const matchups = generateBestMatchups(partnerships, opponentCounts, scorers);
   const courted = assignCourts(matchups, courtNumbers, courtCounts);
 
