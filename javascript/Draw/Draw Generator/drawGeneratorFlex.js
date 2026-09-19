@@ -24,43 +24,32 @@ const FLEX_CORE_MAX = 4;
 // One attempt: pick a feasible split, bridge Flex players, and pair off each
 // pool. Mirrors attemptPartnerships/attemptMatchups — a single candidate,
 // scored, for generateBestFlexRound to compare across many of.
-function isCrossCoreGroupPartnership(pair, coreGroup1, coreGroup2) {
-  const [playerA, playerB] = pair;
-
-  const aInGroup1 = coreGroup1.includes(playerA);
-  const aInGroup2 = coreGroup2.includes(playerA);
-  const bInGroup1 = coreGroup1.includes(playerB);
-  const bInGroup2 = coreGroup2.includes(playerB);
-
-  // Flag it if one partner is in coreGroup1 and the other is in coreGroup2,
-  // regardless of which side each player is on
-  return (aInGroup1 && bInGroup2) || (aInGroup2 && bInGroup1);
-}
-
-function containsCrossCoreGroupPlayers(matchup, coreGroup1, coreGroup2) {
-  const hasGroup1Player = matchup.some(player => coreGroup1.includes(player));
-  const hasGroup2Player = matchup.some(player => coreGroup2.includes(player));
-
-  // Flag the matchup if it mixes players from both core groups at all,
-  // whether as partners or as opponents
-  return hasGroup1Player && hasGroup2Player;
-}
-
 function attemptFlexRound(coreGroup1, flexGroup, coreGroup2, eligible, courtsCount, partnerCounts, opponentCounts, scorers) {
+
+  const coreGroup1Ids = coreGroup1.map(player => player.PlayerID);
+  const coreGroup2Ids = coreGroup2.map(player => player.PlayerID);
+
   const shuffledPlayers = shuffle(eligible);
-  
+
   const flexPartnerships = attemptPartnerships(shuffledPlayers, partnerCounts, scorers);
-  console.log('flexPartnerships',flexPartnerships);
-  flexPartnerships.pairs = flexPartnerships.pairs.filter(
-    pair => !isCrossCoreGroupPartnership(pair, coreGroup1, coreGroup2)
-  );
-  
+
+  flexPartnerships.pairs = flexPartnerships.pairs.filter(pair => {
+    const [playerA, playerB] = pair;
+    const aInGroup1 = coreGroup1Ids.includes(playerA.PlayerID);
+    const aInGroup2 = coreGroup2Ids.includes(playerA.PlayerID);
+    const bInGroup1 = coreGroup1Ids.includes(playerB.PlayerID);
+    const bInGroup2 = coreGroup2Ids.includes(playerB.PlayerID);
+    return !((aInGroup1 && bInGroup2) || (aInGroup2 && bInGroup1));
+  });
 
   const flexMatchups = attemptMatchups(flexPartnerships.pairs, opponentCounts, scorers);
-  console.log('flexMatchups',flexMatchups.matchups);
-  flexMatchups.matchups = flexMatchups.matchups.filter(
-    matchup => !containsCrossCoreGroupPlayers(matchup, coreGroup1, coreGroup2)
-  );
+
+  flexMatchups.matchups = flexMatchups.matchups.filter(matchup => {
+    const allPlayers = [...matchup.teamA, ...matchup.teamB];
+    const hasGroup1Player = allPlayers.some(player => coreGroup1Ids.includes(player.PlayerID));
+    const hasGroup2Player = allPlayers.some(player => coreGroup2Ids.includes(player.PlayerID));
+    return !(hasGroup1Player && hasGroup2Player);
+  });
 
   return {
     matchups: flexMatchups.matchups,
