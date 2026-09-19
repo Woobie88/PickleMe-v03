@@ -56,6 +56,7 @@ function attemptFlexRound(coreGroup1, flexGroup, coreGroup2, eligible, courtsCou
   
 
   const flexMatchups = attemptMatchups(flexPartnerships.pairs, opponentCounts, scorers);
+  console.log('flexMatchups',flexMatchups.matchups);
   flexMatchups.matchups = flexMatchups.matchups.filter(
     matchup => !containsCrossCoreGroupPlayers(matchup, coreGroup1, coreGroup2)
   );
