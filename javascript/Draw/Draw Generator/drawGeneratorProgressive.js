@@ -73,7 +73,7 @@ function buildProgressiveRound1(activePlayers, courtsCount, eventId, drawVersion
 
 // ---------- FULL DUMMY SCHEDULE (locks in the bye rotation upfront) ----------
 
-function buildProgressiveDummySchedule(players, numberOfRounds, courtsCount, eventId, drawVersion, userEmail) {
+function buildProgressiveDummySchedule(players, numberOfRounds, courtsCount, eventId, drawVersion, userEmail, gameProfile, scorers) {
   const byeSchedule = generateByeSchedule(players, numberOfRounds, courtsCount);
 
   let allMatches = [];
@@ -94,7 +94,7 @@ function buildProgressiveDummySchedule(players, numberOfRounds, courtsCount, eve
 
     const placeholderMatches = generateGroupMatches(
       activePlayers, courtNumbers, partnerCounts, opponentCounts, courtCounts,
-      roundNumber, eventId, drawVersion
+      roundNumber, eventId, drawVersion, scorers
     );
     placeholderMatches.forEach(m => { m.UserEmail = userEmail; });
 

@@ -564,7 +564,7 @@ async function generateNRoundsAndPreview(numberOfRounds) {
     console.log(`Generated Doubles Pro draw: ${newMatches.length} matches across ${numberOfRounds} round(s).`);
 
   } else if (['kings-queens', 'survivor', 'snakes-ladders'].includes(gameId)) {
-    newMatches = buildProgressiveDummySchedule(players, numberOfRounds, courtsCount, activeEventId, newDrawVersion, userEmail);
+    newMatches = buildProgressiveDummySchedule(players, numberOfRounds, courtsCount, activeEventId, newDrawVersion, userEmail, gameProfile, scorers);
     console.log(`Generated ${gameId} dummy schedule: ${newMatches.length} matches across ${numberOfRounds} round(s).`);
 
   } else if (gameId === 'teams') {
