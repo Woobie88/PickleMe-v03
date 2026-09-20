@@ -94,7 +94,7 @@ function buildProgressiveDummySchedule(players, numberOfRounds, courtsCount, eve
 
     const placeholderMatches = generateGroupMatches(
       activePlayers, courtNumbers, partnerCounts, opponentCounts, courtCounts,
-      roundNumber, eventId, drawVersion, scorers
+      roundNumber, eventId, drawVersion, userEmail, scorers
     );
     placeholderMatches.forEach(m => { m.UserEmail = userEmail; });
 
