@@ -271,6 +271,57 @@ function getByePlayersForRound(allPlayers, roundMatches) {
   return allPlayers.filter(p => !playingIds.has(p.PlayerID)).map(p => p.PlayerID);
 }
 
+// function applyProgressiveByeSwaps(groups, byePlayerIdsThisRound, allPlayersById, partnerCounts, fixedTeamCourts) {
+//   console.log("applyProgressiveByeSwaps");
+
+//   const outgoing = [];
+//   groups.forEach(g => {
+//     g.playerIds.forEach(pid => {
+//       if (byePlayerIdsThisRound.includes(pid)) outgoing.push({ pid, court: g.court });
+//     });
+//   });
+
+//   const placedSoFar = new Set(groups.flatMap(g => g.playerIds));
+//   let incomingPlayers = Object.keys(allPlayersById).filter(
+//     pid => !byePlayerIdsThisRound.includes(pid) && !placedSoFar.has(pid)
+//   );
+
+//   outgoing.forEach(({ pid: outgoingId, court }) => {
+//     const group = groups.find(g => g.court === court);
+//     const outgoingIndex = group.playerIds.indexOf(outgoingId);
+
+//     let bestCandidate = null, bestScore = Infinity;
+
+//     if (fixedTeamCourts.includes(court)) {
+//       // Fixed-team court — just find the best DUPR-fit replacement for this specific slot,
+//       // since who they're partnered with isn't a decision here (the team is locked).
+//       const partnerIndex = outgoingIndex % 2 === 0 ? outgoingIndex + 1 : outgoingIndex - 1;
+//       const partnerDupr = parseFloat(allPlayersById[group.playerIds[partnerIndex]].DUPR) || 0;
+
+//       incomingPlayers.forEach(candidateId => {
+//         const delta = Math.abs((parseFloat(allPlayersById[candidateId].DUPR) || 0) - partnerDupr);
+//         if (delta < bestScore) { bestScore = delta; bestCandidate = candidateId; }
+//       });
+//     } else {
+//       // Normal court — full scoring-based selection, same evaluation used for regular pairing
+//       incomingPlayers.forEach(candidateId => {
+//         const testIds = [...group.playerIds];
+//         testIds[outgoingIndex] = candidateId;
+//         const testPlayers = testIds.map(id => allPlayersById[id]);
+//         const result = bestKingsQueensPairing(testPlayers, group.justWonPairs, partnerCounts);
+//         if (result.score < bestScore) { bestScore = result.score; bestCandidate = candidateId; }
+//       });
+//     }
+
+//     if (bestCandidate) {
+//       group.playerIds[outgoingIndex] = bestCandidate;
+//       incomingPlayers = incomingPlayers.filter(id => id !== bestCandidate);
+//     }
+//   });
+
+//   return groups;
+// }
+
 function applyProgressiveByeSwaps(groups, byePlayerIdsThisRound, allPlayersById, partnerCounts, fixedTeamCourts) {
   console.log("applyProgressiveByeSwaps");
 
@@ -281,43 +332,57 @@ function applyProgressiveByeSwaps(groups, byePlayerIdsThisRound, allPlayersById,
     });
   });
 
+  if (outgoing.length === 0) return groups;
+
   const placedSoFar = new Set(groups.flatMap(g => g.playerIds));
-  let incomingPlayers = Object.keys(allPlayersById).filter(
+  const incomingPlayers = Object.keys(allPlayersById).filter(
     pid => !byePlayerIdsThisRound.includes(pid) && !placedSoFar.has(pid)
   );
 
-  outgoing.forEach(({ pid: outgoingId, court }) => {
-    const group = groups.find(g => g.court === court);
-    const outgoingIndex = group.playerIds.indexOf(outgoingId);
+  const outgoingDuprs = outgoing.map(({ pid }) => parseFloat(allPlayersById[pid].DUPR) || 0);
 
-    let bestCandidate = null, bestScore = Infinity;
-
-    if (fixedTeamCourts.includes(court)) {
-      // Fixed-team court — just find the best DUPR-fit replacement for this specific slot,
-      // since who they're partnered with isn't a decision here (the team is locked).
-      const partnerIndex = outgoingIndex % 2 === 0 ? outgoingIndex + 1 : outgoingIndex - 1;
-      const partnerDupr = parseFloat(allPlayersById[group.playerIds[partnerIndex]].DUPR) || 0;
-
-      incomingPlayers.forEach(candidateId => {
-        const delta = Math.abs((parseFloat(allPlayersById[candidateId].DUPR) || 0) - partnerDupr);
-        if (delta < bestScore) { bestScore = delta; bestCandidate = candidateId; }
-      });
-    } else {
-      // Normal court — full scoring-based selection, same evaluation used for regular pairing
-      incomingPlayers.forEach(candidateId => {
-        const testIds = [...group.playerIds];
-        testIds[outgoingIndex] = candidateId;
-        const testPlayers = testIds.map(id => allPlayersById[id]);
-        const result = bestKingsQueensPairing(testPlayers, group.justWonPairs, partnerCounts);
-        if (result.score < bestScore) { bestScore = result.score; bestCandidate = candidateId; }
-      });
+  // Generate all k-permutations of incomingPlayers (k = outgoing.length)
+  function permutations(arr, k) {
+    const results = [];
+    function backtrack(path, remaining) {
+      if (path.length === k) {
+        results.push([...path]);
+        return;
+      }
+      for (let i = 0; i < remaining.length; i++) {
+        path.push(remaining[i]);
+        backtrack(path, remaining.slice(0, i).concat(remaining.slice(i + 1)));
+        path.pop();
+      }
     }
+    backtrack([], arr);
+    return results;
+  }
 
-    if (bestCandidate) {
-      group.playerIds[outgoingIndex] = bestCandidate;
-      incomingPlayers = incomingPlayers.filter(id => id !== bestCandidate);
+  const allAssignments = permutations(incomingPlayers, outgoing.length);
+
+  let bestAssignment = null;
+  let bestCost = Infinity;
+
+  allAssignments.forEach(assignment => {
+    let cost = 0;
+    for (let i = 0; i < assignment.length; i++) {
+      const incomingDupr = parseFloat(allPlayersById[assignment[i]].DUPR) || 0;
+      cost += Math.abs(incomingDupr - outgoingDuprs[i]);
+    }
+    if (cost < bestCost) {
+      bestCost = cost;
+      bestAssignment = assignment;
     }
   });
+
+  if (bestAssignment) {
+    outgoing.forEach(({ pid: outgoingId, court }, i) => {
+      const group = groups.find(g => g.court === court);
+      const outgoingIndex = group.playerIds.indexOf(outgoingId);
+      group.playerIds[outgoingIndex] = bestAssignment[i];
+    });
+  }
 
   return groups;
 }
