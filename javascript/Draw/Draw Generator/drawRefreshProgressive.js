@@ -7,6 +7,13 @@ async function refreshCurrentRoundMatches() {
   const drawVersion = activeEvent.CurrentDrawVersion;
   const userEmail = window.currentUserEmail;
 
+  const gameId = activeEvent.GameID;
+  const gameProfile = gamesProfile.find(g => g.GameID === gameId);
+
+  const drawWeightingIndex = parseInt(activeEvent.DrawWeighting) || 0;
+  const drawBuildVariables = penaltyWeightPresets[drawWeightingIndex];
+  const scorers = makeScorers(drawBuildVariables); // NEW — build once per
+
   const allMatches = payload.draw;
 
   // History for repeat-avoidance: ONLY rounds actually played before this one —
@@ -39,7 +46,7 @@ async function refreshCurrentRoundMatches() {
 
   const refreshedMatches = generateGroupMatches(
     groupPlayers, courtNumbers, partnerCounts, opponentCounts, courtCounts,
-    currentRound, activeEventId, drawVersion, userEmail
+    currentRound, activeEventId, drawVersion, userEmail, scorers
   );
 
   refreshedMatches.forEach(m => {
