@@ -241,13 +241,13 @@ function attemptMatchups(partnerships, opponentCounts, scorers) {
     let candidateIdxs = [];
     for (let b = 0; b < pool.length; b++) {
       if (b === a || used.has(b)) continue;
-      // const gap = Math.abs(teamAvgDupr(pool[a]) - teamAvgDupr(pool[b]));
-      // if (gap <= scorers.opponentDuprDelta) candidateIdxs.push(b);
+      const gap = Math.abs(teamAvgDupr(pool[a]) - teamAvgDupr(pool[b]));
+      if (gap <= scorers.opponentDuprDelta) candidateIdxs.push(b);
       
       // Changed to base it on forecast score
-      const winProb1 = calculateWinProbability(teamAvgDupr(pool[a]), teamAvgDupr(pool[b]));
-      const loseScore = winProb1 >= 0.5 ? Math.min(Math.round((1 - winProb1) * 11 / winProb1),9) : Math.min(Math.round(winProb1 * 11 / (1 - winProb1)),9);
-      if (loseScore >= scorers.opponentMinExpScore) candidateIdxs.push(b);
+      // const winProb1 = calculateWinProbability(teamAvgDupr(pool[a]), teamAvgDupr(pool[b]));
+      // const loseScore = winProb1 >= 0.5 ? Math.min(Math.round((1 - winProb1) * 11 / winProb1),9) : Math.min(Math.round(winProb1 * 11 / (1 - winProb1)),9);
+      // if (loseScore >= scorers.opponentMinExpScore) candidateIdxs.push(b);
     }
 
     // Stage 2: fall back to full pool only if nobody fits the delta
@@ -353,10 +353,14 @@ function generateGroupMatches(groupPlayers, courtNumbers, partnerCounts, opponen
 
 // ---------- SINGLE ROUND GENERATION (Rotating Partners — one group, all courts) ----------
 
-function generateRoundDraw(players, matches, byePlayerIds, roundNumber, courtsCount, eventId, drawVersion, userEmail, scorers) {
+function generateRoundDraw(players, matches, byePlayerIds, roundNumber, courtsCount, eventId, drawVersion, userEmail, scorers, gameId) {
   const eligible = players.filter(p => !byePlayerIds.includes(p.PlayerID));
   const { partnerCounts, opponentCounts, courtCounts } = buildDrawHistory(matches);
   const courtNumbers = Array.from({ length: courtsCount }, (_, i) => i + 1);
+
+  if (gameId === "Keep It Fair") {
+    return generateBestMatches(groupPlayers, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion, userEmail, scorers);
+  }
 
   return generateGroupMatches(eligible, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion, userEmail, scorers);
 }
@@ -461,7 +465,7 @@ function generateMultipleRounds(players, existingMatches, byesByRound, startRoun
       roundMatches = generateClusteredRoundDraw(players, allMatches, byesByTeamForThisRound, roundNumber, courtsCount, eventId, drawVersion, numberOfTeams, userEmail, gameProfile, scorers); // ADDED gameProfile
     } else {
       const byesForThisRound = byesByRound[roundNumber] || [];
-      roundMatches = generateRoundDraw(players, allMatches, byesForThisRound, roundNumber, courtsCount, eventId, drawVersion, userEmail, scorers);
+      roundMatches = generateRoundDraw(players, allMatches, byesForThisRound, roundNumber, courtsCount, eventId, drawVersion, userEmail, scorers, gameId);
     }
 
     generatedRounds.push(...roundMatches);
