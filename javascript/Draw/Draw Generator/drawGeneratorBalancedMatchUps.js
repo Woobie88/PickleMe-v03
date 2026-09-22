@@ -135,7 +135,7 @@ function generateBestRound(eligiblePlayers, partnerCounts, opponentCounts, score
 // CALLING FUNCTION FROM: generateRoundDraw
 // ---------------------------------------------
 
-function generateBestMatches(groupPlayers, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion, userEmail, scorers) {
+function generateBestMatches(eligiblePlayers, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion, userEmail, scorers) {
   const matchups = generateBestRound(eligiblePlayers, partnerCounts, opponentCounts, scorers);
   const courted = assignCourts(matchups, courtNumbers, courtCounts);
 
