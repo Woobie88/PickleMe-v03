@@ -107,12 +107,11 @@ function attemptRound(eligiblePlayers, partnerCounts, opponentCounts, scorers) {
 
     // Stage 2 (micro): find the best team split within that group
     const bestGame = bestSplitForGroup(bestGroup, partnerCounts, opponentCounts, scorers);
-    console.log(scored.map(s => ({
-        teamA: s.teamA.map(p => p.DUPR),
-        teamB: s.teamB.map(p => p.DUPR),
-        matchupCost: s.matchupCost,
-        partnerCost: s.partnerCost
-        })));
+    console.log({
+        teamA: bestGame.teamA.map(p => p.DUPR),
+        teamB: bestGame.teamB.map(p => p.DUPR),
+        cost: bestGame.cost
+        });
 
     games.push(bestGame);
     [...bestGame.teamA, ...bestGame.teamB].forEach(p => used.add(p.PlayerID));
