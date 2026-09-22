@@ -173,7 +173,11 @@ function makeScorers(drawBuildVariables) {
     scorePairing,
     scoreMatchup,
     partnerDuprDelta: drawBuildVariables.partnerDuprDelta ?? Infinity,
-    opponentDuprDelta: drawBuildVariables.opponentDuprDelta ?? Infinity
+    opponentDuprDelta: drawBuildVariables.opponentDuprDelta ?? Infinity,
+    maxGroupCandidates: drawBuildVariables.maxGroupCandidates ?? 10,
+    groupDuprGapWeight: drawBuildVariables.groupDuprGapWeight ?? 0.6,
+    partnerFrequencyWeight: drawBuildVariables.partnerFrequencyWeight,
+    opponentFrequencyWeight: drawBuildVariables.opponentFrequencyWeight
   };
 }
 

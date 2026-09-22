@@ -1,6 +1,29 @@
 
 // ---------------------------------------------
-// SINGLE-GAME OPTIMIZER (exact — all 3 team splits)
+// STAGE 1 (macro): GROUP FORMATION — pick best 4
+// ---------------------------------------------
+function scoreGroupFormation(group, partnerCounts, opponentCounts, scorers) {
+  let duprCost = 0;
+  let freqCost = 0;
+
+  for (let i = 0; i < group.length; i++) {
+    for (let j = i + 1; j < group.length; j++) {
+      const p1 = group[i], p2 = group[j];
+      const duprGap = Math.abs((parseFloat(p1.DUPR) || 0) - (parseFloat(p2.DUPR) || 0));
+      const partnerRepeats = (partnerCounts[p1.PlayerID]?.[p2.PlayerID]) || 0;
+      const opponentRepeats = (opponentCounts[p1.PlayerID]?.[p2.PlayerID]) || 0;
+
+      duprCost += duprGap;
+      freqCost += partnerRepeats * scorers.partnerFrequencyWeight
+                + opponentRepeats * scorers.opponentFrequencyWeight;
+    }
+  }
+
+  return duprCost * scorers.groupDuprGapWeight + freqCost;
+}
+
+// ---------------------------------------------
+// STAGE 2 (micro): TEAM SPLIT — pick best 2v2 within the group
 // ---------------------------------------------
 function splitIntoTeams(players) {
   const [p1, p2, p3, p4] = players;
@@ -11,23 +34,16 @@ function splitIntoTeams(players) {
   ];
 }
 
-function scoreFullGame({ teamA, teamB }, partnerCounts, opponentCounts, scorers) {
-//   const partnerCostA = scorers.scorePairing(teamA[0], teamA[1], partnerCounts);
-//   const partnerCostB = scorers.scorePairing(teamB[0], teamB[1], partnerCounts);
-  const matchupCost = scorers.scoreMatchup(teamA, teamB, opponentCounts);
-  return partnerCostA + partnerCostB + matchupCost;
-}
-
-function generateBestGame(players, partnerCounts, opponentCounts, scorers) {
-  if (players.length !== 4) {
-    throw new Error(`generateBestGame expects exactly 4 players, got ${players.length}`);
-  }
-
-  const splits = splitIntoTeams(players);
-
+function bestSplitForGroup(group, partnerCounts, opponentCounts, scorers) {
+  const splits = splitIntoTeams(group);
   let best = null, bestCost = Infinity;
+
   for (const split of splits) {
-    const cost = scoreFullGame(split, partnerCounts, opponentCounts, scorers);
+    const partnerCostA = scorers.scorePairing(split.teamA[0], split.teamA[1], partnerCounts);
+    const partnerCostB = scorers.scorePairing(split.teamB[0], split.teamB[1], partnerCounts);
+    const matchupCost = scorers.scoreMatchup(split.teamA, split.teamB, opponentCounts);
+    const cost = partnerCostA + partnerCostB + matchupCost;
+
     if (cost < bestCost) { bestCost = cost; best = split; }
   }
 
@@ -35,7 +51,7 @@ function generateBestGame(players, partnerCounts, opponentCounts, scorers) {
 }
 
 // ---------------------------------------------
-// ROUND OPTIMIZER (randomized multi-attempt — pool > 4)
+// COMBINATIONS HELPER
 // ---------------------------------------------
 function combinations(arr, k) {
   const results = [];
@@ -51,6 +67,9 @@ function combinations(arr, k) {
   return results;
 }
 
+// ---------------------------------------------
+// ROUND OPTIMIZER (randomized multi-attempt)
+// ---------------------------------------------
 function attemptRound(eligiblePlayers, partnerCounts, opponentCounts, scorers) {
   const pool = shuffle(eligiblePlayers);
   const games = [];
@@ -63,36 +82,33 @@ function attemptRound(eligiblePlayers, partnerCounts, opponentCounts, scorers) {
     const remaining = pool.filter(p => !used.has(p.PlayerID) && p.PlayerID !== p1.PlayerID);
     if (remaining.length < 3) continue; // not enough left to form a foursome
 
-    // Stage 1: candidates within DUPR delta
+    // Stage 1 candidate filtering
     let candidates = remaining.filter(p2 =>
       Math.abs((parseFloat(p1.DUPR) || 0) - (parseFloat(p2.DUPR) || 0)) <= scorers.partnerDuprDelta
     );
+    if (candidates.length < 3) candidates = remaining;
 
-    // Stage 2: fall back to full remaining pool if not enough fit the delta
-    if (candidates.length < 3) {
-      candidates = remaining;
-    }
-
-    // Cap candidate pool size to keep C(candidates, 3) manageable
     const maxCandidates = scorers.maxGroupCandidates || 10;
     if (candidates.length > maxCandidates) {
       candidates = shuffle(candidates).slice(0, maxCandidates);
     }
 
-    let bestGame = null, bestCost = Infinity;
-    const possibleTrios = combinations(candidates, 3);
-
-    for (const trio of possibleTrios) {
+    // Stage 1 (macro): find the best-formed group of 4
+    let bestGroup = null, bestGroupCost = Infinity;
+    for (const trio of combinations(candidates, 3)) {
       const group = [p1, ...trio];
-      const game = generateBestGame(group, partnerCounts, opponentCounts, scorers);
-      if (game.cost < bestCost) { bestCost = game.cost; bestGame = game; }
+      const groupCost = scoreGroupFormation(group, partnerCounts, opponentCounts, scorers);
+      if (groupCost < bestGroupCost) { bestGroupCost = groupCost; bestGroup = group; }
     }
 
-    if (bestGame) {
-      games.push(bestGame);
-      [...bestGame.teamA, ...bestGame.teamB].forEach(p => used.add(p.PlayerID));
-      cost += bestCost;
-    }
+    if (!bestGroup) continue;
+
+    // Stage 2 (micro): find the best team split within that group
+    const bestGame = bestSplitForGroup(bestGroup, partnerCounts, opponentCounts, scorers);
+
+    games.push(bestGame);
+    [...bestGame.teamA, ...bestGame.teamB].forEach(p => used.add(p.PlayerID));
+    cost += bestGroupCost + bestGame.cost;
   }
 
   return { games, cost };
@@ -106,6 +122,10 @@ function generateBestRound(eligiblePlayers, partnerCounts, opponentCounts, score
   }
   return best;
 }
+
+// ---------------------------------------------
+// CALLING FUNCTION FROM: generateRoundDraw
+// ---------------------------------------------
 
 function generateBestMatches(groupPlayers, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion, userEmail, scorers) {
   const matchups = generateBestRound(eligiblePlayers, partnerCounts, opponentCounts, scorers);
