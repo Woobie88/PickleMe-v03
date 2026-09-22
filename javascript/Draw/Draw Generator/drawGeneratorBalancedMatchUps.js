@@ -36,18 +36,20 @@ function splitIntoTeams(players) {
 
 function bestSplitForGroup(group, partnerCounts, opponentCounts, scorers) {
   const splits = splitIntoTeams(group);
-  let best = null, bestCost = Infinity;
 
-  for (const split of splits) {
+  const scored = splits.map(split => {
     const partnerCostA = scorers.scorePairing(split.teamA[0], split.teamA[1], partnerCounts);
     const partnerCostB = scorers.scorePairing(split.teamB[0], split.teamB[1], partnerCounts);
-    const matchupCost = scorers.scoreMatchup(split.teamA, split.teamB, opponentCounts);
-    const cost = partnerCostA + partnerCostB + matchupCost;
+    const matchupCost = scorers.scoreMatchup(split.teamA, split.teamB, opponentCounts); // avg-delta based
+    return { ...split, partnerCost: partnerCostA + partnerCostB, matchupCost };
+  });
 
-    if (cost < bestCost) { bestCost = cost; best = split; }
-  }
+  // Primary: minimize team-average DUPR delta (matchupCost).
+  // Secondary: if two splits balance the teams equally well, prefer the one with less partner repetition.
+  scored.sort((x, y) => (x.matchupCost - y.matchupCost) || (x.partnerCost - y.partnerCost));
 
-  return { ...best, cost: bestCost };
+  const best = scored[0];
+  return { ...best, cost: best.partnerCost + best.matchupCost };
 }
 
 // ---------------------------------------------
