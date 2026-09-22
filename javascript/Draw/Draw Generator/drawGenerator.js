@@ -363,7 +363,7 @@ function generateRoundDraw(players, matches, byePlayerIds, roundNumber, courtsCo
   const courtNumbers = Array.from({ length: courtsCount }, (_, i) => i + 1);
 
   if (gameId === "keep-it-fair") {
-    return generateBestMatches(groupPlayers, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion, userEmail, scorers);
+    return generateBestMatches(eligible, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion, userEmail, scorers);
   }
 
   return generateGroupMatches(eligible, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion, userEmail, scorers);
