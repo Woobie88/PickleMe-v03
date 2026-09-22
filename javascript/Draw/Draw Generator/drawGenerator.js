@@ -362,7 +362,7 @@ function generateRoundDraw(players, matches, byePlayerIds, roundNumber, courtsCo
   const { partnerCounts, opponentCounts, courtCounts } = buildDrawHistory(matches);
   const courtNumbers = Array.from({ length: courtsCount }, (_, i) => i + 1);
 
-  if (gameId === "Keep It Fair") {
+  if (gameId === "keep-it-fair") {
     return generateBestMatches(groupPlayers, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion, userEmail, scorers);
   }
 
