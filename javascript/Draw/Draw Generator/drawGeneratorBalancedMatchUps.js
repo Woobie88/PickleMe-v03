@@ -12,8 +12,8 @@ function splitIntoTeams(players) {
 }
 
 function scoreFullGame({ teamA, teamB }, partnerCounts, opponentCounts, scorers) {
-  const partnerCostA = scorers.scorePairing(teamA[0], teamA[1], partnerCounts);
-  const partnerCostB = scorers.scorePairing(teamB[0], teamB[1], partnerCounts);
+//   const partnerCostA = scorers.scorePairing(teamA[0], teamA[1], partnerCounts);
+//   const partnerCostB = scorers.scorePairing(teamB[0], teamB[1], partnerCounts);
   const matchupCost = scorers.scoreMatchup(teamA, teamB, opponentCounts);
   return partnerCostA + partnerCostB + matchupCost;
 }
