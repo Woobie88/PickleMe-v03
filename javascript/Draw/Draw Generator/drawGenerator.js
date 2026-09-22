@@ -241,8 +241,13 @@ function attemptMatchups(partnerships, opponentCounts, scorers) {
     let candidateIdxs = [];
     for (let b = 0; b < pool.length; b++) {
       if (b === a || used.has(b)) continue;
-      const gap = Math.abs(teamAvgDupr(pool[a]) - teamAvgDupr(pool[b]));
-      if (gap <= scorers.opponentDuprDelta) candidateIdxs.push(b);
+      // const gap = Math.abs(teamAvgDupr(pool[a]) - teamAvgDupr(pool[b]));
+      // if (gap <= scorers.opponentDuprDelta) candidateIdxs.push(b);
+      
+      // Changed to base it on forecast score
+      const winProb1 = calculateWinProbability(teamAvgDupr(pool[a]), teamAvgDupr(pool[b]));
+      const loseScore = winProb1 >= 0.5 ? Math.min(Math.round((1 - winProb1) * 11 / winProb1),9) : Math.min(Math.round(winProb1 * 11 / (1 - winProb1)),9);
+      if (loseScore >= scorers.opponentMinExpScore) candidateIdxs.push(b);
     }
 
     // Stage 2: fall back to full pool only if nobody fits the delta
