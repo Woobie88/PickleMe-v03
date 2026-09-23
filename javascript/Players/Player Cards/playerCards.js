@@ -868,7 +868,7 @@ function renderPlayerResultsSummaryView() {
       ${buildTile('pointsAgainst', '#ef4444', 'rgba(239,68,68,0.2)', 'Points Against', stats.pointsAgainst, avgPointsAgainst, 'lowerIsBetter')}
       <div class="stat-tile stat-tile-wide">
         <div class="stat-tile-header">
-          <div class="stat-tile-icon" style="background-color: rgba(100,116,139,0.2); color: #64748b;">${STAT_ICONS.matches}</div>
+          <div class="stat-tile-icon" style="background-color: rgba(100,116,139,0.2); color: #64748b;">${STAT_ICONS.points}</div>
           <div class="stat-tile-label">Wins & Losses</div>
         </div>
         <div style="padding: 16px; height: 400px; position: relative;">
