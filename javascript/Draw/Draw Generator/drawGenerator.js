@@ -175,7 +175,7 @@ function makeScorers(drawBuildVariables) {
     partnerDuprDelta: drawBuildVariables.partnerDuprDelta ?? Infinity,
     opponentDuprDelta: drawBuildVariables.opponentDuprDelta ?? Infinity,
     maxGroupCandidates: drawBuildVariables.maxGroupCandidates ?? 10,
-    groupDuprGapWeight: drawBuildVariables.groupDuprGapWeight ?? 20,
+    groupDuprGapWeight: drawBuildVariables.groupDuprGapWeight ?? 40,
     partnerFrequencyWeight: drawBuildVariables.partnerFrequencyWeight,
     opponentFrequencyWeight: drawBuildVariables.opponentFrequencyWeight
   };
