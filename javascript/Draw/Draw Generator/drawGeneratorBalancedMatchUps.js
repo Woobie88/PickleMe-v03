@@ -13,7 +13,7 @@ function scoreGroupFormation(group, partnerCounts, opponentCounts, scorers) {
       const partnerRepeats = (partnerCounts[p1.PlayerID]?.[p2.PlayerID]) || 0;
       const opponentRepeats = (opponentCounts[p1.PlayerID]?.[p2.PlayerID]) || 0;
 
-      duprCost += duprGap * partnerDuprGapWeight;
+      duprCost += duprGap * scorers.partnerDuprGapWeight;
       freqCost += partnerRepeats * scorers.partnerFrequencyWeight
                 + opponentRepeats * scorers.opponentFrequencyWeight;
     }
