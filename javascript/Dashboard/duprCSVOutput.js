@@ -26,6 +26,7 @@ window.exportDuprCsv = async function() {
 
   if (completedMatches.length === 0) {
     alert("No completed matches to export.");
+    navigateToScreen('dashboard');
     return;
   }
 
@@ -90,6 +91,7 @@ window.exportDuprCsv = async function() {
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
   alert("DUPR file has successfully downloaded to your device");
+  navigateToScreen('dashboard');
 };
 
 function escapeCsvValue(val) {
