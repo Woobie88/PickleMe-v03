@@ -89,6 +89,7 @@ window.exportDuprCsv = async function() {
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+  alert("DUPR file has successfully downloaded to your device");
 };
 
 function escapeCsvValue(val) {
