@@ -144,7 +144,7 @@ function assignBipartitePairings(teamAPairs, teamBPairs, opponentCounts) {
 }
 
 // ---------- MAIN ENTRY POINT: ONE ROUND ----------
-function generateTeamsRoundDraw(players, matches, roundNumber, courtsCount, eventId, drawVersion, userEmail, totalTeamsInput) {
+function generateTeamsRoundDraw(players, matches, roundNumber, courtsCount, eventId, drawVersion, userEmail, totalTeamsInput, scorers) {
   const structure = determineTeamRoundStructure(totalTeamsInput, courtsCount);
   if (!structure) {
     console.error(`No valid team round structure found for ${totalTeamsInput} teams / ${courtsCount} courts.`);
@@ -209,7 +209,7 @@ function generateTeamsRoundDraw(players, matches, roundNumber, courtsCount, even
   const teamPairPools = {};
   activeTeamKeys.forEach(teamKey => {
     const activePlayers = allTeams[teamKey].filter(p => !(individualByesByTeam[teamKey] || []).includes(p.PlayerID));
-    teamPairPools[teamKey] = generateBestPartnerships(activePlayers, partnerCounts);
+    teamPairPools[teamKey] = generateBestPartnerships(activePlayers, partnerCounts, scorers);
   });
 
   const teamPoolCursor = {};

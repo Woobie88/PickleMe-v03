@@ -584,7 +584,7 @@ async function generateNRoundsAndPreview(numberOfRounds) {
     let allMatches = [];
     for (let i = 0; i < numberOfRounds; i++) {
       const roundNumber = startRound + i;
-      const roundMatches = generateTeamsRoundDraw(players, allMatches, roundNumber, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfTeams);
+      const roundMatches = generateTeamsRoundDraw(players, allMatches, roundNumber, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfTeams, scorers);
       allMatches.push(...roundMatches);
     }
     newMatches = allMatches;
