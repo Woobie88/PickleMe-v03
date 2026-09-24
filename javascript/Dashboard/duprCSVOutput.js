@@ -66,8 +66,8 @@ window.exportDuprCsv = async function() {
       escapeCsvValue(b2.name || ''),
       b2.duprId || '',
       '',
-      m.Team1Score || '',
-      m.Team2Score || '',
+      String(m.Team1Score ?? 0),
+      String(m.Team2Score ?? 0),
       '', '', '', '', '', '', '', '', // Game 2-5 left blank
       escapeCsvValue(activeEvent.EventLocation || ''),
       'SIDEOUT'
