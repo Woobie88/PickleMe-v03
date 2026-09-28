@@ -65,29 +65,34 @@ function attemptFlexPartnerships(eligiblePlayers, coreGroup1Ids, coreGroup2Ids, 
   const used = new Set();
   let cost = 0;
 
+  // Core Group 1 and Core Group 2 players can never partner each other
+  const isEligiblePartner = (p1, p2) => {
+    const p1InGroup1 = coreGroup1Ids.includes(p1.PlayerID);
+    const p1InGroup2 = coreGroup2Ids.includes(p1.PlayerID);
+    const p2InGroup1 = coreGroup1Ids.includes(p2.PlayerID);
+    const p2InGroup2 = coreGroup2Ids.includes(p2.PlayerID);
+    return !((p1InGroup1 && p2InGroup2) || (p1InGroup2 && p2InGroup1));
+  };
+
   for (const p1 of pool) {
     if (used.has(p1.PlayerID)) continue;
 
-    // Stage 1: candidates within the DUPR delta
+    // Stage 1: unused candidates within the DUPR delta, minus ineligible core pairings
     let candidates = pool.filter(p2 =>
       p2.PlayerID !== p1.PlayerID &&
       !used.has(p2.PlayerID) &&
-      Math.abs((parseFloat(p1.DUPR) || 0) - (parseFloat(p2.DUPR) || 0)) <= scorers.partnerDuprDelta
+      Math.abs((parseFloat(p1.DUPR) || 0) - (parseFloat(p2.DUPR) || 0)) <= scorers.partnerDuprDelta &&
+      isEligiblePartner(p1, p2)
     );
 
-    // Stage 2: remove core group players from partnership
-    candidates.pairs = candidates.pairs.filter(pair => {
-      const [playerA, playerB] = pair;
-      const aInGroup1 = coreGroup1Ids.includes(playerA.PlayerID);
-      const aInGroup2 = coreGroup2Ids.includes(playerA.PlayerID);
-      const bInGroup1 = coreGroup1Ids.includes(playerB.PlayerID);
-      const bInGroup2 = coreGroup2Ids.includes(playerB.PlayerID);
-      return !((aInGroup1 && bInGroup2) || (aInGroup2 && bInGroup1));
-    });
-
-    // Stage 3: fall back to full pool only if nobody fits the delta
+    // Stage 2: fall back to the full unused pool if nobody fits the delta.
+    // The eligibility rule still applies; it must never be relaxed.
     if (candidates.length === 0) {
-      candidates = pool.filter(p2 => p2.PlayerID !== p1.PlayerID && !used.has(p2.PlayerID));
+      candidates = pool.filter(p2 =>
+        p2.PlayerID !== p1.PlayerID &&
+        !used.has(p2.PlayerID) &&
+        isEligiblePartner(p1, p2)
+      );
     }
 
     let bestPartner = null, bestCost = Infinity;
@@ -103,6 +108,10 @@ function attemptFlexPartnerships(eligiblePlayers, coreGroup1Ids, coreGroup2Ids, 
       cost += bestCost;
     }
   }
+
+  // A player left unpaired makes this attempt invalid. Infinity stops it
+  // ever being picked as the best attempt.
+  if (used.size !== pool.length) return { pairs, cost: Infinity };
 
   return { pairs, cost };
 }
