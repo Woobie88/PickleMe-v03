@@ -29,20 +29,20 @@ function attemptFlexRound(coreGroup1, flexGroup, coreGroup2, eligible, courtsCou
   const coreGroup1Ids = coreGroup1.map(player => player.PlayerID);
   const coreGroup2Ids = coreGroup2.map(player => player.PlayerID);
 
-  const shuffledPlayers = shuffle(eligible);
+  // const shuffledPlayers = shuffle(eligible);
 
-  const flexPartnerships = attemptPartnerships(shuffledPlayers, partnerCounts, scorers);
+  const flexPartnerships = attemptFlexPartnerships(eligible, coreGroup1Ids, coreGroup2Ids, partnerCounts, scorers);
 
-  flexPartnerships.pairs = flexPartnerships.pairs.filter(pair => {
-    const [playerA, playerB] = pair;
-    const aInGroup1 = coreGroup1Ids.includes(playerA.PlayerID);
-    const aInGroup2 = coreGroup2Ids.includes(playerA.PlayerID);
-    const bInGroup1 = coreGroup1Ids.includes(playerB.PlayerID);
-    const bInGroup2 = coreGroup2Ids.includes(playerB.PlayerID);
-    return !((aInGroup1 && bInGroup2) || (aInGroup2 && bInGroup1));
-  });
+  // flexPartnerships.pairs = flexPartnerships.pairs.filter(pair => {
+  //   const [playerA, playerB] = pair;
+  //   const aInGroup1 = coreGroup1Ids.includes(playerA.PlayerID);
+  //   const aInGroup2 = coreGroup2Ids.includes(playerA.PlayerID);
+  //   const bInGroup1 = coreGroup1Ids.includes(playerB.PlayerID);
+  //   const bInGroup2 = coreGroup2Ids.includes(playerB.PlayerID);
+  //   return !((aInGroup1 && bInGroup2) || (aInGroup2 && bInGroup1));
+  // });
 
-  const flexMatchups = attemptMatchups(flexPartnerships.pairs, opponentCounts, scorers);
+  const flexMatchups = attemptFlexMatchups(flexPartnerships.pairs, coreGroup1Ids, coreGroup2Ids, opponentCounts, scorers);
 
   flexMatchups.matchups = flexMatchups.matchups.filter(matchup => {
     const allPlayers = [...matchup.teamA, ...matchup.teamB];
@@ -55,6 +55,107 @@ function attemptFlexRound(coreGroup1, flexGroup, coreGroup2, eligible, courtsCou
     matchups: flexMatchups.matchups,
     cost: flexPartnerships.cost + flexMatchups.cost
   };
+}
+
+// ---------- PARTNERSHIP GENERATION (hard delta version) ----------
+
+function attemptFlexPartnerships(eligiblePlayers, coreGroup1Ids, coreGroup2Ids, partnerCounts, scorers) {
+  const pool = shuffle(eligiblePlayers);
+  const pairs = [];
+  const used = new Set();
+  let cost = 0;
+
+  for (const p1 of pool) {
+    if (used.has(p1.PlayerID)) continue;
+
+    // Stage 1: candidates within the DUPR delta
+    let candidates = pool.filter(p2 =>
+      p2.PlayerID !== p1.PlayerID &&
+      !used.has(p2.PlayerID) &&
+      Math.abs((parseFloat(p1.DUPR) || 0) - (parseFloat(p2.DUPR) || 0)) <= scorers.partnerDuprDelta
+    );
+
+    // Stage 2: remove core group players from partnership
+    candidates.pairs = candidates.pairs.filter(pair => {
+      const [playerA, playerB] = pair;
+      const aInGroup1 = coreGroup1Ids.includes(playerA.PlayerID);
+      const aInGroup2 = coreGroup2Ids.includes(playerA.PlayerID);
+      const bInGroup1 = coreGroup1Ids.includes(playerB.PlayerID);
+      const bInGroup2 = coreGroup2Ids.includes(playerB.PlayerID);
+      return !((aInGroup1 && bInGroup2) || (aInGroup2 && bInGroup1));
+    });
+
+    // Stage 3: fall back to full pool only if nobody fits the delta
+    if (candidates.length === 0) {
+      candidates = pool.filter(p2 => p2.PlayerID !== p1.PlayerID && !used.has(p2.PlayerID));
+    }
+
+    let bestPartner = null, bestCost = Infinity;
+    for (const p2 of candidates) {
+      const c = scorers.scorePairing(p1, p2, partnerCounts);
+      if (c < bestCost) { bestCost = c; bestPartner = p2; }
+    }
+
+    if (bestPartner) {
+      pairs.push([p1, bestPartner]);
+      used.add(p1.PlayerID);
+      used.add(bestPartner.PlayerID);
+      cost += bestCost;
+    }
+  }
+
+  return { pairs, cost };
+}
+
+// ---------- MATCHUP GENERATION (hard delta version) ----------
+
+function attemptFlexMatchups(partnerships, coreGroup1Ids, coreGroup2Ids, opponentCounts, scorers) {
+  const pool = shuffle(partnerships);
+  const matchups = [];
+  const used = new Set();
+  let cost = 0;
+
+  for (let a = 0; a < pool.length; a++) {
+    if (used.has(a)) continue;
+
+    // Stage 1: candidates within the DUPR delta
+    let candidateIdxs = [];
+    for (let b = 0; b < pool.length; b++) {
+      if (b === a || used.has(b)) continue;
+      const gap = Math.abs(teamAvgDupr(pool[a]) - teamAvgDupr(pool[b]));
+      if (gap <= scorers.opponentDuprDelta) candidateIdxs.push(b);
+    }
+
+    // Stage 2: remove core group 1 & 2 from competing
+    candidateIdxs.matchups = candidateIdxs.matchups.filter(matchup => {
+      const allPlayers = [...matchup.teamA, ...matchup.teamB];
+      const hasGroup1Player = allPlayers.some(player => coreGroup1Ids.includes(player.PlayerID));
+      const hasGroup2Player = allPlayers.some(player => coreGroup2Ids.includes(player.PlayerID));
+      return !(hasGroup1Player && hasGroup2Player);
+    });
+
+    // Stage 3: fall back to full pool only if nobody fits the delta
+    if (candidateIdxs.length === 0) {
+      for (let b = 0; b < pool.length; b++) {
+        if (b !== a && !used.has(b)) candidateIdxs.push(b);
+      }
+    }
+
+    let bestIdx = -1, bestCost = Infinity;
+    for (const b of candidateIdxs) {
+      const c = scorers.scoreMatchup(pool[a], pool[b], opponentCounts);
+      if (c < bestCost) { bestCost = c; bestIdx = b; }
+    }
+
+    if (bestIdx !== -1) {
+      matchups.push({ teamA: pool[a], teamB: pool[bestIdx] });
+      used.add(a);
+      used.add(bestIdx);
+      cost += bestCost;
+    }
+  }
+
+  return { matchups, cost };
 }
 
 // ---------- MATCHUP GENERATION ----------
