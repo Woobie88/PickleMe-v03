@@ -78,12 +78,13 @@ function attemptFlexPartnerships(eligiblePlayers, coreGroup1Ids, coreGroup2Ids, 
     if (used.has(p1.PlayerID)) continue;
 
     // Stage 1: unused candidates within the DUPR delta, minus ineligible core pairings
-    let candidates = pool.filter(p2 =>
-      p2.PlayerID !== p1.PlayerID &&
-      !used.has(p2.PlayerID) &&
-      Math.abs((parseFloat(p1.DUPR) || 0) - (parseFloat(p2.DUPR) || 0)) <= scorers.partnerDuprDelta &&
-      isEligiblePartner(p1, p2)
-    );
+    let candidates
+    // let candidates = pool.filter(p2 =>
+    //   p2.PlayerID !== p1.PlayerID &&
+    //   !used.has(p2.PlayerID) &&
+    //   Math.abs((parseFloat(p1.DUPR) || 0) - (parseFloat(p2.DUPR) || 0)) <= scorers.partnerDuprDelta &&
+    //   isEligiblePartner(p1, p2)
+    // );
 
     // Stage 2: fall back to the full unused pool if nobody fits the delta.
     // The eligibility rule still applies; it must never be relaxed.
