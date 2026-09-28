@@ -124,29 +124,35 @@ function attemptFlexMatchups(partnerships, coreGroup1Ids, coreGroup2Ids, opponen
   const used = new Set();
   let cost = 0;
 
+  // A team carrying a Core Group 1 player can never face a team carrying a
+  // Core Group 2 player (Flex-only teams are eligible against anyone)
+  const isEligibleMatchup = (teamA, teamB) => {
+    const allPlayers = [...teamA, ...teamB];
+    const hasGroup1Player = allPlayers.some(player => coreGroup1Ids.includes(player.PlayerID));
+    const hasGroup2Player = allPlayers.some(player => coreGroup2Ids.includes(player.PlayerID));
+    return !(hasGroup1Player && hasGroup2Player);
+  };
+
   for (let a = 0; a < pool.length; a++) {
     if (used.has(a)) continue;
 
-    // Stage 1: candidates within the DUPR delta
+    // Stage 1: unused candidates within the DUPR delta, minus ineligible core matchups
     let candidateIdxs = [];
     for (let b = 0; b < pool.length; b++) {
       if (b === a || used.has(b)) continue;
       const gap = Math.abs(teamAvgDupr(pool[a]) - teamAvgDupr(pool[b]));
-      if (gap <= scorers.opponentDuprDelta) candidateIdxs.push(b);
+      if (gap <= scorers.opponentDuprDelta && isEligibleMatchup(pool[a], pool[b])) {
+        candidateIdxs.push(b);
+      }
     }
 
-    // Stage 2: remove core group 1 & 2 from competing
-    candidateIdxs.matchups = candidateIdxs.matchups.filter(matchup => {
-      const allPlayers = [...matchup.teamA, ...matchup.teamB];
-      const hasGroup1Player = allPlayers.some(player => coreGroup1Ids.includes(player.PlayerID));
-      const hasGroup2Player = allPlayers.some(player => coreGroup2Ids.includes(player.PlayerID));
-      return !(hasGroup1Player && hasGroup2Player);
-    });
-
-    // Stage 3: fall back to full pool only if nobody fits the delta
+    // Stage 2: fall back to the full unused pool if nobody fits the delta.
+    // The eligibility rule still applies; it must never be relaxed.
     if (candidateIdxs.length === 0) {
       for (let b = 0; b < pool.length; b++) {
-        if (b !== a && !used.has(b)) candidateIdxs.push(b);
+        if (b !== a && !used.has(b) && isEligibleMatchup(pool[a], pool[b])) {
+          candidateIdxs.push(b);
+        }
       }
     }
 
@@ -163,6 +169,9 @@ function attemptFlexMatchups(partnerships, coreGroup1Ids, coreGroup2Ids, opponen
       cost += bestCost;
     }
   }
+
+  // A team left without an opponent makes this attempt invalid
+  if (used.size !== pool.length) return { matchups, cost: Infinity };
 
   return { matchups, cost };
 }
