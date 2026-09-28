@@ -140,7 +140,7 @@ function generateBestFlexBalancedRoundGreedy(eligiblePlayers, coreGroup1Ids, cor
 // ---------------------------------------------
 // CALLING FUNCTION (mirrors generateBestMatches)
 // ---------------------------------------------
-function generateFlexRoundDraw(eligiblePlayers, coreGroup1Ids, coreGroup2Ids, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion, userEmail, scorers) {
+function generateFlexBalancedMatches(eligiblePlayers, coreGroup1Ids, coreGroup2Ids, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion, userEmail, scorers) {
   const matchups = eligiblePlayers.length <= FLEX_EXACT_SEARCH_MAX_PLAYERS
     ? generateBestFlexBalancedRoundExact(eligiblePlayers, coreGroup1Ids, coreGroup2Ids, partnerCounts, opponentCounts, scorers)
     : generateBestFlexBalancedRoundGreedy(eligiblePlayers, coreGroup1Ids, coreGroup2Ids, partnerCounts, opponentCounts, scorers);
