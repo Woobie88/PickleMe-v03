@@ -1,5 +1,5 @@
 window.analyticsChartInstance = null;
-window.analyticsScreenIndex = 0; // 0=unique, 1=max, 2=draw quality (DUPR gap), 3=court frequency, 4=byes, 5=wins/losses, 6=points
+window.analyticsScreenIndex = 0; // 0=unique, 1=max, 2=draw quality (DUPR gap), 3=court frequency, 4=byes, 5=wins/losses, 6=points, 7=score margin (actual vs forecast)
 window.analyticsRawData = [];
 
 // ---------- DUPR GAP CLASSIFICATION (Draw Quality) ----------
@@ -29,6 +29,59 @@ function teamAvgDuprFromIds(ids, playersById) {
   return vals.reduce((a, b) => a + b, 0) / (vals.length || 1);
 }
 
+// ---------- SCORE MARGIN CLASSIFICATION (Points Scored: Actual vs Forecast) ----------
+// NEW — every game is equated back to an 11-point game before it is bucketed, so
+// games played to other targets (15, 21, etc.) are judged on the same footing.
+// Buckets are on the scaled losing score: Even 9+, Lopsided 6-8, Blowout <6.
+// Forecast scores are already an 11-point basis, so scaling leaves them unchanged.
+const SCORE_MARGIN_TARGET = 11;
+
+// Forecast score columns on the draw rows. Change these two names if the sheet headers differ.
+const FORECAST_SCORE_FIELDS = { team1: 'ExpectedTeam1Score', team2: 'ExpectedTeam2Score' };
+
+const SCORE_MARGIN_BUCKETS = [
+  { key: 'even',     minLosingScore: 9, label: 'Even (losing score 9+)',     color: '#00E676' },
+  { key: 'lopsided', minLosingScore: 6, label: 'Lopsided (losing score 6–8)', color: '#f59e0b' },
+  { key: 'blowout',  minLosingScore: 0, label: 'Blowout (losing score <6)',   color: '#ef4444' }
+];
+
+function scaleLosingScore(pointsForGame, pointsAgainstGame) {
+  const winningScore = Math.max(pointsForGame, pointsAgainstGame);
+  const losingScore = Math.min(pointsForGame, pointsAgainstGame);
+  if (!(winningScore > 0)) return null;
+  return Math.round((losingScore * SCORE_MARGIN_TARGET) / winningScore);
+}
+
+function classifyScoreMargin(scaledLosingScore) {
+  return SCORE_MARGIN_BUCKETS.find(b => scaledLosingScore >= b.minLosingScore) || SCORE_MARGIN_BUCKETS[SCORE_MARGIN_BUCKETS.length - 1];
+}
+
+function initMarginBuckets() {
+  const obj = {};
+  SCORE_MARGIN_BUCKETS.forEach(b => { obj[b.key] = { count: 0, rounds: [] }; });
+  return obj;
+}
+
+function addMarginGame(buckets, game, round) {
+  const scaledLosingScore = scaleLosingScore(game.for, game.against);
+  if (scaledLosingScore === null) return;
+  const bucket = classifyScoreMargin(scaledLosingScore);
+  buckets[bucket.key].count++;
+  buckets[bucket.key].rounds.push({ round, pointsFor: game.for, pointsAgainst: game.against, scaledLosingScore });
+}
+
+// points for / (points for + points against) across every game sitting in the buckets
+function calcBucketPointsPct(buckets) {
+  const games = Object.values(buckets).flatMap(b => b.rounds);
+  const totalFor = games.reduce((sum, g) => sum + g.pointsFor, 0);
+  const totalAll = games.reduce((sum, g) => sum + g.pointsFor + g.pointsAgainst, 0);
+  return totalAll > 0 ? totalFor / totalAll : null;
+}
+
+function formatMarginScore(value) {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+}
+
 function computeAnalyticsPlayerCounts(payload) {
   const activeEventId = payload.activeEventId;
   const activeEvent = payload.events.find(e => String(e.EventID) === String(activeEventId));
@@ -53,11 +106,14 @@ function computeAnalyticsPlayerCounts(payload) {
     const opponentRounds = {};
     const roundResults = {};
     const roundPoints = {};
+    const roundForecastPoints = {}; // NEW
     const roundsPlayed = new Set();
     const courtCounts = {}; // { courtNumber: count }
     const courtDetails = {}; // { courtNumber: [{ round, partnerName }, ...] }
     const partnerGapBuckets = initGapBuckets(); // NEW
     const opponentGapBuckets = initGapBuckets(); // NEW
+    const actualMarginBuckets = initMarginBuckets(); // NEW
+    const forecastMarginBuckets = initMarginBuckets(); // NEW
     let wins = 0;
     let losses = 0;
     let pointsFor = 0;
@@ -84,6 +140,10 @@ function computeAnalyticsPlayerCounts(payload) {
         pointsFor += forScore;
         pointsAgainst += againstScore;
         roundPoints[round] = { for: forScore, against: againstScore };
+        roundForecastPoints[round] = { // NEW
+          for: Number(m[FORECAST_SCORE_FIELDS.team1]) || 0,
+          against: Number(m[FORECAST_SCORE_FIELDS.team2]) || 0
+        };
       }
 
       if (onT2) {
@@ -94,6 +154,18 @@ function computeAnalyticsPlayerCounts(payload) {
         pointsFor += forScore;
         pointsAgainst += againstScore;
         roundPoints[round] = { for: forScore, against: againstScore };
+        roundForecastPoints[round] = { // NEW
+          for: Number(m[FORECAST_SCORE_FIELDS.team2]) || 0,
+          against: Number(m[FORECAST_SCORE_FIELDS.team1]) || 0
+        };
+      }
+
+      // NEW — score margin buckets. Only games with an actual score count, and the
+      // forecast is counted for those same games so both bars cover the same games.
+      const actualGame = roundPoints[round];
+      if (actualGame && actualGame.for + actualGame.against > 0) {
+        addMarginGame(actualMarginBuckets, actualGame, round);
+        addMarginGame(forecastMarginBuckets, roundForecastPoints[round], round);
       }
 
       const isDummyRound = isProgressive && round > currentRound;
@@ -160,7 +232,12 @@ function computeAnalyticsPlayerCounts(payload) {
       courtCounts,
       courtDetails,
       partnerGapBuckets, // NEW
-      opponentGapBuckets // NEW
+      opponentGapBuckets, // NEW
+      roundForecastPoints, // NEW
+      actualMarginBuckets, // NEW
+      forecastMarginBuckets, // NEW
+      actualPointsPct: calcBucketPointsPct(actualMarginBuckets), // NEW
+      forecastPointsPct: calcBucketPointsPct(forecastMarginBuckets) // NEW
     };
   });
 }
@@ -192,6 +269,7 @@ function renderAnalyticsCards(payload) {
 
   let datasets, heading;
   const isQualityScreen = window.analyticsScreenIndex === 2; // NEW
+  const isMarginScreen = window.analyticsScreenIndex === 7; // NEW
 
   if (window.analyticsScreenIndex === 0) {
     heading = 'Unique Partners & Opponents';
@@ -261,6 +339,36 @@ function renderAnalyticsCards(payload) {
       { label: 'Points For', data: sorted.map(d => d.pointsFor), backgroundColor: '#00E676' },
       { label: 'Points Against', data: sorted.map(d => d.pointsAgainst), backgroundColor: '#ef4444' }
     ];
+  } else if (window.analyticsScreenIndex === 7) { // NEW — Points Scored %: actual (top bar) vs forecast (bottom bar)
+    heading = 'Points Scored — Actual vs Forecast (11-pt basis)';
+    datasets = [];
+    window.marginBucketHidden = window.marginBucketHidden || {};
+
+    // Top bar — actual results, solid bucket colors
+    SCORE_MARGIN_BUCKETS.forEach(b => {
+      datasets.push({
+        label: `Actual: ${b.label}`,
+        data: sorted.map(d => d.actualMarginBuckets[b.key].count),
+        backgroundColor: b.color,
+        stack: 'actual',
+        bucketKey: b.key,
+        metricType: 'actual',
+        hidden: !!window.marginBucketHidden[b.key]
+      });
+    });
+
+    // Bottom bar — forecast, same colors at reduced opacity
+    SCORE_MARGIN_BUCKETS.forEach(b => {
+      datasets.push({
+        label: `Forecast: ${b.label}`,
+        data: sorted.map(d => d.forecastMarginBuckets[b.key].count),
+        backgroundColor: `${b.color}99`,
+        stack: 'forecast',
+        bucketKey: b.key,
+        metricType: 'forecast',
+        hidden: !!window.marginBucketHidden[b.key]
+      });
+    });
   }
 
   document.getElementById('analytics-heading').innerText = heading;
@@ -270,7 +378,7 @@ function renderAnalyticsCards(payload) {
   // actual drawn pixels were near-black), so the built-in legend is hidden for
   // this screen and replaced with a real HTML legend below, which has no such
   // dependency on Chart.js's internal text-color handling.
-  const legendConfig = isQualityScreen
+  const legendConfig = (isQualityScreen || isMarginScreen)
     ? { display: false }
     : { display: true, position: 'top' };
 
@@ -292,6 +400,14 @@ function renderAnalyticsCards(payload) {
                 const entry = sorted[item.dataIndex];
                 const metricLabel = item.dataset.metricType === 'partner' ? 'Partner' : 'Opponent';
                 return `${entry.player.FirstName || 'Unnamed'} — ${metricLabel}`;
+              }
+              if (window.analyticsScreenIndex === 7) { // NEW — name + Actual/Forecast + overall % of points
+                const item = items[0];
+                const entry = sorted[item.dataIndex];
+                const isForecast = item.dataset.metricType === 'forecast';
+                const pointsPct = isForecast ? entry.forecastPointsPct : entry.actualPointsPct;
+                const pctText = pointsPct === null ? 'n/a' : `${(pointsPct * 100).toFixed(1)}%`;
+                return `${entry.player.FirstName || 'Unnamed'} — ${isForecast ? 'Forecast' : 'Actual'} (${pctText} of points)`;
               }
               return items[0].label; // preserves the default category-label title everywhere else
             },
@@ -350,6 +466,19 @@ function renderAnalyticsCards(payload) {
                 const rounds = Object.keys(entry.roundPoints).map(Number).sort((a, b) => a - b);
                 const lines = rounds.map(r => `Round ${r}: ${entry.roundPoints[r].for} - ${entry.roundPoints[r].against}`);
                 return lines.length > 0 ? lines : ['No scores yet'];
+
+              } else if (window.analyticsScreenIndex === 7) { // NEW — games in this margin bucket with points % per game
+                const isForecast = ctx.dataset.metricType === 'forecast';
+                const buckets = isForecast ? entry.forecastMarginBuckets : entry.actualMarginBuckets;
+                const bucketLabel = SCORE_MARGIN_BUCKETS.find(b => b.key === ctx.dataset.bucketKey)?.label || '';
+                const games = (buckets[ctx.dataset.bucketKey]?.rounds || []).slice().sort((a, b) => a.round - b.round);
+                if (games.length === 0) return [bucketLabel, 'No games in this range'];
+                return [bucketLabel, ...games.map(g => {
+                  const gamePct = ((g.pointsFor / (g.pointsFor + g.pointsAgainst)) * 100).toFixed(1);
+                  const wasScaled = !isForecast && Math.max(g.pointsFor, g.pointsAgainst) !== SCORE_MARGIN_TARGET;
+                  const scaledNote = wasScaled ? ` → ${SCORE_MARGIN_TARGET}-${g.scaledLosingScore} eq.` : '';
+                  return `Round ${g.round}: ${formatMarginScore(g.pointsFor)}-${formatMarginScore(g.pointsAgainst)} (${gamePct}%)${scaledNote}`;
+                })];
               }
 
               return `${ctx.dataset.label}: ${ctx.parsed.x}`;
@@ -361,7 +490,7 @@ function renderAnalyticsCards(payload) {
         x: {
           beginAtZero: true,
           ticks: { stepSize: 1 },
-          stacked: isQualityScreen // NEW
+          stacked: isQualityScreen || isMarginScreen // CHANGED — was isQualityScreen
         }
         // y-axis intentionally left unstacked — it's the category (player) axis
         // here, and marking it stacked caused the Partners/Opponents bars to
@@ -376,6 +505,12 @@ function renderAnalyticsCards(payload) {
     renderQualityLegendHTML(window.analyticsChartInstance);
   } else {
     hideQualityLegendHTML();
+  }
+
+  if (isMarginScreen) { // NEW
+    renderMarginLegendHTML(window.analyticsChartInstance);
+  } else {
+    hideMarginLegendHTML();
   }
 }
 
@@ -450,6 +585,84 @@ function hideQualityLegendHTML() {
   if (legendEl) legendEl.style.display = 'none';
 }
 
+// ---------- HTML LEGEND (Score Margin screen) ----------
+// NEW — same approach as the Draw Quality legend: plain DOM, click a bucket to hide/show it
+// on both the actual and forecast bars.
+
+function renderMarginLegendHTML(chart) {
+  const canvas = document.getElementById('analytics-chart-canvas');
+  if (!canvas) return;
+
+  let legendEl = document.getElementById('analytics-margin-legend');
+  if (!legendEl) {
+    legendEl = document.createElement('div');
+    legendEl.id = 'analytics-margin-legend';
+    legendEl.style.display = 'flex';
+    legendEl.style.flexWrap = 'wrap';
+    legendEl.style.gap = '10px 16px';
+    legendEl.style.marginBottom = '10px';
+    legendEl.style.fontSize = '0.8rem';
+    canvas.parentNode.insertBefore(legendEl, canvas);
+  }
+
+  legendEl.innerHTML = '';
+  window.marginBucketHidden = window.marginBucketHidden || {};
+
+  const caption = document.createElement('div');
+  caption.style.width = '100%';
+  caption.style.color = 'var(--text-main)';
+  caption.style.opacity = '0.7';
+  caption.textContent = 'Top bar: Actual (scaled to 11)  ·  Bottom bar: Forecast (lighter)';
+  legendEl.appendChild(caption);
+
+  SCORE_MARGIN_BUCKETS.forEach(b => {
+    const isHidden = !!window.marginBucketHidden[b.key];
+
+    const item = document.createElement('div');
+    item.style.display = 'flex';
+    item.style.alignItems = 'center';
+    item.style.gap = '6px';
+    item.style.cursor = 'pointer';
+    item.style.color = 'var(--text-main)';
+    item.style.opacity = isHidden ? '0.4' : '1';
+    item.style.userSelect = 'none';
+
+    const swatch = document.createElement('span');
+    swatch.style.display = 'inline-block';
+    swatch.style.width = '12px';
+    swatch.style.height = '12px';
+    swatch.style.borderRadius = '3px';
+    swatch.style.backgroundColor = b.color;
+    swatch.style.flexShrink = '0';
+
+    const label = document.createElement('span');
+    label.textContent = b.label;
+
+    item.appendChild(swatch);
+    item.appendChild(label);
+
+    item.addEventListener('click', () => {
+      window.marginBucketHidden[b.key] = !window.marginBucketHidden[b.key];
+      chart.data.datasets.forEach((ds, idx) => {
+        if (ds.bucketKey === b.key) {
+          if (window.marginBucketHidden[b.key]) chart.hide(idx); else chart.show(idx);
+        }
+      });
+      chart.update();
+      renderMarginLegendHTML(chart); // refresh dimmed/active styling
+    });
+
+    legendEl.appendChild(item);
+  });
+
+  legendEl.style.display = 'flex';
+}
+
+function hideMarginLegendHTML() {
+  const legendEl = document.getElementById('analytics-margin-legend');
+  if (legendEl) legendEl.style.display = 'none';
+}
+
 function initAnalyticsSwipeHandlers() {
   const container = document.getElementById('screen-analytics');
   if (!container) return;
@@ -465,7 +678,7 @@ function initAnalyticsSwipeHandlers() {
     const deltaY = e.changedTouches[0].screenY - startY;
     if (Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY)) return;
 
-    if (deltaX < 0 && window.analyticsScreenIndex < 6) { // CHANGED — was < 5, now 7 screens (0-6)
+    if (deltaX < 0 && window.analyticsScreenIndex < 7) { // CHANGED — was < 6, now 8 screens (0-7)
       window.analyticsScreenIndex++;
       renderAnalyticsCards(window.cachedUserUniverse);
     } else if (deltaX > 0 && window.analyticsScreenIndex > 0) {
