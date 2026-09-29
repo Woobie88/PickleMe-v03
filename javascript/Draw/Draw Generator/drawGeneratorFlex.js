@@ -181,7 +181,7 @@ function generateBestFlexRound(coreGroup1, flexGroup, coreGroup2, eligible, cour
 }
 
 // ---------- CORE FLEX DRAW GENERATION ----------
-// Drives building the flex draw
+// Drives building the flex draw 
 function generateFlexRoundDraw(players, matches, byePlayerIds, roundNumber, courtsCount, eventId, drawVersion, userEmail, scorers) {
   const eligible = players.filter(p => !byePlayerIds.includes(p.PlayerID));
   const { partnerCounts, opponentCounts, courtCounts } = buildDrawHistory(matches);
