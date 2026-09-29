@@ -86,6 +86,12 @@ function computeAnalyticsPlayerCounts(payload) {
   const activeEventId = payload.activeEventId;
   const activeEvent = payload.events.find(e => String(e.EventID) === String(activeEventId));
   const matches = payload.draw || [];
+
+  // NEW — diagnostic: flag once if the forecast columns aren't on the draw rows,
+  // since every forecast bar will be empty in that case
+  if (matches.length > 0 && !(FORECAST_SCORE_FIELDS.team1 in matches[0])) {
+    console.warn(`Analytics: '${FORECAST_SCORE_FIELDS.team1}' not found on draw rows. Available fields:`, Object.keys(matches[0]));
+  }
   const players = payload.players.filter(
     p => String(p.PlayerVersion) === String(activeEvent.CurrentPlayerVersion) && p.playerExclude !== 'Yes'
   );
@@ -160,16 +166,15 @@ function computeAnalyticsPlayerCounts(payload) {
         };
       }
 
-      // NEW — score margin buckets. Only games with an actual score count, and the
-      // forecast is counted for those same games so both bars cover the same games.
-      const actualGame = roundPoints[round];
-      if (actualGame && actualGame.for + actualGame.against > 0) {
-        addMarginGame(actualMarginBuckets, actualGame, round);
-        addMarginGame(forecastMarginBuckets, roundForecastPoints[round], round);
-      }
-
       const isDummyRound = isProgressive && round > currentRound;
       if (isDummyRound) return;
+
+      // NEW — score margin buckets. Actual counts once a game has a score; forecast
+      // counts as soon as the game has expected scores, so upcoming games show on the
+      // forecast bar before results are in. Dummy rounds are excluded above. Games
+      // with no score (0-0) are skipped inside addMarginGame.
+      addMarginGame(actualMarginBuckets, roundPoints[round], round);
+      addMarginGame(forecastMarginBuckets, roundForecastPoints[round], round);
 
       myTeam.forEach(pid => {
         if (pid !== player.PlayerID) {
