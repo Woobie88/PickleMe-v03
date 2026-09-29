@@ -30,6 +30,7 @@ function attemptFlexRound(coreGroup1, flexGroup, coreGroup2, eligible, courtsCou
   const coreGroup2Ids = coreGroup2.map(player => player.PlayerID);
 
   const flexPartnerships = attemptFlexPartnerships(eligible, coreGroup1Ids, coreGroup2Ids, partnerCounts, scorers);
+  conole.log('The flex partnerships are',flexPartnerships);
 
   const flexMatchups = attemptFlexMatchups(flexPartnerships.pairs, coreGroup1Ids, coreGroup2Ids, opponentCounts, scorers);
 
