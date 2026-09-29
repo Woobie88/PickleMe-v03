@@ -1,155 +1,213 @@
-// ---------------------------------------------
-// FLEX + BALANCED MATCHUPS
-// ---------------------------------------------
-// Depends on drawGeneratorBalancedMatchUps.js: scoreGroupFormation, bestSplitForGroup, combinations
-// Depends on drawGenerator.js: shuffle, assignCourts, buildMatchRecord
+// ---------- FLEX ROUND GENERATION (Cross Court Divisions) ----------
 //
-// The core group rules decide WHO may be in a foursome together. The balanced
-// matchup logic then scores those foursomes and decides how each one splits
-// into teams (best team-average DUPR match, then least partner repetition).
+// Three groups set on the Cross Court Divisions screen, persisted to player.Team:
+//   1 = Core Group 1  (max 4)   2 = Flex Group (unlimited)   3 = Core Group 2 (max 4)
 //
-// Scorers need the fields drawGeneratorBalancedMatchUps.js already reads:
-// partnerFrequencyWeight, opponentFrequencyWeight, groupDuprGapWeight,
-// partnerDuprDelta, maxGroupCandidates.
+// Group membership decides who can play with/against whom: Core Group 1 only
+// ever partners or opposes Core Group 1 or Flex players, Core Group 2 only
+// Core Group 2 or Flex, and the two cores never meet. Which physical court a
+// match happens on is unrelated to that and is decided the same way every
+// other game type here decides it — via assignCourts, balancing each
+// player's court history — so court assignment flexes freely with courtCount.
+//
+// Capping each core at 4 (one court's worth) is what makes the byes safe to
+// draw at random: whichever k courts end up "Core 1 + Flex" for the round,
+// Core 1 always fits inside them no matter who sits out, and likewise for
+// Core 2 on the other k' courts — so a valid split always exists.
 
-// Above this many players the exact search gets slow (about 0.2s at 20 players,
-// 4s at 24), so larger fields use the greedy search instead.
-const FLEX_EXACT_SEARCH_MAX_PLAYERS = 20;
+const FLEX_CORE_GROUP_1 = 1;
+const FLEX_GROUP = 2;
+const FLEX_CORE_GROUP_2 = 3;
+const FLEX_CORE_MAX = 4;
 
-// A foursome may never contain both a Core Group 1 and a Core Group 2 player.
-// Flex players are eligible with anyone.
-function isEligibleFlexGroup(group, coreGroup1Ids, coreGroup2Ids) {
-  const hasGroup1Player = group.some(player => coreGroup1Ids.includes(player.PlayerID));
-  const hasGroup2Player = group.some(player => coreGroup2Ids.includes(player.PlayerID));
-  return !(hasGroup1Player && hasGroup2Player);
+// ---------- PARTNERSHIP & MATCHUP GENERATION ---------- 
+// One attempt: pick a feasible split, bridge Flex players, and pair off each
+// pool. Mirrors attemptPartnerships/attemptMatchups — a single candidate,
+// scored, for generateBestFlexRound to compare across many of.
+function attemptFlexRound(coreGroup1, flexGroup, coreGroup2, eligible, courtsCount, partnerCounts, opponentCounts, scorers) {
+
+  const coreGroup1Ids = coreGroup1.map(player => player.PlayerID);
+  const coreGroup2Ids = coreGroup2.map(player => player.PlayerID);
+
+  const flexPartnerships = attemptFlexPartnerships(eligible, coreGroup1Ids, coreGroup2Ids, partnerCounts, scorers);
+
+  const flexMatchups = attemptFlexMatchups(flexPartnerships.pairs, coreGroup1Ids, coreGroup2Ids, opponentCounts, scorers);
+
+  flexMatchups.matchups = flexMatchups.matchups.filter(matchup => {
+    const allPlayers = [...matchup.teamA, ...matchup.teamB];
+    const hasGroup1Player = allPlayers.some(player => coreGroup1Ids.includes(player.PlayerID));
+    const hasGroup2Player = allPlayers.some(player => coreGroup2Ids.includes(player.PlayerID));
+    return !(hasGroup1Player && hasGroup2Player);
+  });
+
+  return {
+    matchups: flexMatchups.matchups,
+    cost: flexPartnerships.cost + flexMatchups.cost
+  };
 }
 
-// ---------------------------------------------
-// EXACT SEARCH (up to FLEX_EXACT_SEARCH_MAX_PLAYERS)
-// ---------------------------------------------
-// Scores every eligible foursome once, then finds the cheapest way to split the
-// whole round into foursomes that covers every player exactly once. Returns the
-// true best round, not a lucky one, and returns null only if no legal round exists.
-function generateBestFlexBalancedRoundExact(eligiblePlayers, coreGroup1Ids, coreGroup2Ids, partnerCounts, opponentCounts, scorers) {
-  const playerCount = eligiblePlayers.length;
-  if (playerCount % 4 !== 0) return null;
+// ---------- PARTNERSHIP GENERATION (hard delta version) ----------
 
-  // 1. Every eligible foursome, scored once. A bitmask identifies its players.
-  const foursomesByLowestPlayer = Array.from({ length: playerCount }, () => []);
-  for (const indexes of combinations(eligiblePlayers.map((p, i) => i), 4)) {
-    const group = indexes.map(i => eligiblePlayers[i]);
-    if (!isEligibleFlexGroup(group, coreGroup1Ids, coreGroup2Ids)) continue;
-
-    const groupCost = scoreGroupFormation(group, partnerCounts, opponentCounts, scorers);
-    const bestGame = bestSplitForGroup(group, partnerCounts, opponentCounts, scorers);
-    const mask = indexes.reduce((m, i) => m | (1 << i), 0);
-    foursomesByLowestPlayer[indexes[0]].push({ mask, cost: groupCost + bestGame.cost, game: bestGame });
-  }
-
-  // 2. Cheapest exact cover: always place the lowest uncovered player next
-  const fullMask = (1 << playerCount) - 1;
-  const memo = new Map();
-
-  function solve(coveredMask) {
-    if (coveredMask === fullMask) return { cost: 0, games: [] };
-    if (memo.has(coveredMask)) return memo.get(coveredMask);
-
-    let lowestFree = 0;
-    while (coveredMask & (1 << lowestFree)) lowestFree++;
-
-    let best = null;
-    for (const foursome of foursomesByLowestPlayer[lowestFree]) {
-      if (foursome.mask & coveredMask) continue;
-      const rest = solve(coveredMask | foursome.mask);
-      if (!rest) continue;
-
-      // Tiny jitter so equally good rounds vary instead of always picking the same one
-      const cost = foursome.cost + rest.cost + Math.random() * 1e-6;
-      if (!best || cost < best.cost) best = { cost, games: [foursome.game, ...rest.games] };
-    }
-
-    memo.set(coveredMask, best);
-    return best;
-  }
-
-  const result = solve(0);
-  return result ? result.games : null;
-}
-
-// ---------------------------------------------
-// GREEDY SEARCH (fallback for large fields)
-// ---------------------------------------------
-function attemptFlexBalancedRound(eligiblePlayers, coreGroup1Ids, coreGroup2Ids, partnerCounts, opponentCounts, scorers) {
+function attemptFlexPartnerships(eligiblePlayers, coreGroup1Ids, coreGroup2Ids, partnerCounts, scorers) {
   const pool = shuffle(eligiblePlayers);
-  const games = [];
+  const pairs = [];
   const used = new Set();
   let cost = 0;
+
+  // Core Group 1 and Core Group 2 players can never partner each other
+  const isEligiblePartner = (p1, p2) => {
+    const p1InGroup1 = coreGroup1Ids.includes(p1.PlayerID);
+    const p1InGroup2 = coreGroup2Ids.includes(p1.PlayerID);
+    const p2InGroup1 = coreGroup1Ids.includes(p2.PlayerID);
+    const p2InGroup2 = coreGroup2Ids.includes(p2.PlayerID);
+    return !((p1InGroup1 && p2InGroup2) || (p1InGroup2 && p2InGroup1));
+  };
 
   for (const p1 of pool) {
     if (used.has(p1.PlayerID)) continue;
 
-    // Only players p1 is allowed to share a foursome with
-    const remaining = pool.filter(p =>
-      !used.has(p.PlayerID) &&
-      p.PlayerID !== p1.PlayerID &&
-      isEligibleFlexGroup([p1, p], coreGroup1Ids, coreGroup2Ids)
+    // Stage 1: unused candidates within the DUPR delta, minus ineligible core pairings
+    let candidates = pool.filter(p2 =>
+      p2.PlayerID !== p1.PlayerID &&
+      !used.has(p2.PlayerID) &&
+      Math.abs((parseFloat(p1.DUPR) || 0) - (parseFloat(p2.DUPR) || 0)) <= scorers.partnerDuprDelta &&
+      isEligiblePartner(p1, p2)
     );
 
-    // p1 cannot be placed in any foursome: this attempt is invalid
-    if (remaining.length < 3) return { games, cost: Infinity };
-
-    let candidates = remaining.filter(p2 =>
-      Math.abs((parseFloat(p1.DUPR) || 0) - (parseFloat(p2.DUPR) || 0)) <= scorers.partnerDuprDelta
-    );
-    if (candidates.length < 3) candidates = remaining;
-
-    const maxCandidates = scorers.maxGroupCandidates || 10;
-    if (candidates.length > maxCandidates) {
-      candidates = shuffle(candidates).slice(0, maxCandidates);
+    // Stage 2: fall back to the full unused pool if nobody fits the delta.
+    // The eligibility rule still applies; it must never be relaxed.
+    if (candidates.length === 0) {
+      candidates = pool.filter(p2 =>
+        p2.PlayerID !== p1.PlayerID &&
+        !used.has(p2.PlayerID) &&
+        isEligiblePartner(p1, p2)
+      );
     }
 
-    let bestGroup = null, bestGroupCost = Infinity;
-    for (const trio of combinations(candidates, 3)) {
-      const group = [p1, ...trio];
-      if (!isEligibleFlexGroup(group, coreGroup1Ids, coreGroup2Ids)) continue;
-      const groupCost = scoreGroupFormation(group, partnerCounts, opponentCounts, scorers);
-      if (groupCost < bestGroupCost) { bestGroupCost = groupCost; bestGroup = group; }
+    let bestPartner = null, bestCost = Infinity;
+    for (const p2 of candidates) {
+      const c = scorers.scorePairing(p1, p2, partnerCounts);
+      if (c < bestCost) { bestCost = c; bestPartner = p2; }
     }
 
-    // Every candidate trio broke the core rule: this attempt is invalid
-    if (!bestGroup) return { games, cost: Infinity };
-
-    const bestGame = bestSplitForGroup(bestGroup, partnerCounts, opponentCounts, scorers);
-    games.push(bestGame);
-    [...bestGame.teamA, ...bestGame.teamB].forEach(p => used.add(p.PlayerID));
-    cost += bestGroupCost + bestGame.cost;
+    if (bestPartner) {
+      pairs.push([p1, bestPartner]);
+      used.add(p1.PlayerID);
+      used.add(bestPartner.PlayerID);
+      cost += bestCost;
+    }
   }
 
-  return { games, cost };
+  // A player left unpaired makes this attempt invalid. Infinity stops it
+  // ever being picked as the best attempt.
+  if (used.size !== pool.length) return { pairs, cost: Infinity };
+
+  return { pairs, cost };
 }
 
-function generateBestFlexBalancedRoundGreedy(eligiblePlayers, coreGroup1Ids, coreGroup2Ids, partnerCounts, opponentCounts, scorers, attempts = 300) {
+// ---------- MATCHUP GENERATION (hard delta version) ----------
+
+function attemptFlexMatchups(partnerships, coreGroup1Ids, coreGroup2Ids, opponentCounts, scorers) {
+  const pool = shuffle(partnerships);
+  const matchups = [];
+  const used = new Set();
+  let cost = 0;
+
+  // A team carrying a Core Group 1 player can never face a team carrying a
+  // Core Group 2 player (Flex-only teams are eligible against anyone)
+  const isEligibleMatchup = (teamA, teamB) => {
+    const allPlayers = [...teamA, ...teamB];
+    const hasGroup1Player = allPlayers.some(player => coreGroup1Ids.includes(player.PlayerID));
+    const hasGroup2Player = allPlayers.some(player => coreGroup2Ids.includes(player.PlayerID));
+    return !(hasGroup1Player && hasGroup2Player);
+  };
+
+  for (let a = 0; a < pool.length; a++) {
+    if (used.has(a)) continue;
+
+    // Stage 1: unused candidates within the DUPR delta, minus ineligible core matchups
+    let candidateIdxs = [];
+    for (let b = 0; b < pool.length; b++) {
+      if (b === a || used.has(b)) continue;
+      const gap = Math.abs(teamAvgDupr(pool[a]) - teamAvgDupr(pool[b]));
+      if (gap <= scorers.opponentDuprDelta && isEligibleMatchup(pool[a], pool[b])) {
+        candidateIdxs.push(b);
+      }
+    }
+
+    // Stage 2: fall back to the full unused pool if nobody fits the delta.
+    // The eligibility rule still applies; it must never be relaxed.
+    if (candidateIdxs.length === 0) {
+      for (let b = 0; b < pool.length; b++) {
+        if (b !== a && !used.has(b) && isEligibleMatchup(pool[a], pool[b])) {
+          candidateIdxs.push(b);
+        }
+      }
+    }
+
+    let bestIdx = -1, bestCost = Infinity;
+    for (const b of candidateIdxs) {
+      const c = scorers.scoreMatchup(pool[a], pool[b], opponentCounts);
+      if (c < bestCost) { bestCost = c; bestIdx = b; }
+    }
+
+    if (bestIdx !== -1) {
+      matchups.push({ teamA: pool[a], teamB: pool[bestIdx] });
+      used.add(a);
+      used.add(bestIdx);
+      cost += bestCost;
+    }
+  }
+
+  // A team left without an opponent makes this attempt invalid
+  if (used.size !== pool.length) return { matchups, cost: Infinity };
+
+  return { matchups, cost };
+}
+
+// ---------- MATCHUP GENERATION ----------
+// Tries many splits and pairings and keeps the lowest-cost combination —
+// this is what stops the smaller core group getting stuck repartnering
+// itself: a split that bridges a Flex player in to break up a repeat will
+// score lower and win, rather than the split being decided before scoring
+// ever happens.
+function generateBestFlexRound(coreGroup1, flexGroup, coreGroup2, eligible, courtsCount, partnerCounts, opponentCounts, scorers, attempts = 300) {
   let best = null, bestCost = Infinity;
   for (let i = 0; i < attempts; i++) {
-    const result = attemptFlexBalancedRound(eligiblePlayers, coreGroup1Ids, coreGroup2Ids, partnerCounts, opponentCounts, scorers);
-    if (result.cost < bestCost) { bestCost = result.cost; best = result.games; }
+    const result = attemptFlexRound(coreGroup1, flexGroup, coreGroup2, eligible, courtsCount, partnerCounts, opponentCounts, scorers);
+    if (result && result.cost < bestCost) { bestCost = result.cost; best = result.matchups; }
   }
-  return best; // null if every attempt hit a dead end
+  return best;
 }
 
-// ---------------------------------------------
-// CALLING FUNCTION (mirrors generateBestMatches)
-// ---------------------------------------------
-function generateFlexBalancedMatches(eligiblePlayers, coreGroup1Ids, coreGroup2Ids, courtNumbers, partnerCounts, opponentCounts, courtCounts, roundNumber, eventId, drawVersion, userEmail, scorers) {
-  const matchups = eligiblePlayers.length <= FLEX_EXACT_SEARCH_MAX_PLAYERS
-    ? generateBestFlexBalancedRoundExact(eligiblePlayers, coreGroup1Ids, coreGroup2Ids, partnerCounts, opponentCounts, scorers)
-    : generateBestFlexBalancedRoundGreedy(eligiblePlayers, coreGroup1Ids, coreGroup2Ids, partnerCounts, opponentCounts, scorers);
+// ---------- CORE FLEX DRAW GENERATION ----------
+// Drives building the flex draw
+function generateFlexRoundDraw(players, matches, byePlayerIds, roundNumber, courtsCount, eventId, drawVersion, userEmail, scorers) {
+  const eligible = players.filter(p => !byePlayerIds.includes(p.PlayerID));
+  const { partnerCounts, opponentCounts, courtCounts } = buildDrawHistory(matches);
 
-  if (!matchups || matchups.length !== courtNumbers.length) {
-    console.error(`Cannot generate Cross Court draw for round ${roundNumber}: no valid foursomes found under the group rules.`);
+  const coreGroup1 = eligible.filter(p => parseInt(p.Team) === FLEX_CORE_GROUP_1);
+  const flexGroup = eligible.filter(p => parseInt(p.Team) === FLEX_GROUP);
+  const coreGroup2 = eligible.filter(p => parseInt(p.Team) === FLEX_CORE_GROUP_2);
+
+  if (coreGroup1.length > FLEX_CORE_MAX || coreGroup2.length > FLEX_CORE_MAX) {
+    console.error(`Cannot generate Cross Court draw: core groups are capped at ${FLEX_CORE_MAX} (Core Group 1 has ${coreGroup1.length}, Core Group 2 has ${coreGroup2.length}).`);
     return [];
   }
 
-  const courted = assignCourts(matchups, courtNumbers, courtCounts);
+  if (eligible.length !== courtsCount * 4) {
+    console.error(`Cannot generate Cross Court draw for round ${roundNumber}: ${eligible.length} eligible players cannot fill ${courtsCount} courts.`);
+    return [];
+  }
+
+  const bestMatchups = generateBestFlexRound(coreGroup1, flexGroup, coreGroup2, eligible, courtsCount, partnerCounts, opponentCounts, scorers);
+  if (!bestMatchups) {
+    console.error(`Cannot generate Cross Court draw for round ${roundNumber}: no court split fits this group composition.`);
+    return [];
+  }
+
+  const courtNumbers = Array.from({ length: courtsCount }, (_, i) => i + 1);
+  const courted = assignCourts(bestMatchups, courtNumbers, courtCounts);
+
   return courted.map((m, idx) => buildMatchRecord(m, idx, roundNumber, eventId, drawVersion, userEmail));
 }
