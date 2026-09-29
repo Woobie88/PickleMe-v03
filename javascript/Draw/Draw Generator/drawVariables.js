@@ -1,6 +1,6 @@
 // --- Draw Generation Weighting: slider presets ---
 const penaltyWeightPresets = [
-  { drawWeightValue: 0, label: 'Maximise partner & opponent rotation', partnerDuprGapWeight: 10, partnerFrequencyWeight: 100, partnerDuprDelta: 1,  
+  { drawWeightValue: 0, label: 'Maximise partner & opponent rotation', partnerDuprGapWeight: 0, partnerFrequencyWeight: 100, partnerDuprDelta: 1,  
     opponentDuprGapWeight: 10,  opponentFrequencyWeight: 100, opponentDuprDelta: 1, opponentMinExpScore: 5  },
   { drawWeightValue: 1, label: 'Balanced draw', partnerDuprGapWeight: 50,  partnerFrequencyWeight: 50, partnerDuprDelta: 0.4,
     opponentDuprGapWeight: 50,  opponentFrequencyWeight: 50, opponentDuprDelta: 0.3, opponentMinExpScore: 7  },
