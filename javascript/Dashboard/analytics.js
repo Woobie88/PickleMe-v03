@@ -289,7 +289,7 @@ function renderAnalyticsCards(payload) {
       { label: 'Max Opponent', data: sorted.map(d => d.maxSameOpponent), backgroundColor: '#ef4444' }
     ];
   } else if (window.analyticsScreenIndex === 2) { // NEW — Draw Quality: DUPR Gap Distribution
-    heading = 'Draw Quality — DUPR Gap Distribution';
+    heading = 'DUPR Draw Quality';
     datasets = [];
 
     // Partner stack — solid bucket colors
@@ -345,7 +345,7 @@ function renderAnalyticsCards(payload) {
       { label: 'Points Against', data: sorted.map(d => d.pointsAgainst), backgroundColor: '#ef4444' }
     ];
   } else if (window.analyticsScreenIndex === 7) { // NEW — Points Scored %: actual (top bar) vs forecast (bottom bar)
-    heading = 'Points Scored — Actual vs Forecast (11-pt basis)';
+    heading = 'Actual vs Expected Points Margins';
     datasets = [];
     window.marginBucketHidden = window.marginBucketHidden || {};
 
@@ -612,13 +612,6 @@ function renderMarginLegendHTML(chart) {
 
   legendEl.innerHTML = '';
   window.marginBucketHidden = window.marginBucketHidden || {};
-
-  const caption = document.createElement('div');
-  caption.style.width = '100%';
-  caption.style.color = 'var(--text-main)';
-  caption.style.opacity = '0.7';
-  caption.textContent = 'Top bar: Actual (scaled to 11)  ·  Bottom bar: Forecast (lighter)';
-  legendEl.appendChild(caption);
 
   SCORE_MARGIN_BUCKETS.forEach(b => {
     const isHidden = !!window.marginBucketHidden[b.key];
