@@ -294,7 +294,7 @@ const gamesProfile = [
     Rounds: "Yes",
     CycleRounds: "No",
     Lives: "No",
-    DrawWeighting: "No",
+    DrawWeighting: "Yes",
     drawMenuOpt: [{
       Redivisioning: ["No",null],
       AddMatch: "Yes",
@@ -399,6 +399,27 @@ const gamesProfile = [
     GameID: "rx-sports",
     GameTitle: "Rx Sports",
     Grouping: "Teams",
+    Draft: "Yes",
+    Rounds: "Yes",
+    CycleRounds: "No",
+    Lives: "No",
+    DrawWeighting: "No",
+    drawMenuOpt: [{
+      Redivisioning: ["No",null],
+      AddMatch: "Yes",
+      PlayerSub: "Yes",
+      PlayerAvailable: "No",
+      ReDraw: "Yes",
+      PlayOffs: "Yes",
+      ResultRefresh: "No"
+    }],
+    Scoring: ["Points","Wins"],
+    ScoringDefault: "Points"
+  },
+  {
+    GameID: "mlb-divisions",
+    GameTitle: "MLB Divisions",
+    Grouping: "Pools",
     Draft: "Yes",
     Rounds: "Yes",
     CycleRounds: "No",
