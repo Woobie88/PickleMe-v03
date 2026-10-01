@@ -345,7 +345,7 @@ function renderAnalyticsCards(payload) {
       { label: 'Points Against', data: sorted.map(d => d.pointsAgainst), backgroundColor: '#ef4444' }
     ];
   } else if (window.analyticsScreenIndex === 7) { // NEW — Points Scored %: actual (top bar) vs forecast (bottom bar)
-    heading = 'Actual vs Expected Points Margins';
+    heading = 'Actual vs Expected Score';
     datasets = [];
     window.marginBucketHidden = window.marginBucketHidden || {};
 
