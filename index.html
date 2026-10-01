@@ -560,14 +560,14 @@
       <section id="screen-games" class="app-screen">
   
         <div class="top-tab-bar">
-          <div class="tab-item active" id="tab-rr" onclick="switchGameTab('rr')">Single Group</div>
-          <div class="tab-item" id="tab-split" onclick="switchGameTab('split')">Tiered Groups</div>
-          <div class="tab-item" id="tab-single" onclick="switchGameTab('single')">Progressive</div>
+          <div class="tab-item active" id="tab-rr" onclick="switchGameTab('rr')">Traditional</div>
+          <div class="tab-item" id="tab-split" onclick="switchGameTab('split')">Tiered</div>
+          <div class="tab-item" id="tab-single" onclick="switchGameTab('single')">Novelty</div>
         </div>
 
         <div class="tab-viewport">
           
-          <div id="view-rr" class="tab-view active">
+          <<div id="view-rr" class="tab-view active">
             <div class="card-grid">
               <div class="app-card" data-game-id="rotating-partners">
                 <div class="card-icon-wrapper">
@@ -599,16 +599,36 @@
                 </div>
                 <span class="card-arrow">→</span>
               </div>
-              <div class="app-card" data-game-id="the-two-of-us">
+              <div class="app-card" data-game-id="kings-queens">
                 <div class="card-icon-wrapper">
-                  <img src="https://i.postimg.cc/x8zyTbNr/Two-Of-Us.png" alt="Two Of Us" loading="lazy" class="card-icon-images">
+                  <img src="https://i.postimg.cc/vm6BFpX0/Kings-Queens.png" alt="Kings And Queens" loading="lazy" class="card-icon-images">
                 </div>
                 <div class="card-content">
-                  <h3>The Two Of Us</h3>
-                  <p>Practice with your partner against all opponent match ups</p>
+                  <h3>Kings &amp; Queens</h3>
+                  <p>Court promotion and relegation is dependant on your last round results</p>
                 </div>
                 <span class="card-arrow">→</span>
               </div>
+              <div class="app-card" data-game-id="survivor">
+                <div class="card-icon-wrapper">
+                  <img src="https://i.postimg.cc/5N4rG7Cv/Survivor.png" alt="Survivor" loading="lazy" class="card-icon-images">
+                </div>
+                <div class="card-content">
+                  <h3>Survivor</h3>
+                  <p>Keep winning on the designated top court to maintain your partnership</p>
+                </div>
+                <span class="card-arrow">→</span>
+              </div> 
+              <div class="app-card" data-game-id="snakes-ladders">
+                <div class="card-icon-wrapper">
+                  <img src="https://i.postimg.cc/3wHMNVY0/Snakes-And-Ladders.png" alt="Snakes And Ladders" loading="lazy" class="card-icon-images">
+                </div>
+                <div class="card-content">
+                  <h3>Snakes &amp; Ladders</h3>
+                  <p>Court allocation is based on last round results. Losing means you go to the bottom</p>
+                </div>
+                <span class="card-arrow">→</span>
+              </div> 
             </div>
           </div>
 
@@ -664,6 +684,11 @@
                 </div>
                 <span class="card-arrow">→</span>
               </div>
+            </div>
+          </div>
+
+          <div id="view-single" class="tab-view">
+            <div class="card-grid">
               <div class="app-card" data-game-id="pool-fusion">
                 <div class="card-icon-wrapper">
                   <img src="https://i.postimg.cc/8zJXhHtY/Pool-Fusion.png" alt="Pool Fusion" loading="lazy" class="card-icon-images">
@@ -693,32 +718,7 @@
                   <p>Divisions game where you play your way to the Fall Classics and ultimately the World Series</p>
                 </div>
                 <span class="card-arrow">→</span>
-              </div>
-            </div>
-          </div>
-
-          <div id="view-single" class="tab-view">
-            <div class="card-grid">
-              <div class="app-card" data-game-id="kings-queens">
-                <div class="card-icon-wrapper">
-                  <img src="https://i.postimg.cc/vm6BFpX0/Kings-Queens.png" alt="Kings And Queens" loading="lazy" class="card-icon-images">
-                </div>
-                <div class="card-content">
-                  <h3>Kings &amp; Queens</h3>
-                  <p>Court promotion and relegation is dependant on your last round results</p>
-                </div>
-                <span class="card-arrow">→</span>
-              </div>
-              <div class="app-card" data-game-id="survivor">
-                <div class="card-icon-wrapper">
-                  <img src="https://i.postimg.cc/5N4rG7Cv/Survivor.png" alt="Survivor" loading="lazy" class="card-icon-images">
-                </div>
-                <div class="card-content">
-                  <h3>Survivor</h3>
-                  <p>Keep winning on the designated top court to maintain your partnership</p>
-                </div>
-                <span class="card-arrow">→</span>
-              </div>
+              </div> 
               <div class="app-card" data-game-id="out-of-lives">
                 <div class="card-icon-wrapper">
                   <img src="https://i.postimg.cc/JntcwFL9/Out-Of-Lives.png" alt="Out Of Lives" loading="lazy" class="card-icon-images">
@@ -739,16 +739,6 @@
                 </div>
                 <span class="card-arrow">→</span>
               </div>
-              <div class="app-card" data-game-id="snakes-ladders">
-                <div class="card-icon-wrapper">
-                  <img src="https://i.postimg.cc/3wHMNVY0/Snakes-And-Ladders.png" alt="Snakes And Ladders" loading="lazy" class="card-icon-images">
-                </div>
-                <div class="card-content">
-                  <h3>Snakes &amp; Ladders</h3>
-                  <p>Court allocation is based on last round results. Losing means you go to the bottom</p>
-                </div>
-                <span class="card-arrow">→</span>
-              </div>
               <div class="app-card" data-game-id="bridge-the-gap">
                 <div class="card-icon-wrapper">
                   <img src="https://i.postimg.cc/QCQR5CyY/Bridge-The-Gap.png" alt="Bridge The Gap" loading="lazy" class="card-icon-images">
@@ -759,6 +749,16 @@
                 </div>
                 <span class="card-arrow">→</span>
               </div>
+              <div class="app-card" data-game-id="the-two-of-us">
+                <div class="card-icon-wrapper">
+                  <img src="https://i.postimg.cc/x8zyTbNr/Two-Of-Us.png" alt="Two Of Us" loading="lazy" class="card-icon-images">
+                </div>
+                <div class="card-content">
+                  <h3>The Two Of Us</h3>
+                  <p>Practice with your partner against all opponent match ups</p>
+                </div>
+                <span class="card-arrow">→</span>
+              </div> 
             </div>
           </div>
 
