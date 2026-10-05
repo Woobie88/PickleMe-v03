@@ -133,7 +133,7 @@
 
         <!-- Add Events button -->
         <div class="fab-wrapper">
-          <div class="fab-container" id="add-events-fab-toggle" onclick="">
+          <div class="fab-container" id="add-events-fab-toggle" onclick="navigateToScreen(add-event-detail)">
             <div class="fab-circle">
               <svg id="add-events-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 767.999994" width="1024" height="1024"><path fill="currentColor" d="M 707.386719 323.386719 L 444.613281 323.386719 L 444.613281 60.613281 C 444.613281 27.476562 417.953125 0 384 0 C 350.863281 0 323.386719 26.660156 323.386719 60.613281 L 323.386719 323.386719 L 60.613281 323.386719 C 27.476562 323.386719 0 350.046875 0 384 C 0 400.976562 6.476562 415.5 17.796875 426.886719 C 29.113281 438.136719 43.636719 444.613281 60.613281 444.613281 L 323.386719 444.613281 L 323.386719 707.386719 C 323.386719 724.363281 329.863281 738.886719 341.183594 750.203125 C 352.5 761.523438 367.023438 768 384 768 C 417.136719 768 444.613281 741.339844 444.613281 707.386719 L 444.613281 444.613281 L 707.386719 444.613281 C 740.523438 444.613281 768 417.953125 768 384 C 768 350.863281 741.339844 323.386719 707.386719 323.386719 " fill-opacity="1" fill-rule="nonzero"/></svg>
             </div>
@@ -158,52 +158,50 @@
 
       <!-- SCREEN: ADD NEW EVENT DETAIL -->
       <section id="screen-add-event-detail" class="app-screen" style="display: none;">
-        
+
         <div class="view-section-header" style="padding: 12px 12px 0 12px; margin-bottom: 10px;">
           <h2>Event Details</h2>
           <p>Add the configuration parameters for your new event</p>
         </div>
 
-        <input type="hidden" id="edit-event-id" value="${targetEvent.EventID || ''}">
-
         <div class="detail-form-group">
-          <label for="edit-event-name">Event Name</label>
-          <input type="text" id="edit-event-name" class="detail-input" value="${targetEvent.EventName || ''}">
+          <label for="ae-event-name">Event Name</label>
+          <input type="text" id="ae-event-name" class="detail-input" value="">
         </div>
 
         <div class="detail-form-group">
-          <label for="edit-event-date">Date</label>
-          <input type="date" id="edit-event-date" class="detail-input" value="${inputDate}">
+          <label for="ae-event-date">Date</label>
+          <input type="date" id="ae-event-date" class="detail-input" value="">
         </div>
 
         <div class="detail-form-group">
-          <label for="edit-event-location">Location</label>
-          <input type="text" id="edit-event-location" class="detail-input" value="${targetEvent.EventLocation || ''}">
+          <label for="ae-event-location">Location</label>
+          <input type="text" id="ae-event-location" class="detail-input" value="">
         </div>
 
         <div class="detail-form-group">
           <label>Number of Courts</label>
           <div class="score-control">
-            <button class="score-btn" onclick="adjustCourts(-1)">−</button>
-            <span id="courts-value" class="score-value">${targetEvent.NumberofCourts || 1}</span>
-            <button class="score-btn" onclick="adjustCourts(1)">+</button>
+            <button class="score-btn" onclick="adjustAeCourts(-1)">−</button>
+            <span id="ae-courts-value" class="score-value">1</span>
+            <button class="score-btn" onclick="adjustAeCourts(1)">+</button>
           </div>
-          <input type="hidden" id="edit-event-courts" value="${targetEvent.NumberofCourts || 1}">
+          <input type="hidden" id="ae-event-courts" value="1">
         </div>
-        
+
         <div class="detail-form-group">
           <label>DUPR Limit</label>
           <div class="score-control">
-            <button class="score-btn" onclick="adjustDuprLimit(-1)">−</button>
-            <span id="dupr-value" class="score-value">${duprVal}</span>
-            <button class="score-btn" onclick="adjustDuprLimit(1)">+</button>
+            <button class="score-btn" onclick="adjustAeDuprLimit(-1)">−</button>
+            <span id="ae-dupr-value" class="score-value">0</span>
+            <button class="score-btn" onclick="adjustAeDuprLimit(1)">+</button>
           </div>
-          <input type="hidden" id="edit-event-dupr" value="${duprVal}">
+          <input type="hidden" id="ae-event-dupr" value="0">
         </div>
 
         <div class="form-action-bar">
           <button class="btn-secondary" onclick="navigateToScreen('events')">Cancel</button>
-          <button class="btn-primary" onclick="updateActiveEventDetails()">Update</button>
+          <button class="btn-primary" onclick="createNewEvent()">Create</button>
         </div>
 
         <!-- Add Hosts button -->
@@ -844,7 +842,7 @@
             </div>
           </div>
         </div>
-        <!-- DUPR refresh button -->
+        <!-- Game help button -->
         <div class="fab-wrapper"> 
           <div class="fab-container" id="game-ai-help" onclick="gameAIHelp()">
             <div class="fab-circle">
@@ -1329,6 +1327,7 @@
     </div>
     <script type="module" src="javascript/Database/fireStone.js"></script>
     <script src="javascript/Events/eventCards.js"></script>
+    <script src="javascript/Events/addEvent.js"></script>
     <script src="javascript/Players/Player Cards/playerCards.js"></script>
     <script src="javascript/Draw/Draw Cards/drawCards.js"></script>
     <script src="javascript/Dashboard/images.js"></script>

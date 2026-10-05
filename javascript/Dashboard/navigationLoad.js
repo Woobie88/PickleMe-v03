@@ -144,6 +144,9 @@ function navigateToScreen(screenId) {
     case 'playoffs':
       renderPlayoffsScreen(window.cachedUserUniverse);
       break;
+    case 'add-event-detail':
+      renderAddEventDetailScreen();
+      break;
   }
 }
 
