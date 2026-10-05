@@ -163,45 +163,48 @@
           <h2>Event Details</h2>
           <p>Add the configuration parameters for your new event</p>
         </div>
+        
+        <div id="event-add-detail-content" class="detail-view-container">
 
-        <div class="detail-form-group">
-          <label for="ae-event-name">Event Name</label>
-          <input type="text" id="ae-event-name" class="detail-input" value="">
-        </div>
-
-        <div class="detail-form-group">
-          <label for="ae-event-date">Date</label>
-          <input type="date" id="ae-event-date" class="detail-input" value="">
-        </div>
-
-        <div class="detail-form-group">
-          <label for="ae-event-location">Location</label>
-          <input type="text" id="ae-event-location" class="detail-input" value="">
-        </div>
-
-        <div class="detail-form-group">
-          <label>Number of Courts</label>
-          <div class="score-control">
-            <button class="score-btn" onclick="adjustAeCourts(-1)">−</button>
-            <span id="ae-courts-value" class="score-value">1</span>
-            <button class="score-btn" onclick="adjustAeCourts(1)">+</button>
+          <div class="detail-form-group">
+            <label for="ae-event-name">Event Name</label>
+            <input type="text" id="ae-event-name" class="detail-input" value="">
           </div>
-          <input type="hidden" id="ae-event-courts" value="1">
-        </div>
 
-        <div class="detail-form-group">
-          <label>DUPR Limit</label>
-          <div class="score-control">
-            <button class="score-btn" onclick="adjustAeDuprLimit(-1)">−</button>
-            <span id="ae-dupr-value" class="score-value">0</span>
-            <button class="score-btn" onclick="adjustAeDuprLimit(1)">+</button>
+          <div class="detail-form-group">
+            <label for="ae-event-date">Date</label>
+            <input type="date" id="ae-event-date" class="detail-input" value="">
           </div>
-          <input type="hidden" id="ae-event-dupr" value="0">
-        </div>
 
-        <div class="form-action-bar">
-          <button class="btn-secondary" onclick="navigateToScreen('events')">Cancel</button>
-          <button class="btn-primary" onclick="createNewEvent()">Create</button>
+          <div class="detail-form-group">
+            <label for="ae-event-location">Location</label>
+            <input type="text" id="ae-event-location" class="detail-input" value="">
+          </div>
+
+          <div class="detail-form-group">
+            <label>Number of Courts</label>
+            <div class="score-control">
+              <button class="score-btn" onclick="adjustAeCourts(-1)">−</button>
+              <span id="ae-courts-value" class="score-value">1</span>
+              <button class="score-btn" onclick="adjustAeCourts(1)">+</button>
+            </div>
+            <input type="hidden" id="ae-event-courts" value="1">
+          </div>
+
+          <div class="detail-form-group">
+            <label>DUPR Limit</label>
+            <div class="score-control">
+              <button class="score-btn" onclick="adjustAeDuprLimit(-1)">−</button>
+              <span id="ae-dupr-value" class="score-value">0</span>
+              <button class="score-btn" onclick="adjustAeDuprLimit(1)">+</button>
+            </div>
+            <input type="hidden" id="ae-event-dupr" value="0">
+          </div>
+
+          <div class="form-action-bar">
+            <button class="btn-secondary" onclick="navigateToScreen('events')">Cancel</button>
+            <button class="btn-primary" onclick="createNewEvent()">Create</button>
+          </div>
         </div>
 
         <!-- Add Hosts button -->
