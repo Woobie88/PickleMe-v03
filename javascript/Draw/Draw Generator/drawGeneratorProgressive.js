@@ -260,7 +260,7 @@ function bestKingsQueensPairing(fourPlayers, justWonPairIds, partnerCounts) {
 }
 
 // ---------- PARTNER ALLOCATION FOR BRIDGE THE GAP ----------
-function bestMatchUpProgressive(fourPlayers, matchUpCriteria) {
+function bestMatchUpProgressive(fourPlayers) {
   const [a, b, c, d] = fourPlayers;
   const options = [
     { teamA: [a, b], teamB: [c, d] },
@@ -444,7 +444,7 @@ function advanceProgressiveRound(gameKey, allMatchesSoFar, nextRoundDummyMatches
       // Teams already fixed by buildGroups' ordering — first 2 are one team, last 2 are the other
       pairing = { teamA: [fourPlayers[0], fourPlayers[1]], teamB: [fourPlayers[2], fourPlayers[3]] };
     } else if(gameKey === "bridge-the-gap") {
-      pairing = bestMatchUpProgressive(fourPlayers, matchUpCriteria).pairing;
+      pairing = bestMatchUpProgressive(fourPlayers).pairing;
     } else {
       pairing = bestKingsQueensPairing(fourPlayers, group.justWonPairs, partnerCounts).pairing;
     }
