@@ -32,6 +32,10 @@ const PROGRESSIVE_GAME_RULES = {
   'snakes-ladders': {
     fixedTeamCourts: [],
     buildGroups: buildSnakesLaddersGroups
+  },
+  'bridge-the-gap': {
+    fixedTeamCourts: [],
+    buildGroups: buildStandardGroups
   }
 };
 
@@ -135,7 +139,6 @@ function isRoundComplete(matches, roundNumber) {
 //   Court i   (middle) = Ct(i-1) Losers     + Ct(i+1) Winners
 //   Court N   (bottom) = Ct(N-1) Losers     + CtN Losers
 function buildStandardGroups(previousRoundMatches, numCourts) {
-  console.log("buildStandardGroups");
   const byCourt = {};
   previousRoundMatches.forEach(m => { byCourt[m.Court] = m; });
 
@@ -227,7 +230,6 @@ function buildSnakesLaddersGroups(previousRoundMatches) {
 // ---------- SHARED PARTNER ALLOCATION SCORER ----------
 
 function bestKingsQueensPairing(fourPlayers, justWonPairIds, partnerCounts) {
-  console.log("bestKingsQueensPairing");
   const [a, b, c, d] = fourPlayers;
   const options = [
     { teamA: [a, b], teamB: [c, d] },
@@ -260,7 +262,6 @@ function bestKingsQueensPairing(fourPlayers, justWonPairIds, partnerCounts) {
 // ---------- BYE HANDLING ----------
 
 function getByePlayersForRound(allPlayers, roundMatches) {
-  console.log("getByePlayersForRound");
   const playingIds = new Set();
   roundMatches.forEach(m => {
     [m.Team1Player1, m.Team1Player2, m.Team1Player3, m.Team1Player4,
@@ -323,7 +324,6 @@ function getByePlayersForRound(allPlayers, roundMatches) {
 // }
 
 function applyProgressiveByeSwaps(groups, byePlayerIdsThisRound, allPlayersById, partnerCounts, fixedTeamCourts) {
-  console.log("applyProgressiveByeSwaps");
 
   const outgoing = [];
   groups.forEach(g => {
@@ -390,8 +390,6 @@ function applyProgressiveByeSwaps(groups, byePlayerIdsThisRound, allPlayersById,
 // ---------- MAIN ENTRY POINT: ADVANCE ONE ROUND ----------
 
 function advanceProgressiveRound(gameKey, allMatchesSoFar, nextRoundDummyMatches, allPlayers, roundNumber, eventId, drawVersion, userEmail) {
-  console.log("advanceProgressiveRound");
-  
   const rules = PROGRESSIVE_GAME_RULES[gameKey];
   if (!rules) {
     console.error(`No progressive rules defined for game "${gameKey}".`);
