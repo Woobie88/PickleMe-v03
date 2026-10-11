@@ -261,7 +261,23 @@ function bestKingsQueensPairing(fourPlayers, justWonPairIds, partnerCounts) {
 
 // ---------- PARTNER ALLOCATION FOR BRIDGE THE GAP ----------
 function bestMatchUpProgressive(fourPlayers, matchUpCriteria) {
-  
+  const [a, b, c, d] = fourPlayers;
+  const options = [
+    { teamA: [a, b], teamB: [c, d] },
+    { teamA: [a, c], teamB: [b, d] },
+    { teamA: [a, d], teamB: [b, c] }
+  ];
+
+  const candidates = options;
+
+  let best = candidates[0], bestScore = Infinity;
+  candidates.forEach(opt => {
+    const duprGap = Math.abs(teamAvgDupr(opt.teamA) - teamAvgDupr(opt.teamB));
+    const score = duprGap * 100;
+    if (score < bestScore) { bestScore = score; best = opt; }
+  });
+
+  return { pairing: best, score: bestScore };
 }
 
 // ---------- BYE HANDLING ----------
