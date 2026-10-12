@@ -7,52 +7,13 @@ function renderPairingMethodScreen(payload) {
 
   document.getElementById('pm-selected-game-title').innerText = gameProfile?.GameTitle || 'No Game Selected';
 
-  // --- Rounds ---
-  const isProgressive = gameProfile?.GamesGroup === 'Progressive';
-  const roundsSupported = gameProfile?.Rounds === 'Yes' || isProgressive;
-  let roundsValue = roundsSupported ? (parseInt(activeEvent?.NumberofRound) || 1) : 1;
+  // --- Pairing Method toggle (mirrors Generate Draw) ---
+  const partnerAllocationMethod = activeEvent.PairingMethod;
 
-  document.getElementById('pm-rounds-value').innerText = roundsValue;
-  document.getElementById('pm-rounds-hidden').value = roundsValue;
-  document.querySelectorAll('#pm-rounds-group .score-btn').forEach(btn => {
-    btn.disabled = !roundsSupported;
-    btn.style.opacity = roundsSupported ? '1' : '0.4';
+  document.querySelectorAll('#pairing-method-toggle .scoring-option').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.value === partnerAllocationMethod);
   });
-
-  // --- Lives ---
-  const livesSupported = gameProfile?.Lives === 'Yes';
-  const livesGroup = document.getElementById('rd-lives-group');
-  if (livesSupported) {
-    livesGroup.style.display = '';
-    const livesValue = parseInt(activeEvent?.Lives) || 1;
-    document.getElementById('rd-lives-value').innerText = livesValue;
-    document.getElementById('rd-lives-hidden').value = livesValue;
-  } else {
-    livesGroup.style.display = 'none';
-  }
-
-  // --- Promote/Relegate (Ladder Scramble only) — unchanged from before ---
-  const promoteGroup = document.getElementById('rd-promote-group');
-  if (gameId === 'ladder-scramble') {
-    promoteGroup.style.display = '';
-    const promoteValue = parseInt(activeEvent?.RedivisionPromoteCount) || 2;
-    document.getElementById('rd-promote-value').innerText = promoteValue;
-    document.getElementById('rd-promote-hidden').value = promoteValue;
-  } else {
-    promoteGroup.style.display = 'none';
-  }
-
-  // --- All Players Present toggle (mirrors Generate Draw) ---
-  const currentPlayerVersion = activeEvent.CurrentPlayerVersion;
-  const players = (payload.players || []).filter(p => String(p.PlayerVersion) === String(currentPlayerVersion));
-  const anyExcluded = players.some(p => p.playerExclude === 'Yes');
-  const computedDefault = anyExcluded ? 'No' : 'Yes';
-  const currentValue = activeEvent.AllPlayersPresent || computedDefault;
-
-  document.querySelectorAll('#rd-all-present-toggle .scoring-option').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.value === currentValue);
-  });
-  window.rdAllPlayersPresentValue = currentValue;
+  window.pmPairingMethodValue = partnerAllocationMethod;
 
   // --- Smarter default for Pairing Method Starts From Round ---
   const matches = window.cachedUserUniverse.draw || [];
