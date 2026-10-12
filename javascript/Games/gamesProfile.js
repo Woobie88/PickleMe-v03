@@ -16,7 +16,8 @@ const gamesProfile = [
       PlayerAvailable: "Yes",
       ReDraw: "No",
       PlayOffs: "No",
-      ResultRefresh: "Yes"
+      ResultRefresh: "Yes",
+      PairingMethod: "No"
     }],
     Scoring: ["Points","Wins"],
     ScoringDefault: "Points"
@@ -38,7 +39,8 @@ const gamesProfile = [
       PlayerAvailable: "Yes",
       ReDraw: "No",
       PlayOffs: "No",
-      ResultRefresh: "Yes"
+      ResultRefresh: "Yes",
+      PairingMethod: "No"
     }],
     Scoring: ["Points","Wins"],
     ScoringDefault: "Points"
@@ -60,7 +62,8 @@ const gamesProfile = [
       PlayerAvailable: "Yes",
       ReDraw: "No",
       PlayOffs: "No",
-      ResultRefresh: "Yes"
+      ResultRefresh: "Yes",
+      PairingMethod: "No"
     }],
     Scoring: ["Points","Wins"],
     ScoringDefault: "Points"
@@ -82,7 +85,8 @@ const gamesProfile = [
       PlayerAvailable: "Yes",
       ReDraw: "No",
       PlayOffs: "No",
-      ResultRefresh: "Yes"
+      ResultRefresh: "Yes",
+      PairingMethod: "No"
     }],
     Scoring: ["Points","Wins"],
     ScoringDefault: "Points"
@@ -104,7 +108,8 @@ const gamesProfile = [
       PlayerAvailable: "Yes",
       ReDraw: "No",
       PlayOffs: "No",
-      ResultRefresh: "Yes"
+      ResultRefresh: "Yes",
+      PairingMethod: "No"
     }],
     Scoring: ["Points","Wins"],
     ScoringDefault: "Points"
@@ -126,7 +131,8 @@ const gamesProfile = [
       PlayerAvailable: "Yes",
       ReDraw: "No",
       PlayOffs: "No",
-      ResultRefresh: "Yes"
+      ResultRefresh: "Yes",
+      PairingMethod: "No"
     }],
     Scoring: ["Points","Wins"],
     ScoringDefault: "Points"
@@ -148,7 +154,8 @@ const gamesProfile = [
       PlayerAvailable: "Yes",
       ReDraw: "No",
       PlayOffs: "No",
-      ResultRefresh: "Yes"
+      ResultRefresh: "Yes",
+      PairingMethod: "Yes"
     }],
     Scoring: ["Points","Wins"],
     ScoringDefault: "Points"
@@ -170,7 +177,8 @@ const gamesProfile = [
       PlayerAvailable: "Yes",
       ReDraw: "No",
       PlayOffs: "No",
-      ResultRefresh: "Yes"
+      ResultRefresh: "Yes",
+      PairingMethod: "No"
     }],
     Scoring: ["Points","Wins"],
     ScoringDefault: "Points"
@@ -192,7 +200,8 @@ const gamesProfile = [
       PlayerAvailable: "No",
       ReDraw: "Yes",
       PlayOffs: "Yes",
-      ResultRefresh: "No"
+      ResultRefresh: "No",
+      PairingMethod: "No"
     }],
     Scoring: ["Points","Wins","None"],
     ScoringDefault: "Points"
@@ -214,7 +223,8 @@ const gamesProfile = [
       PlayerAvailable: "No",
       ReDraw: "Yes",
       PlayOffs: "Yes",
-      ResultRefresh: "No"
+      ResultRefresh: "No",
+      PairingMethod: "No"
     }],
     Scoring: ["Points","Wins","None"],
     ScoringDefault: "Points"
@@ -236,7 +246,8 @@ const gamesProfile = [
       PlayerAvailable: "No",
       ReDraw: "Yes",
       PlayOffs: "Yes",
-      ResultRefresh: "No"
+      ResultRefresh: "No",
+      PairingMethod: "No"
     }],
     Scoring: ["Points","Wins","None"],
     ScoringDefault: "Points"
@@ -258,7 +269,8 @@ const gamesProfile = [
       PlayerAvailable: "No",
       ReDraw: "Yes",
       PlayOffs: "Yes",
-      ResultRefresh: "No"
+      ResultRefresh: "No",
+      PairingMethod: "No"
     }],
     Scoring: ["Points","Wins","None"],
     ScoringDefault: "Points"
@@ -280,7 +292,8 @@ const gamesProfile = [
       PlayerAvailable: "No",
       ReDraw: "Yes",
       PlayOffs: "No",
-      ResultRefresh: "No"
+      ResultRefresh: "No",
+      PairingMethod: "No"
     }],
     Scoring: ["Points","Wins","None"],
     ScoringDefault: "Points"
@@ -302,7 +315,8 @@ const gamesProfile = [
       PlayerAvailable: "No",
       ReDraw: "Yes",
       PlayOffs: "No",
-      ResultRefresh: "No"
+      ResultRefresh: "No",
+      PairingMethod: "No"
     }],
     Scoring: ["Points","Wins","None"],
     ScoringDefault: "Points"
@@ -324,7 +338,8 @@ const gamesProfile = [
       PlayerAvailable: "No",
       ReDraw: "Yes",
       PlayOffs: "No",
-      ResultRefresh: "No"
+      ResultRefresh: "No",
+      PairingMethod: "No"
     }],
     Scoring: ["Points","Wins"],
     ScoringDefault: "Points"
@@ -346,7 +361,8 @@ const gamesProfile = [
       PlayerAvailable: "No",
       ReDraw: "Yes",
       PlayOffs: "No",
-      ResultRefresh: "No"
+      ResultRefresh: "No",
+      PairingMethod: "No"
     }],
     Scoring: ["Points","Wins","None"],
     ScoringDefault: "Points"
@@ -368,7 +384,8 @@ const gamesProfile = [
       PlayerAvailable: "No",
       ReDraw: "Yes",
       PlayOffs: "No",
-      ResultRefresh: "No"
+      ResultRefresh: "No",
+      PairingMethod: "No"
     }],
     Scoring: ["Points","Wins","None"],
     ScoringDefault: "Points"
@@ -390,7 +407,8 @@ const gamesProfile = [
       PlayerAvailable: "No",
       ReDraw: "Yes",
       PlayOffs: "No",
-      ResultRefresh: "No"
+      ResultRefresh: "No",
+      PairingMethod: "No"
     }],
     Scoring: ["Points","Wins"],
     ScoringDefault: "Points"
@@ -411,7 +429,8 @@ const gamesProfile = [
       PlayerAvailable: "No",
       ReDraw: "Yes",
       PlayOffs: "Yes",
-      ResultRefresh: "No"
+      ResultRefresh: "No",
+      PairingMethod: "No"
     }],
     Scoring: ["Points","Wins"],
     ScoringDefault: "Points"
@@ -432,7 +451,8 @@ const gamesProfile = [
       PlayerAvailable: "No",
       ReDraw: "Yes",
       PlayOffs: "Yes",
-      ResultRefresh: "No"
+      ResultRefresh: "No",
+      PairingMethod: "No"
     }],
     Scoring: ["Points","Wins"],
     ScoringDefault: "Points"
