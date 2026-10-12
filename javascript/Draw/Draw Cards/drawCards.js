@@ -1050,7 +1050,7 @@ const DRAW_MENU_ITEM_MAP = {
   PlayOffs: 'fab-playoffs-item',
   Redivisioning: 'fab-redivision-item',
   ResultRefresh: 'fab-result-refresh-item',
-  PairingMethod: 'pairing-method-item'
+  PairingMethod: 'fab-pairing-method-item'
 };
 
 function updateDrawFabMenuVisibility() {
