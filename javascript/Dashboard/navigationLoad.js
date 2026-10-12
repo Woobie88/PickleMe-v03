@@ -147,6 +147,9 @@ function navigateToScreen(screenId) {
     case 'add-event-detail':
       renderAddEventDetailScreen();
       break;
+    case 'pairing-method':
+      renderPairingMethodScreen(window.cachedUserUniverse);
+      break;
   }
 }
 
