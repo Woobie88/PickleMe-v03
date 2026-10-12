@@ -1046,7 +1046,8 @@ const DRAW_MENU_ITEM_MAP = {
   ReDraw: 'fab-redraw-item',
   PlayOffs: 'fab-playoffs-item',
   Redivisioning: 'fab-redivision-item',
-  ResultRefresh: 'fab-result-refresh-item'
+  ResultRefresh: 'fab-result-refresh-item',
+  PairingMethod: 'pairing-method-item'
 };
 
 function updateDrawFabMenuVisibility() {
