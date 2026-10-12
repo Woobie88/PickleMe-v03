@@ -658,7 +658,15 @@
           </div>
 
           <div class="detail-form-group">
-            <label>Partner Allocated Method Change Starts From Round</label>
+            <label>Partner Allocation Method</label>
+            <div class="scoring-toggle" id="pairing-method-toggle">
+              <button class="scoring-option" data-value="DUPR" onclick="handlePairingMethodToggle('DUPR')">DUPR</button>
+              <button class="scoring-option" data-value="Rank" onclick="handlePairingMethodToggle('Rank')">Ranking</button>
+            </div>
+          </div>
+
+          <div class="detail-form-group">
+            <label>Adjust Partner Allocation Method From Round</label>
             <div class="score-control">
               <button class="score-btn" onclick="adjustPmStartRound(-1)">−</button>
               <span id="pm-start-round-value" class="score-value">2</span>
