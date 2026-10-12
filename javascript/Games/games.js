@@ -577,7 +577,14 @@ function enableGameDragToActivate() {
           // Supported, but never saved before — DB should read 1 (Equal), the default
           const drawWeighting = drawWeightingSupported ? 2 : 0;
 
-          await window.updateScoringModeInFirestore(activeEventId, scoringDefault, drawWeighting);
+          // --- Pairing Method ---
+          const pairingMethodSupported = gameProfile?.drawMenuOpt?.[0]?.PairingMethod === 'Yes';
+
+          // Not supported — DB should read No 
+          // Supported, but never saved before — DB should the default
+          const pairingMethod = pairingMethodSupported ? "DUPR" : "";
+
+          await window.updateScoringModeInFirestore(activeEventId, scoringDefault, drawWeighting, pairingMethod);
           if (activeEvent) activeEvent.Scoring = scoringDefault;
 
           renderActiveGameHighlight();
