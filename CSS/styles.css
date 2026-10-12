@@ -1572,3 +1572,12 @@ body {
   min-width: 60px;
   text-align: center;
 }
+
+#pairing-method-toggle {
+  display: flex;
+}
+
+#pairing-method-toggle .scoring-option {
+  flex: 1;
+  text-align: center;
+}
