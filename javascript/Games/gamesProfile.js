@@ -154,7 +154,7 @@ const gamesProfile = [
       PlayerAvailable: "Yes",
       ReDraw: "No",
       PlayOffs: "No",
-      ResultRefresh: "Yes",
+      ResultRefresh: "No",
       PairingMethod: "Yes"
     }],
     Scoring: ["Points","Wins"],
