@@ -485,6 +485,9 @@ async function handleFabAction(action) {
     case 'player-available': // NEW
       console.log('Player Available tapped — routing not yet wired up');
       break;
+    case 'pairing-method': // NEW
+      console.log('Pairing Method tapped — routing not yet wired up');
+      break;
     case 'result-refresh': {
       const confirmed = window.confirm(
         "Refresh this round's matches? This will re-shuffle courts and partners for players in the current round."
