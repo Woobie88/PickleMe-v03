@@ -743,16 +743,16 @@ function generateEntityByeScheduleOrdered(orderedEntityIds, numberOfRounds, need
 
 // ---------- UPDATED: assignDoublesProPartnerships ----------
 
-function assignDoublesProPartnerships(players) {
-  const teams = {};
-  players.forEach(p => {
-    const t = p.Team;
-    if (!teams[t]) teams[t] = [];
-    teams[t].push(p);
-  });
+// function assignDoublesProPartnerships(players) {
+//   const teams = {};
+//   players.forEach(p => {
+//     const t = p.Team;
+//     if (!teams[t]) teams[t] = [];
+//     teams[t].push(p);
+//   });
 
-  const teamGroups = Object.values(teams);
+//   const teamGroups = Object.values(teams);
 
-  return buildStableTeamOrder(teamGroups); // CHANGED — was a numeric teamKey sort
-}
+//   return buildStableTeamOrder(teamGroups); // CHANGED — was a numeric teamKey sort
+// }
   // ---- END BRANCH ----
