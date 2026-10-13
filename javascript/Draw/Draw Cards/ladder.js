@@ -269,37 +269,6 @@ function setLadderScoringMode(newValue) {
  * TEAM level, using each match's Team1/Team2 fields (already populated
  * by both the standard clustered engine and Doubles Pro).
  */
-// function calculateTeamStats(teamNumber, matches) {
-//   let games = 0, wins = 0, losses = 0;
-//   let pointsFor = 0, pointsAgainst = 0, expPointsFor = 0, expPointsAgainst = 0;
-
-//   matches.forEach(m => {
-//     if (!m.Team1WinLoss || !m.Team2WinLoss) return; // only completed matches
-
-//     const onTeam1 = [m.Team1Player1, m.Team1Player2, m.Team1Player3, m.Team1Player4].includes(playerId); // FIXED
-//     const onTeam2 = [m.Team2Player1, m.Team2Player2, m.Team2Player3, m.Team2Player4].includes(playerId); // FIXED
-//     if (!onTeam1 && !onTeam2) return;
-
-//     games++;
-
-//     const myScore = onTeam1 ? parseFloat(m.Team1Score) || 0 : parseFloat(m.Team2Score) || 0;
-//     const oppScore = onTeam1 ? parseFloat(m.Team2Score) || 0 : parseFloat(m.Team1Score) || 0;
-//     const myExpScore = onTeam1 ? parseFloat(m.ExpectedTeam1Score) || 0 : parseFloat(m.ExpectedTeam2Score) || 0;
-//     const oppExpScore = onTeam1 ? parseFloat(m.ExpectedTeam2Score) || 0 : parseFloat(m.ExpectedTeam1Score) || 0;
-
-//     const myWinLoss = onTeam1 ? m.Team1WinLoss : m.Team2WinLoss;
-//     if (myWinLoss === 'Win') wins++;
-//     else if (myWinLoss === 'Loss') losses++;
-
-//     pointsFor += myScore;
-//     pointsAgainst += oppScore;
-//     expPointsFor += myExpScore;
-//     expPointsAgainst += oppExpScore;
-//   });
-
-//   return { games, wins, losses, pointsFor, pointsAgainst, expPointsFor, expPointsAgainst };
-// }
-
 function calculateTeamStats(teamNumber, matches) {
   let games = 0, wins = 0, losses = 0;
   let pointsFor = 0, pointsAgainst = 0, expPointsFor = 0, expPointsAgainst = 0;
