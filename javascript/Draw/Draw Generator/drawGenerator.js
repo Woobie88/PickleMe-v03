@@ -755,4 +755,4 @@ function generateEntityByeScheduleOrdered(orderedEntityIds, numberOfRounds, need
 
 //   return buildStableTeamOrder(teamGroups); // CHANGED — was a numeric teamKey sort
 // }
-  // ---- END BRANCH ----
+  // ---- END BRANCH -----
