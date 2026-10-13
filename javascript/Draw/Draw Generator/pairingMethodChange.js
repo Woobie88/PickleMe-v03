@@ -26,59 +26,6 @@ function renderPairingMethodScreen(payload) {
   document.getElementById('pm-start-round-hidden').value = startRoundValue;
 }
 
-function renderRedivisionTeamsScreen(payload) {
-  const activeEventId = payload.activeEventId;
-  const activeEvent = payload.events.find(e => String(e.EventID) === String(activeEventId));
-  const gameId = activeEvent?.GameID;
-  const gameProfile = gamesProfile.find(g => g.GameID === gameId);
-  const grouping = gameProfile?.Grouping || 'None';
-
-  const groupLabels = { 'Teams': 'Team', 'Pools': 'Pool', 'Divisions': 'Division', 'Pairs': 'Pair' };
-  const groupLabel = groupLabels[grouping] || 'Team';
-
-  const currentPlayerVersion = activeEvent.CurrentPlayerVersion;
-  const allPlayers = (payload.players || [])
-    .filter(p => String(p.PlayerVersion) === String(currentPlayerVersion))
-    .filter(p => p.playerExclude !== 'Yes');
-
-  document.getElementById('rd-teams-screen-heading').innerText = groupLabel + 's';
-  document.getElementById('rd-draft-toggle-block').style.display = 'none'; // redivision never drafts
-
-  let groups;
-
-  if (gameId === 'doubles-pro') {
-    groups = redivideDoublesProByStandings(payload);
-  } else if (gameId === 'ladder-scramble') {
-    const promoteCount = parseInt(activeEvent.RedivisionPromoteCount) || 2;
-    groups = redivideLadderScrambleByStandings(payload, promoteCount);
-  } else if (gameId === 'pools') {
-    const numberOfGroups = parseInt(activeEvent.NumberOfTeams) || 2;
-    groups = redividePoolsByStandings(payload, numberOfGroups);
-  } else if (gameId === 'pool-fusion') {
-    groups = redividePoolFusion(payload);
-  } else {
-    console.error(`No redivision rule defined for game "${gameId}".`);
-    groups = [];
-  }
-
-  renderGroupsUI(groups, groupLabel, allPlayers, {
-    groupsListId: 'rd-teams-groups-list',
-    nextBtnId: 'rd-teams-next-btn',
-    allPlayersPresentVar: 'rdAllPlayersPresentValue'
-  }, true); // NEW — ladder-style cards for redivision
-}
-
-function handleRedivisionTeamsNext() {
-  routeRedivisionToAvailabilityOrBuild();
-}
-
-function routeRedivisionToAvailabilityOrBuild() {
-  if (window.rdAllPlayersPresentValue === 'Yes') {
-    handleRedivisionBuild();
-  } else {
-    navigateToScreen('redivision-available');
-  }
-}
 
 async function handleRedivisionConfirm() {
   const activeEventId = window.cachedUserUniverse.activeEventId;
@@ -110,11 +57,11 @@ async function handleRedivisionConfirm() {
   navigateToScreen('redivision-teams');
 }
 
-async function handleRdAllPlayersPresentToggle(value) {
+async function handlePairingMethodToggle(value) {
   const activeEventId = window.cachedUserUniverse.activeEventId;
   const activeEvent = window.cachedUserUniverse.events.find(e => String(e.EventID) === String(activeEventId));
 
-  document.querySelectorAll('#rd-all-present-toggle .scoring-option').forEach(btn => {
+  document.querySelectorAll('#pairing-method-toggle .scoring-option').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.value === value);
   });
 
