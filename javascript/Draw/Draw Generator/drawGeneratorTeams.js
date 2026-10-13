@@ -30,6 +30,7 @@ function determineTeamRoundStructure(totalTeams, courtsCount) {
 }
 
 // ---------- GENERIC BYE ROTATION (same mechanism as generateByeSchedule, parameterized) ----------
+// ---------- CHECK AS THIS FUNCTION IS NEVER CALLED ---------------
 
 function generateEntityByeSchedule(entityIds, numberOfRounds, neededPerRound) {
   const byesByRound = {};
@@ -46,6 +47,32 @@ function generateEntityByeSchedule(entityIds, numberOfRounds, neededPerRound) {
     const byes = [];
     for (let i = 0; i < neededPerRound; i++) {
       byes.push(baseOrder[pointer % baseOrder.length]);
+      pointer++;
+    }
+    byesByRound[round] = byes;
+  }
+
+  return byesByRound;
+}
+
+/**
+ * Same cycling mechanism as generateEntityByeSchedule, but takes an
+ * ALREADY-ORDERED list instead of shuffling internally — needed
+ * wherever manual bye order must take priority over randomization.
+ */
+function generateEntityByeScheduleOrdered(orderedEntityIds, numberOfRounds, neededPerRound) {
+  const byesByRound = {};
+
+  if (neededPerRound <= 0) {
+    for (let i = 0; i < numberOfRounds; i++) byesByRound[i] = [];
+    return byesByRound;
+  }
+
+  let pointer = 0;
+  for (let round = 0; round < numberOfRounds; round++) {
+    const byes = [];
+    for (let i = 0; i < neededPerRound; i++) {
+      byes.push(orderedEntityIds[pointer % orderedEntityIds.length]);
       pointer++;
     }
     byesByRound[round] = byes;

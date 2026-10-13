@@ -566,16 +566,15 @@ async function generateNRoundsAndPreview(numberOfRounds) {
   let newMatches;
   const startRound = 1;
 
-  // if (gameId === 'doubles-pro' || gameId === 'rx-sports') {
-  //   newMatches = generateDoublesProDraw(players, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfRounds);
-  //   console.log(`Generated Doubles Pro draw: ${newMatches.length} matches across ${numberOfRounds} round(s).`);
+  if (gameId === 'doubles-pro' || gameId === 'rx-sports') {
+    newMatches = generateDoublesProDraw(players, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfRounds);
+    console.log(`Generated Doubles Pro draw: ${newMatches.length} matches across ${numberOfRounds} round(s).`);
 
-  // } else 
-  if (['kings-queens', 'survivor', 'snakes-ladders', 'bridge-the-gap'].includes(gameId)) {
+  } else if (['kings-queens', 'survivor', 'snakes-ladders', 'bridge-the-gap'].includes(gameId)) {
     newMatches = buildProgressiveDummySchedule(players, numberOfRounds, courtsCount, activeEventId, newDrawVersion, userEmail, gameProfile, scorers);
     console.log(`Generated ${gameId} dummy schedule: ${newMatches.length} matches across ${numberOfRounds} round(s).`);
 
-  } else if (gameId === 'teams' || gameId === 'doubles-pro' || gameId === 'rx-sports') {
+  } else if (gameId === 'teams') {
     const numberOfTeams = parseInt(activeEvent.NumberOfTeams) || 2;
     let allMatches = [];
     for (let i = 0; i < numberOfRounds; i++) {

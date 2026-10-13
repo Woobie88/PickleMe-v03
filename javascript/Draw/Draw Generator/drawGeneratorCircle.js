@@ -81,33 +81,6 @@ function buildStableTeamOrder(teamGroups) {
   return [...manual, ...remaining];
 }
 
-/**
- * Same cycling mechanism as generateEntityByeSchedule, but takes an
- * ALREADY-ORDERED list instead of shuffling internally — needed
- * wherever manual bye order must take priority over randomization.
- */
-function generateEntityByeScheduleOrdered(orderedEntityIds, numberOfRounds, neededPerRound) {
-  const byesByRound = {};
-
-  if (neededPerRound <= 0) {
-    for (let i = 0; i < numberOfRounds; i++) byesByRound[i] = [];
-    return byesByRound;
-  }
-
-  let pointer = 0;
-  for (let round = 0; round < numberOfRounds; round++) {
-    const byes = [];
-    for (let i = 0; i < neededPerRound; i++) {
-      byes.push(orderedEntityIds[pointer % orderedEntityIds.length]);
-      pointer++;
-    }
-    byesByRound[round] = byes;
-  }
-
-  return byesByRound;
-}
-
-
 // ---------- CIRCLE METHOD SCHEDULER (guaranteed no-repeat opponents per cycle) ----------
 
 function generateCircleMethodSchedule(teams) {
