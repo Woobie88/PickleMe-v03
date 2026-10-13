@@ -566,15 +566,16 @@ async function generateNRoundsAndPreview(numberOfRounds) {
   let newMatches;
   const startRound = 1;
 
-  if (gameId === 'doubles-pro' || gameId === 'rx-sports') {
-    newMatches = generateDoublesProDraw(players, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfRounds);
-    console.log(`Generated Doubles Pro draw: ${newMatches.length} matches across ${numberOfRounds} round(s).`);
+  // if (gameId === 'doubles-pro' || gameId === 'rx-sports') {
+  //   newMatches = generateDoublesProDraw(players, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfRounds);
+  //   console.log(`Generated Doubles Pro draw: ${newMatches.length} matches across ${numberOfRounds} round(s).`);
 
-  } else if (['kings-queens', 'survivor', 'snakes-ladders', 'bridge-the-gap'].includes(gameId)) {
+  // } 
+  else if (['kings-queens', 'survivor', 'snakes-ladders', 'bridge-the-gap'].includes(gameId)) {
     newMatches = buildProgressiveDummySchedule(players, numberOfRounds, courtsCount, activeEventId, newDrawVersion, userEmail, gameProfile, scorers);
     console.log(`Generated ${gameId} dummy schedule: ${newMatches.length} matches across ${numberOfRounds} round(s).`);
 
-  } else if (gameId === 'teams') {
+  } else if (gameId === 'teams' || gameId === 'doubles-pro' || gameId === 'rx-sports') {
     const numberOfTeams = parseInt(activeEvent.NumberOfTeams) || 2;
     let allMatches = [];
     for (let i = 0; i < numberOfRounds; i++) {
@@ -677,82 +678,4 @@ function buildStablePoolOrder(poolPlayers) {
   return [...manual, ...remaining];
 }
 
-// ---------- TEAM-LEVEL: Teams, Pool Fusion, Doubles Pro/Rx ----------
-
-/**
- * Derives a TEAM's effective manual bye preference from its players —
- * the earliest (lowest) manual byeOrder among any of its members, or
- * null if nobody on the team has one set. If any one player on a team
- * wants an early bye, the whole team is pulled earlier in the rotation
- * (their partner is automatically included, since byes happen at the
- * team level for these game types).
- */
-function getTeamEffectiveByeOrder(teamPlayers) {
-  const manualOrders = teamPlayers
-    .map(p => p.byeOrder)
-    .filter(v => v !== undefined && v !== null && v !== '' && !isNaN(parseInt(v)))
-    .map(v => parseInt(v));
-
-  if (manualOrders.length === 0) return null;
-  return Math.min(...manualOrders);
-}
-
-/**
- * Orders a set of teams (each an array of players) with manual-preference
- * teams first (by effective order), everyone else following in a stable,
- * deterministic order.
- */
-function buildStableTeamOrder(teamGroups) {
-  const withOrder = teamGroups.map(team => ({ team, order: getTeamEffectiveByeOrder(team) }));
-
-  const manual = withOrder.filter(t => t.order !== null)
-    .sort((a, b) => a.order - b.order)
-    .map(t => t.team);
-
-  const remaining = withOrder.filter(t => t.order === null).map(t => t.team);
-  remaining.sort((a, b) => String(a[0]?.PlayerID).localeCompare(String(b[0]?.PlayerID)));
-
-  return [...manual, ...remaining];
-}
-
-/**
- * Same cycling mechanism as generateEntityByeSchedule, but takes an
- * ALREADY-ORDERED list instead of shuffling internally — needed
- * wherever manual bye order must take priority over randomization.
- */
-function generateEntityByeScheduleOrdered(orderedEntityIds, numberOfRounds, neededPerRound) {
-  const byesByRound = {};
-
-  if (neededPerRound <= 0) {
-    for (let i = 0; i < numberOfRounds; i++) byesByRound[i] = [];
-    return byesByRound;
-  }
-
-  let pointer = 0;
-  for (let round = 0; round < numberOfRounds; round++) {
-    const byes = [];
-    for (let i = 0; i < neededPerRound; i++) {
-      byes.push(orderedEntityIds[pointer % orderedEntityIds.length]);
-      pointer++;
-    }
-    byesByRound[round] = byes;
-  }
-
-  return byesByRound;
-}
-
-// ---------- UPDATED: assignDoublesProPartnerships ----------
-
-// function assignDoublesProPartnerships(players) {
-//   const teams = {};
-//   players.forEach(p => {
-//     const t = p.Team;
-//     if (!teams[t]) teams[t] = [];
-//     teams[t].push(p);
-//   });
-
-//   const teamGroups = Object.values(teams);
-
-//   return buildStableTeamOrder(teamGroups); // CHANGED — was a numeric teamKey sort
-// }
-  // ---- END BRANCH -----
+// ---- END BRANCH -----
