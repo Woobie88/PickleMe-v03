@@ -570,8 +570,8 @@ async function generateNRoundsAndPreview(numberOfRounds) {
   //   newMatches = generateDoublesProDraw(players, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfRounds);
   //   console.log(`Generated Doubles Pro draw: ${newMatches.length} matches across ${numberOfRounds} round(s).`);
 
-  // } 
-  else if (['kings-queens', 'survivor', 'snakes-ladders', 'bridge-the-gap'].includes(gameId)) {
+  // } else 
+  if (['kings-queens', 'survivor', 'snakes-ladders', 'bridge-the-gap'].includes(gameId)) {
     newMatches = buildProgressiveDummySchedule(players, numberOfRounds, courtsCount, activeEventId, newDrawVersion, userEmail, gameProfile, scorers);
     console.log(`Generated ${gameId} dummy schedule: ${newMatches.length} matches across ${numberOfRounds} round(s).`);
 
