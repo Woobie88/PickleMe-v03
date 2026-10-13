@@ -18,18 +18,6 @@
 
 // ---------- FIXED TEAM ASSIGNMENT (reads players.Team, set by the Teams screen) ----------
 
-// function assignDoublesProPartnerships(players) {
-//   const teams = {};
-//   players.forEach(p => {
-//     const t = p.Team;
-//     if (!teams[t]) teams[t] = [];
-//     teams[t].push(p);
-//   });
-
-//   const teamKeys = Object.keys(teams).sort((a, b) => parseInt(a) - parseInt(b));
-
-//   return teamKeys.map(teamKey => teams[teamKey]); // array of arrays — each inner array = all players on that team
-// }
 function assignDoublesProPartnerships(players) {
   const teams = {};
   players.forEach(p => {
@@ -38,10 +26,22 @@ function assignDoublesProPartnerships(players) {
     teams[t].push(p);
   });
 
-  const teamGroups = Object.values(teams);
+  const teamKeys = Object.keys(teams).sort((a, b) => parseInt(a) - parseInt(b));
 
-  return buildStableTeamOrder(teamGroups); // CHANGED — was a numeric teamKey sort
+  return teamKeys.map(teamKey => teams[teamKey]); // array of arrays — each inner array = all players on that team
 }
+// function assignDoublesProPartnerships(players) {
+//   const teams = {};
+//   players.forEach(p => {
+//     const t = p.Team;
+//     if (!teams[t]) teams[t] = [];
+//     teams[t].push(p);
+//   });
+
+//   const teamGroups = Object.values(teams);
+
+//   return buildStableTeamOrder(teamGroups); // CHANGED — was a numeric teamKey sort
+// }
 
 // ---------- CIRCLE METHOD SCHEDULER (guaranteed no-repeat opponents per cycle) ----------
 
@@ -144,6 +144,7 @@ function buildDoublesProMatchRecord(m, roundNumber, eventId, drawVersion, userEm
  */
 function generateDoublesProDraw(players, courtsCount, eventId, drawVersion, userEmail, numberOfRounds, startRound = 1, existingMatches = []) {
   const teamGroups = assignDoublesProPartnerships(players);
+  console.log(teamGroups);
   const oneCycle = generateCircleMethodSchedule(teamGroups); // one complete round-robin cycle
 
   const { courtCounts } = buildDrawHistory(existingMatches); // seeds court balancing with prior history, if any
