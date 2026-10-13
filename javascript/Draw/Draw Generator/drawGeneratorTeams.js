@@ -208,7 +208,8 @@ function generateTeamsRoundDraw(players, matches, roundNumber, courtsCount, even
     schedule: window.gdTeamByeCache[teamByeCacheKey],
     wholeTeamByesThisRound
   });
-  const activeTeamKeys = allTeamKeys.filter(t => !wholeTeamByesThisRound.includes(t));
+  const activeTeamKeys = allTeamKeys.filter(t => !wholeTeamByesThisRound.map(String).includes(String(t)));
+  console.log(activeTeamKeys);
 
   // --- Team pairings for this round ---
   const teamPairings = pairActiveTeamsForRound(activeTeamKeys, structure.mode, teamOpponentCounts);
