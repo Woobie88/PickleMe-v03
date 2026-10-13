@@ -18,6 +18,18 @@
 
 // ---------- FIXED TEAM ASSIGNMENT (reads players.Team, set by the Teams screen) ----------
 
+// function assignDoublesProPartnerships(players) {
+//   const teams = {};
+//   players.forEach(p => {
+//     const t = p.Team;
+//     if (!teams[t]) teams[t] = [];
+//     teams[t].push(p);
+//   });
+
+//   const teamKeys = Object.keys(teams).sort((a, b) => parseInt(a) - parseInt(b));
+
+//   return teamKeys.map(teamKey => teams[teamKey]); // array of arrays — each inner array = all players on that team
+// }
 function assignDoublesProPartnerships(players) {
   const teams = {};
   players.forEach(p => {
@@ -26,9 +38,9 @@ function assignDoublesProPartnerships(players) {
     teams[t].push(p);
   });
 
-  const teamKeys = Object.keys(teams).sort((a, b) => parseInt(a) - parseInt(b));
+  const teamGroups = Object.values(teams);
 
-  return teamKeys.map(teamKey => teams[teamKey]); // array of arrays — each inner array = all players on that team
+  return buildStableTeamOrder(teamGroups); // CHANGED — was a numeric teamKey sort
 }
 
 // ---------- CIRCLE METHOD SCHEDULER (guaranteed no-repeat opponents per cycle) ----------
