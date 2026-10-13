@@ -225,7 +225,7 @@ function setScoringMode(newValue) {
   renderScoringToggle(newValue);
 
   // Persist to Firestore
-  window.updateScoringModeInFirestore(activeEventId, newValue, activeEvent.DrawWeighting)
+  window.updateScoringModeInFirestore(activeEventId, newValue, activeEvent.DrawWeighting,"")
     .then(() => console.log("Scoring mode updated in Firestore:", newValue))
     .catch(err => console.error("Failed to update scoring mode:", err));
 }
