@@ -200,16 +200,9 @@ function generateTeamsRoundDraw(players, matches, roundNumber, courtsCount, even
     );
   }
   const wholeTeamByesThisRound = window.gdTeamByeCache[teamByeCacheKey][roundNumber - 1] || [];
-  // >>> ADD THE LOG HERE <<<
-  console.log({
-    roundNumber,
-    orderedTeamKeys,
-    rounds: window.gdCurrentNumberOfRounds,
-    schedule: window.gdTeamByeCache[teamByeCacheKey],
-    wholeTeamByesThisRound
-  });
+
   const activeTeamKeys = allTeamKeys.filter(t => !wholeTeamByesThisRound.map(String).includes(String(t)));
-  console.log(activeTeamKeys);
+  
 
   // --- Team pairings for this round ---
   const teamPairings = pairActiveTeamsForRound(activeTeamKeys, structure.mode, teamOpponentCounts);
