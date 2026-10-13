@@ -1,23 +1,35 @@
-/**
- * ============================================================
- * DOUBLES PRO DRAW GENERATOR
- * Fixed teams (from players.Team, 2 or 4 players per team,
- * assigned via top-with-bottom DUPR pairing at draw time, or
- * top-with-bottom STANDINGS pairing at redivision time — the
- * grouping itself happens on the Teams screen, not here).
- * Uses the circle method to guarantee every team plays every
- * other team exactly once per cycle, repeating the cycle as
- * many times as needed to fill the requested round count, with
- * court balancing carried across the whole history so repeats
- * land on different courts. Supports starting from any round
- * number and continuing from existing match history — needed
- * for redivision, which regenerates only a window of rounds
- * without resetting DrawVersion or losing prior-round history.
- * ============================================================
- */
+// /**
+//  * ============================================================
+//  * DOUBLES PRO DRAW GENERATOR
+//  * Fixed teams (from players.Team, 2 or 4 players per team,
+//  * assigned via top-with-bottom DUPR pairing at draw time, or
+//  * top-with-bottom STANDINGS pairing at redivision time — the
+//  * grouping itself happens on the Teams screen, not here).
+//  * Uses the circle method to guarantee every team plays every
+//  * other team exactly once per cycle, repeating the cycle as
+//  * many times as needed to fill the requested round count, with
+//  * court balancing carried across the whole history so repeats
+//  * land on different courts. Supports starting from any round
+//  * number and continuing from existing match history — needed
+//  * for redivision, which regenerates only a window of rounds
+//  * without resetting DrawVersion or losing prior-round history.
+//  * ============================================================
+//  */
 
-// ---------- FIXED TEAM ASSIGNMENT (reads players.Team, set by the Teams screen) ----------
+// // ---------- FIXED TEAM ASSIGNMENT (reads players.Team, set by the Teams screen) ----------
 
+// // function assignDoublesProPartnerships(players) {
+// //   const teams = {};
+// //   players.forEach(p => {
+// //     const t = p.Team;
+// //     if (!teams[t]) teams[t] = [];
+// //     teams[t].push(p);
+// //   });
+
+// //   const teamKeys = Object.keys(teams).sort((a, b) => parseInt(a) - parseInt(b));
+
+// //   return teamKeys.map(teamKey => teams[teamKey]); // array of arrays — each inner array = all players on that team
+// // }
 // function assignDoublesProPartnerships(players) {
 //   const teams = {};
 //   players.forEach(p => {
@@ -26,10 +38,214 @@
 //     teams[t].push(p);
 //   });
 
-//   const teamKeys = Object.keys(teams).sort((a, b) => parseInt(a) - parseInt(b));
+//   const teamGroups = Object.values(teams);
 
-//   return teamKeys.map(teamKey => teams[teamKey]); // array of arrays — each inner array = all players on that team
+//   return buildStableTeamOrder(teamGroups); // CHANGED — was a numeric teamKey sort
 // }
+
+// // ---------- TEAM-LEVEL: Teams, Pool Fusion, Doubles Pro/Rx ----------
+
+// /**
+//  * Derives a TEAM's effective manual bye preference from its players —
+//  * the earliest (lowest) manual byeOrder among any of its members, or
+//  * null if nobody on the team has one set. If any one player on a team
+//  * wants an early bye, the whole team is pulled earlier in the rotation
+//  * (their partner is automatically included, since byes happen at the
+//  * team level for these game types).
+//  */
+// function getTeamEffectiveByeOrder(teamPlayers) {
+//   const manualOrders = teamPlayers
+//     .map(p => p.byeOrder)
+//     .filter(v => v !== undefined && v !== null && v !== '' && !isNaN(parseInt(v)))
+//     .map(v => parseInt(v));
+
+//   if (manualOrders.length === 0) return null;
+//   return Math.min(...manualOrders);
+// }
+
+// /**
+//  * Orders a set of teams (each an array of players) with manual-preference
+//  * teams first (by effective order), everyone else following in a stable,
+//  * deterministic order.
+//  */
+// function buildStableTeamOrder(teamGroups) {
+//   const withOrder = teamGroups.map(team => ({ team, order: getTeamEffectiveByeOrder(team) }));
+
+//   const manual = withOrder.filter(t => t.order !== null)
+//     .sort((a, b) => a.order - b.order)
+//     .map(t => t.team);
+
+//   const remaining = withOrder.filter(t => t.order === null).map(t => t.team);
+//   remaining.sort((a, b) => String(a[0]?.PlayerID).localeCompare(String(b[0]?.PlayerID)));
+
+//   return [...manual, ...remaining];
+// }
+
+// // ---------- CIRCLE METHOD SCHEDULER (guaranteed no-repeat opponents per cycle) ----------
+
+// function generateCircleMethodSchedule(teams) {
+//   const teamList = [...teams];
+//   const isOdd = teamList.length % 2 !== 0;
+
+//   if (isOdd) {
+//     teamList.push(null); // null = bye slot for this round
+//   }
+
+//   const n = teamList.length;
+//   const numberOfRounds = n - 1;
+//   const half = n / 2;
+
+//   const rounds = [];
+//   let arrangement = [...teamList];
+
+//   for (let round = 0; round < numberOfRounds; round++) {
+//     const roundMatchups = [];
+//     for (let i = 0; i < half; i++) {
+//       const teamA = arrangement[i];
+//       const teamB = arrangement[n - 1 - i];
+//       if (teamA !== null && teamB !== null) {
+//         roundMatchups.push({ teamA, teamB });
+//       }
+//       // if either is null, that team has a bye this round
+//     }
+//     rounds.push(roundMatchups);
+
+//     // Rotate — fix the first team in place, rotate everyone else
+//     const fixed = arrangement[0];
+//     const rest = arrangement.slice(1);
+//     rest.unshift(rest.pop());
+//     arrangement = [fixed, ...rest];
+//   }
+
+//   return rounds; // array of rounds, each an array of { teamA, teamB } matchups
+// }
+
+// // ---------- MATCH RECORD BUILDER (2 or 4 players per team, always populated) ----------
+
+// function buildDoublesProMatchRecord(m, roundNumber, eventId, drawVersion, userEmail) {
+//   const teamA = m.teamA;
+//   const teamB = m.teamB;
+
+//   const avg1 = teamAvgDupr(teamA); // averages across however many players are in the array
+//   const avg2 = teamAvgDupr(teamB);
+//   const winProb1 = calculateWinProbability(avg1, avg2);
+
+//   return {
+//     MatchID: generateMatchId(),
+//     EventID: eventId,
+//     Round: roundNumber,
+//     Court: m.court,
+//     DrawVersion: drawVersion,
+//     MatchType: "Round Robin",
+//     Team1: teamA[0].Team,
+//     Team2: teamB[0].Team,
+//     Team1Player1: teamA[0]?.PlayerID || null,
+//     Team1Player2: teamA[1]?.PlayerID || null,
+//     Team1Player3: teamA[2]?.PlayerID || null,
+//     Team1Player4: teamA[3]?.PlayerID || null,
+//     Team2Player1: teamB[0]?.PlayerID || null,
+//     Team2Player2: teamB[1]?.PlayerID || null,
+//     Team2Player3: teamB[2]?.PlayerID || null,
+//     Team2Player4: teamB[3]?.PlayerID || null,
+//     Team1AvgDUPR: avg1,
+//     Team2AvgDUPR: avg2,
+//     DUPRMatchDelta: Math.abs(avg1 - avg2),
+//     Team1WinProb: winProb1,
+//     Team2WinProb: 1 - winProb1,
+//     ExpectedTeam1Score: winProb1 >= 0.5 ? 11 : Math.min(Math.round(winProb1 * 11 / (1 - winProb1)),9),
+//     ExpectedTeam2Score: winProb1 >= 0.5 ? Math.min(Math.round((1 - winProb1) * 11 / winProb1),9) : 11,
+//     Team1Score: 0,
+//     Team2Score: 0,
+//     Team1WinLoss: '',
+//     Team2WinLoss: '',
+//     Active: 'Active',
+//     UserEmail: userEmail,
+//     Timestamp: new Date().toISOString()
+//   };
+// }
+
+// // ---------- DOUBLES PRO ENTRY POINT (with full court balancing, cycle repetition, and redivision support) ----------
+
+// /**
+//  * @param players            active players for this generation (already filtered for exclusions)
+//  * @param courtsCount        number of courts to fill each round
+//  * @param eventId            active event ID
+//  * @param drawVersion        current DrawVersion (never bumped for redivision)
+//  * @param userEmail          logged-in user's email, stamped on each match
+//  * @param numberOfRounds     how many rounds to generate in this call
+//  * @param startRound         round number to begin at (1 for a fresh draw, or the
+//  *                           Redivision screen's chosen round for a redivision)
+//  * @param existingMatches    match history to use for court-balancing continuity —
+//  *                           pass [] for a fresh draw, or prior rounds' matches for
+//  *                           a redivision so court exposure keeps balancing correctly
+//  *                           across the redivision boundary rather than resetting
+//  */
+// function generateDoublesProDraw(players, courtsCount, eventId, drawVersion, userEmail, numberOfRounds, startRound = 1, existingMatches = []) {
+//   const teamGroups = assignDoublesProPartnerships(players);
+//   console.log(teamGroups);
+//   const oneCycle = generateCircleMethodSchedule(teamGroups); // one complete round-robin cycle
+
+//   const { courtCounts } = buildDrawHistory(existingMatches); // seeds court balancing with prior history, if any
+
+//   const allMatches = [];
+//   let roundNumber = startRound;
+//   const endRound = startRound + numberOfRounds - 1;
+
+//   while (roundNumber <= endRound) {
+//     // Cycle back to the start of oneCycle once exhausted, relative to startRound
+//     const cycleIndex = (roundNumber - startRound) % oneCycle.length;
+//     const roundMatchups = oneCycle[cycleIndex];
+
+//     const courtNumbers = Array.from({ length: courtsCount }, (_, i) => i + 1);
+//     const courted = assignCourts(roundMatchups, courtNumbers, courtCounts); // court balance considers ALL prior rounds passed in
+
+//     const roundRecords = courted.map(m => buildDoublesProMatchRecord(m, roundNumber, eventId, drawVersion, userEmail));
+//     allMatches.push(...roundRecords);
+
+//     // Update courtCounts with this round's assignments so the NEXT round balances against it
+//     roundRecords.forEach(rec => {
+//       const allTeamPlayers = [
+//         rec.Team1Player1, rec.Team1Player2, rec.Team1Player3, rec.Team1Player4,
+//         rec.Team2Player1, rec.Team2Player2, rec.Team2Player3, rec.Team2Player4
+//       ].filter(pid => pid !== null);
+
+//       allTeamPlayers.forEach(pid => {
+//         if (!courtCounts[pid]) courtCounts[pid] = {};
+//         courtCounts[pid][rec.Court] = (courtCounts[pid][rec.Court] || 0) + 1;
+//       });
+//     });
+
+//     roundNumber++;
+//   }
+
+//   return allMatches;
+// }
+
+/**
+ * ============================================================
+ * DOUBLES PRO DRAW GENERATOR
+ * Fixed teams (from players.Team, 2 or 4 players per team,
+ * assigned via top-with-bottom DUPR pairing at draw time, or
+ * top-with-bottom STANDINGS pairing at redivision time — the
+ * grouping itself happens on the Teams screen, not here).
+ *
+ * Each round, the number of matches is limited by whichever is
+ * smaller: the number of courts, or half the number of teams.
+ * Teams that can't play sit out (bye). Byes rotate fairly: the
+ * teams with the fewest byes so far sit out first, ties broken
+ * by team order, and once everyone has had the same number of
+ * byes the rotation starts again at the top. The remaining teams
+ * are paired to minimize repeat opponents, and court balancing is
+ * carried across the whole history so repeats land on different
+ * courts. Supports starting from any round number and continuing
+ * from existing match history — needed for redivision, which
+ * regenerates only a window of rounds without resetting
+ * DrawVersion or losing prior-round history.
+ * ============================================================
+ */
+
+// ---------- FIXED TEAM ASSIGNMENT (reads players.Team, set by the Teams screen) ----------
+
 function assignDoublesProPartnerships(players) {
   const teams = {};
   players.forEach(p => {
@@ -40,7 +256,7 @@ function assignDoublesProPartnerships(players) {
 
   const teamGroups = Object.values(teams);
 
-  return buildStableTeamOrder(teamGroups); // CHANGED — was a numeric teamKey sort
+  return buildStableTeamOrder(teamGroups);
 }
 
 // ---------- TEAM-LEVEL: Teams, Pool Fusion, Doubles Pro/Rx ----------
@@ -81,43 +297,59 @@ function buildStableTeamOrder(teamGroups) {
   return [...manual, ...remaining];
 }
 
-// ---------- CIRCLE METHOD SCHEDULER (guaranteed no-repeat opponents per cycle) ----------
+// ---------- BYE + CAPACITY + PAIRING HELPERS ----------
 
-function generateCircleMethodSchedule(teams) {
-  const teamList = [...teams];
-  const isOdd = teamList.length % 2 !== 0;
+/**
+ * Picks which teams sit out this round: the teams with the fewest byes so far,
+ * ties broken by teamGroups order. This produces a clean rotation, and once
+ * every team has had the same number of byes it starts again at the top.
+ * Returns { playingTeams, byeTeams } with playingTeams kept in teamGroups order.
+ */
+function selectByeTeams(teamGroups, byeCounts, byeTeamCount) {
+  if (byeTeamCount <= 0) return { playingTeams: [...teamGroups], byeTeams: [] };
 
-  if (isOdd) {
-    teamList.push(null); // null = bye slot for this round
-  }
+  const byeTeams = teamGroups
+    .map((team, index) => ({ team, index, byes: byeCounts[team[0].Team] || 0 }))
+    .sort((a, b) => a.byes - b.byes || a.index - b.index)
+    .slice(0, byeTeamCount)
+    .map(t => t.team);
 
-  const n = teamList.length;
-  const numberOfRounds = n - 1;
-  const half = n / 2;
+  const playingTeams = teamGroups.filter(team => !byeTeams.includes(team));
+  return { playingTeams, byeTeams };
+}
 
-  const rounds = [];
-  let arrangement = [...teamList];
+/**
+ * Pairs playingTeams into matchups, minimizing total repeat-opponent count.
+ * Exhaustive search with pruning; stops immediately once a zero-repeat
+ * pairing is found. Returns an array of { teamA, teamB }.
+ */
+function pairTeamsMinimizingRepeats(playingTeams, opponentCounts) {
+  let bestPairs = [];
+  let bestCost = Infinity;
 
-  for (let round = 0; round < numberOfRounds; round++) {
-    const roundMatchups = [];
-    for (let i = 0; i < half; i++) {
-      const teamA = arrangement[i];
-      const teamB = arrangement[n - 1 - i];
-      if (teamA !== null && teamB !== null) {
-        roundMatchups.push({ teamA, teamB });
-      }
-      // if either is null, that team has a bye this round
+  function search(remaining, pairs, cost) {
+    if (cost >= bestCost) return;
+    if (remaining.length === 0) {
+      bestCost = cost;
+      bestPairs = [...pairs];
+      return;
     }
-    rounds.push(roundMatchups);
 
-    // Rotate — fix the first team in place, rotate everyone else
-    const fixed = arrangement[0];
-    const rest = arrangement.slice(1);
-    rest.unshift(rest.pop());
-    arrangement = [fixed, ...rest];
+    const [first, ...rest] = remaining;
+    for (let i = 0; i < rest.length; i++) {
+      const pairCost = (opponentCounts[first[0].Team] || {})[rest[i][0].Team] || 0;
+      const nextRemaining = rest.filter((_, j) => j !== i);
+
+      pairs.push({ teamA: first, teamB: rest[i] });
+      search(nextRemaining, pairs, cost + pairCost);
+      pairs.pop();
+
+      if (bestCost === 0) return; // can't beat zero repeats
+    }
   }
 
-  return rounds; // array of rounds, each an array of { teamA, teamB } matchups
+  search(playingTeams, [], 0);
+  return bestPairs;
 }
 
 // ---------- MATCH RECORD BUILDER (2 or 4 players per team, always populated) ----------
@@ -164,11 +396,11 @@ function buildDoublesProMatchRecord(m, roundNumber, eventId, drawVersion, userEm
   };
 }
 
-// ---------- DOUBLES PRO ENTRY POINT (with full court balancing, cycle repetition, and redivision support) ----------
+// ---------- DOUBLES PRO ENTRY POINT (capacity check, fair byes, repeat-minimizing pairing, court balancing, redivision support) ----------
 
 /**
  * @param players            active players for this generation (already filtered for exclusions)
- * @param courtsCount        number of courts to fill each round
+ * @param courtsCount        number of courts available each round
  * @param eventId            active event ID
  * @param drawVersion        current DrawVersion (never bumped for redivision)
  * @param userEmail          logged-in user's email, stamped on each match
@@ -183,24 +415,45 @@ function buildDoublesProMatchRecord(m, roundNumber, eventId, drawVersion, userEm
 function generateDoublesProDraw(players, courtsCount, eventId, drawVersion, userEmail, numberOfRounds, startRound = 1, existingMatches = []) {
   const teamGroups = assignDoublesProPartnerships(players);
   console.log(teamGroups);
-  const oneCycle = generateCircleMethodSchedule(teamGroups); // one complete round-robin cycle
+  const teamCount = teamGroups.length;
+
+  // Capacity check: limited by courts OR by how many matches the teams can form
+  const matchesPerRound = Math.min(courtsCount, Math.floor(teamCount / 2));
+  const byeTeamCount = teamCount - matchesPerRound * 2;
 
   const { courtCounts } = buildDrawHistory(existingMatches); // seeds court balancing with prior history, if any
+
+  // Fresh per call — team numbers can change at redivision, so team-level
+  // history from earlier rounds isn't reliable across that boundary
+  const opponentCounts = {};
+  const byeCounts = {};
+  teamGroups.forEach(team => {
+    opponentCounts[team[0].Team] = {};
+    byeCounts[team[0].Team] = 0;
+  });
 
   const allMatches = [];
   let roundNumber = startRound;
   const endRound = startRound + numberOfRounds - 1;
 
   while (roundNumber <= endRound) {
-    // Cycle back to the start of oneCycle once exhausted, relative to startRound
-    const cycleIndex = (roundNumber - startRound) % oneCycle.length;
-    const roundMatchups = oneCycle[cycleIndex];
+    const { playingTeams, byeTeams } = selectByeTeams(teamGroups, byeCounts, byeTeamCount);
+    const roundMatchups = pairTeamsMinimizingRepeats(playingTeams, opponentCounts);
 
-    const courtNumbers = Array.from({ length: courtsCount }, (_, i) => i + 1);
+    const courtNumbers = Array.from({ length: matchesPerRound }, (_, i) => i + 1);
     const courted = assignCourts(roundMatchups, courtNumbers, courtCounts); // court balance considers ALL prior rounds passed in
 
     const roundRecords = courted.map(m => buildDoublesProMatchRecord(m, roundNumber, eventId, drawVersion, userEmail));
     allMatches.push(...roundRecords);
+
+    // Update team-level history for the NEXT round
+    byeTeams.forEach(team => { byeCounts[team[0].Team]++; });
+    roundMatchups.forEach(m => {
+      const teamAKey = m.teamA[0].Team;
+      const teamBKey = m.teamB[0].Team;
+      opponentCounts[teamAKey][teamBKey] = (opponentCounts[teamAKey][teamBKey] || 0) + 1;
+      opponentCounts[teamBKey][teamAKey] = (opponentCounts[teamBKey][teamAKey] || 0) + 1;
+    });
 
     // Update courtCounts with this round's assignments so the NEXT round balances against it
     roundRecords.forEach(rec => {
