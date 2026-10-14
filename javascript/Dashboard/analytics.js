@@ -40,9 +40,9 @@ const SCORE_MARGIN_TARGET = 11;
 const FORECAST_SCORE_FIELDS = { team1: 'ExpectedTeam1Score', team2: 'ExpectedTeam2Score' };
 
 const SCORE_MARGIN_BUCKETS = [
-  { key: 'even',     minLosingScore: 9, label: 'Even (losing score 9+)',     color: '#00E676' },
-  { key: 'lopsided', minLosingScore: 6, label: 'Lopsided (losing score 6–8)', color: '#f59e0b' },
-  { key: 'blowout',  minLosingScore: 0, label: 'Blowout (losing score <6)',   color: '#ef4444' }
+  { key: 'even',     minLosingScore: 8, label: 'Even (losing score 8+)', color: '#00E676' },
+  { key: 'lopsided', minLosingScore: 5, label: 'Lopsided (losing score 5–7)', color: '#f59e0b' },
+  { key: 'blowout',  minLosingScore: 0, label: 'Blowout (losing score <5)',   color: '#ef4444' }
 ];
 
 function scaleLosingScore(pointsForGame, pointsAgainstGame) {
