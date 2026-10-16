@@ -411,8 +411,8 @@ function renderAnalyticsCards(payload) {
                 const entry = sorted[item.dataIndex];
                 const isForecast = item.dataset.metricType === 'forecast';
                 const pointsPct = isForecast ? entry.forecastPointsPct : entry.actualPointsPct;
-                const pctText = pointsPct === null ? 'n/a' : `${(pointsPct * 100).toFixed(1)}%`;
-                return `${entry.player.FirstName || 'Unnamed'} — ${isForecast ? 'Forecast' : 'Actual'} (${pctText} of points)`;
+                           const pctText = pointsPct === null ? 'n/a' : `${(pointsPct * 100).toFixed(1)}%`;
+     return `${entry.player.FirstName || 'Unnamed'} — ${isForecast ? 'Forecast' : 'Actual'} (${pctText} of points)`;
               }
               return items[0].label; // preserves the default category-label title everywhere else
             },
