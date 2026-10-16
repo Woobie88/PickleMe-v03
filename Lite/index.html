@@ -45,38 +45,38 @@
         </div>
         
         <div class="card-grid">
-          <!-- Card 1: My Events -->
-          <div class="app-card" id="card-events" onclick="navigateToScreen('events')">
-            <div class="card-icon-wrapper">
-              <img src="https://i.postimg.cc/9MqhT6sQ/Events.png" alt="Events Icon" loading="lazy" class="card-icon-images">
-            </div>
-            <div class="card-content">
-              <h3>My Events</h3>
-              <p>Active tournament states and schedules</p>
-            </div>
-            <span class="card-arrow">→</span>
-          </div>
-          
-          <!-- Card 2: Manage Players -->
-          <div class="app-card" id="card-players" onclick="navigateToScreen('players')">
-            <div class="card-icon-wrapper">
-              <img src="https://i.postimg.cc/ydSH9M26/Players.png" alt="Events Icon" loading="lazy" class="card-icon-images">
-            </div>
-            <div class="card-content">
-              <h3>Update Players</h3>
-              <p>Roster setup, seed numbers, and divisions</p>
-            </div>
-            <span class="card-arrow">→</span>
-          </div>
-          
-          <!-- Card 3: Game Selector -->
+          <!-- Card 1: Game Details -->
           <div class="app-card" id="card-games" onclick="navigateToScreen('games')">
             <div class="card-icon-wrapper">
               <img src="https://i.postimg.cc/3RDTpszh/Games.png" alt="Events Icon" loading="lazy" class="card-icon-images">
             </div>
             <div class="card-content">
-              <h3>Game Selector</h3>
+              <h3>Today's Game Details</h3>
               <p>Formats, rule sets, and bracket styles</p>
+            </div>
+            <span class="card-arrow">→</span>
+          </div>
+          
+          <!-- Card 2: Players -->
+          <div class="app-card" id="card-players" onclick="navigateToScreen('players')">
+            <div class="card-icon-wrapper">
+              <img src="https://i.postimg.cc/ydSH9M26/Players.png" alt="Events Icon" loading="lazy" class="card-icon-images">
+            </div>
+            <div class="card-content">
+              <h3>Player Details</h3>
+              <p>Roster setup, seed numbers, and divisions</p>
+            </div>
+            <span class="card-arrow">→</span>
+          </div>
+          
+          <!-- Card 4: Draw -->
+          <div class="app-card" id="card-generate-draw" onclick="navigateToScreen('draw')">
+            <div class="card-icon-wrapper">
+              <img src="https://i.postimg.cc/50FVvhDb/Draw.png" alt="Generate Draw Icon" loading="lazy" class="card-icon-images">
+            </div>
+            <div class="card-content">
+              <h3>Draw Schedule</h3>
+              <p>Run draw logic, manage teams, and set player availability</p>
             </div>
             <span class="card-arrow">→</span>
           </div>
