@@ -28,7 +28,7 @@ function teamAvgDupr(team) {
 
 function calculateWinProbability(duprA, duprB) {
   const diff = duprA - duprB;
-  return 1 / (1 + Math.pow(10, -diff / 2));
+  return 1 / (1 + Math.pow(10, -diff / scaleParm));
 }
 
 function generateMatchId() {

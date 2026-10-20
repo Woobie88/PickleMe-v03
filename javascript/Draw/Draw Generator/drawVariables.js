@@ -8,5 +8,8 @@ const penaltyWeightPresets = [
     opponentDuprGapWeight: 100,  opponentFrequencyWeight: 10, opponentDuprDelta: 0.2, opponentMinExpScore: 8  }
 ];
 
+// For calculating expected share of points. Original value set to 2
+let scaleParm = 1.5;
+
 let duprGapWeight;
 let frequencyWeight;
