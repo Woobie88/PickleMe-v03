@@ -255,52 +255,6 @@
         </div>
       </section>
 
-      <!-- Add Players -->
-      <!-- OpenSports OCR solution -->
-      <section id="screen-opensports-import" class="app-screen">
-        <div class="welcome-banner">
-          <h2>Import from OpenSports</h2>
-          <p>Take or upload screenshots of your OpenSports attendee list. You can add multiple photos before reviewing.</p>
-        </div>
-      
-        <div class="detail-view-container">
-          <div id="os-scan-status" class="placeholder-view">
-            <h3>No Photos Scanned Yet</h3>
-            <p>Tap below to scan your first screenshot</p>
-          </div>
-      
-          <div id="os-scanned-summary" class="card-grid" style="display: none;">
-            <!-- running tally of scanned photos + names found appears here -->
-          </div>
-      
-          <input type="file" id="os-image-input" accept="image/*" style="display: none;" onchange="handleOpenSportsImageSelected(event)">
-      
-          <div class="form-action-bar">
-            <button class="btn-secondary" onclick="navigateToScreen('players')">Cancel</button>
-            <button class="btn-primary" onclick="triggerOsImageUpload()">Scan Photo</button>
-          </div>
-      
-          <div class="form-action-bar" id="os-review-bar" style="display: none;">
-            <button class="btn-primary" style="width: 100%;" onclick="goToOpenSportsReview()">Review & Import (<span id="os-name-count">0</span> names)</button>
-          </div>
-        </div>
-      </section>
-
-      <!-- OpenSports Image Load & Review Screen  -->
-      <section id="screen-opensports-review" class="app-screen">
-        <div class="welcome-banner">
-          <h2>Review Players</h2>
-          <p>Confirm names and DUPR matches before importing</p>
-        </div>
-
-        <div id="os-review-list" class="card-grid"></div>
-
-        <div class="form-action-bar">
-          <button class="btn-secondary" onclick="navigateToScreen('opensports-import')">Back</button>
-          <button class="btn-primary" onclick="commitOpenSportsImport()">Import (<span id="os-import-count">0</span>)</button>
-        </div>
-      </section>
-
       <!-- Individual Player Add Screen -->
       <section id="screen-individual-add" class="app-screen">
         <div class="welcome-banner">
