@@ -1,0 +1,14 @@
+{
+  "id": "/PickleMe-v03/Players/",
+  "name": "PickleMe Players",
+  "short_name": "PickleMe Players",
+  "start_url": "./",
+  "scope": "./",
+  "icons": [
+    { "src": "https://i.postimg.cc/RF1ZjgHX/Pickle-Me-Players.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "https://i.postimg.cc/RF1ZjgHX/Pickle-Me-Players.png", "sizes": "512x512", "type": "image/png" }
+  ],
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000"
+}

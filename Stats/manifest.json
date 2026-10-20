@@ -1,0 +1,14 @@
+{
+  "id": "/PickleMe-v03/Stats/",
+  "name": "PickleMe Stats",
+  "short_name": "PickleMe Stats",
+  "start_url": "./",
+  "scope": "./",
+  "icons": [
+    { "src": "https://i.postimg.cc/1t03LvqW/Pickle-Me-Stats.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "https://i.postimg.cc/1t03LvqW/Pickle-Me-Stats.png", "sizes": "512x512", "type": "image/png" }
+  ],
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000"
+}
