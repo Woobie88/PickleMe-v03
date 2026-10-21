@@ -13,12 +13,8 @@ function toggleAddPlayersFabMenu() {
 }
 
 function handleAddPlayersAction(action) {
-  console.log('handleAddPlayersAction called with:', action);
-  console.trace();
-  if (action !== 'individual-lite') {
-    toggleAddPlayersFabMenu();
-  }
-
+  toggleAddPlayersFabMenu();
+  
   switch (action) {
     case 'opensports':
       window.osScannedNames = [];
