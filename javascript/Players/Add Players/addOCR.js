@@ -13,7 +13,9 @@ function toggleAddPlayersFabMenu() {
 }
 
 function handleAddPlayersAction(action) {
-  toggleAddPlayersFabMenu();
+  if (action !== 'individual-lite') {
+    toggleAddPlayersFabMenu();
+  }
 
   switch (action) {
     case 'opensports':
@@ -22,6 +24,7 @@ function handleAddPlayersAction(action) {
       navigateToScreen('opensports-import');
       break;
     case 'individual':
+    case 'individual-lite':
       resetIndividualAddForm();
       navigateToScreen('individual-add'); // navigates TO the individual-add screen
       if (!window.cachedUserUniverse.dupr || window.cachedUserUniverse.dupr.length === 0) {
