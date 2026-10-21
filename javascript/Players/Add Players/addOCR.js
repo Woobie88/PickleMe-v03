@@ -13,6 +13,7 @@ function toggleAddPlayersFabMenu() {
 }
 
 function handleAddPlayersAction(action) {
+  console.log(action);
   if (action !== 'individual-lite') {
     toggleAddPlayersFabMenu();
   }
