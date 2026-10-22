@@ -22,7 +22,11 @@ function computeLadderMetrics(stats) {
  *   Wins:   avg Wins desc → avg Margin desc → DUPR desc
  */
 function rankPlayersByLadderCriteria(players, matches, ladderScoringMode) {
-  const withMetrics = players.map(player => {
+  const eligiblePlayers = players.filter(p =>
+      String(p.PlayerExclude || '').trim().toLowerCase() === 'no'
+  );
+
+  const withMetrics = eligiblePlayers.map(player => {
     const stats = calculatePlayerStats(player.PlayerID, matches);
     const metrics = computeLadderMetrics(stats);
     return { player, stats, metrics };
