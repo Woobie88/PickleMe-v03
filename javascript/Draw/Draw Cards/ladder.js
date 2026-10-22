@@ -173,7 +173,7 @@ async function renderStandingsView(payload) {
 
   let html = '';
 
-  if (grouping === 'None') {
+  if (grouping === 'None' || grouping === 'Flex') {
     standings.forEach(entry => { html += buildPlayerLadderCard(entry); });
 
   } else if (grouping === 'Divisions' || grouping === 'Pools') {
