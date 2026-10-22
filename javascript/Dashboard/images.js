@@ -39,7 +39,8 @@ const playerSeeds = [{
   "seed-17": "https://i.postimg.cc/4NKJVFHh/17.png",
   "seed-18": "https://i.postimg.cc/PrLtYFvW/18.png",
   "seed-19": "https://i.postimg.cc/4NKJVFHv/19.png",
-  "seed-20": "https://i.postimg.cc/fT3wmgSx/20.png"
+  "seed-20": "https://i.postimg.cc/fT3wmgSx/20.png",
+  "seed-21": "https://i.postimg.cc/pT63XN2D/21.png"
 }];
 
 const ladderRankings = [{
