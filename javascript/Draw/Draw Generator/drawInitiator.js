@@ -45,14 +45,16 @@ function renderGenerateDrawDetails(payload) {
   }
 
   // --- Draw Weighting ---
-  console.log('[GD render]', {
-    activeEventId,
-    cachedDrawWeighting: activeEvent?.DrawWeighting,
-    drawWeightingValue
-  });
   const drawWeightingSupported = gameProfile?.DrawWeighting === 'Yes';
   const drawWeightingGroup = document.getElementById('gd-drawWeighting-group');
   const parsedDrawWeighting = parseInt(activeEvent?.DrawWeighting);
+
+  console.log('[GD render]', {
+    activeEventId,
+    cachedDrawWeighting: activeEvent?.DrawWeighting,
+    parsedDrawWeighting,
+    drawWeightingSupported
+  });
 
   const drawWeightingValue = drawWeightingSupported
     ? (Number.isNaN(parsedDrawWeighting) ? 1 : parsedDrawWeighting) // 0=Frequency, 1=Equal, 2=DUPR Gap
