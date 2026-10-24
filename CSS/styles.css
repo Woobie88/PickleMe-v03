@@ -1581,3 +1581,12 @@ body {
   flex: 1;
   text-align: center;
 }
+
+#gd-court1-allocation {
+  display: flex;
+}
+
+#gd-court1-allocation .scoring-option {
+  flex: 1;
+  text-align: center;
+}
