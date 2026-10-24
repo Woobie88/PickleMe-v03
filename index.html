@@ -975,6 +975,14 @@
             <input type="hidden" id="gd-drawWeighting-hidden" value="1">
           </div>
 
+          <div class="detail-form-group" id="gd-court1-allocation" style="display: none;">
+            <label>Round 1 Court Allocation</label>
+            <div class="scoring-toggle" id="gd-round1-allocation-toggle">
+              <button class="scoring-option" data-value="Desc" onclick="">Top-Down</button>
+              <button class="scoring-option" data-value="Asc" onclick="">Bottom-Up</button>
+            </div>
+          </div>
+
           <div class="form-action-bar">
             <button class="btn-secondary" onclick="navigateToScreen('dashboard')">Cancel</button>
             <button class="btn-primary" id="gd-details-next-btn" onclick="handleDetailsNext()">Next</button>

@@ -49,13 +49,6 @@ function renderGenerateDrawDetails(payload) {
   const drawWeightingGroup = document.getElementById('gd-drawWeighting-group');
   const parsedDrawWeighting = parseInt(activeEvent?.DrawWeighting);
 
-  console.log('[GD render]', {
-    activeEventId,
-    cachedDrawWeighting: activeEvent?.DrawWeighting,
-    parsedDrawWeighting,
-    drawWeightingSupported
-  });
-
   const drawWeightingValue = drawWeightingSupported
     ? (Number.isNaN(parsedDrawWeighting) ? 1 : parsedDrawWeighting) // 0=Frequency, 1=Equal, 2=DUPR Gap
     : 0; // Frequency — default when the control is hidden
@@ -99,6 +92,12 @@ function renderGenerateDrawDetails(payload) {
   }
 
   ensureTeamsDefaultForGame(activeEventId, gameProfile);
+
+  // --- Court 1 Allocation For Progressive Games ---
+  if (isProgressive) {
+    const court1Allocate = document.getElementById('gd-court1-allocation');
+    court1Allocate.style.display = 'block';
+  }
 
   // --- NEW: All Players Present toggle ---
   const currentPlayerVersion = activeEvent.CurrentPlayerVersion;
