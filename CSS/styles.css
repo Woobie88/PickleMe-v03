@@ -1582,11 +1582,11 @@ body {
   text-align: center;
 }
 
-#gd-court1-allocation {
+#gd-court1-allocation-toggle {
   display: flex;
 }
 
-#gd-court1-allocation .scoring-option {
+#gd-court1-allocation-toggle .scoring-option {
   flex: 1;
   text-align: center;
 }
