@@ -887,3 +887,32 @@ async function commitFlexAssignment() {
 function handleFlexNext() {
   routeToAvailabilityOrBuild(); // reuses the same routing already built for Teams
 }
+
+// ---- HANDLE COURT 1 ALLOCATION CHANGE FOR PROGRESSIVE GAMES ---- //
+async function handleCourt1AllocationToggle(value) {
+  // const activeEventId = window.cachedUserUniverse.activeEventId;
+  // const activeEvent = window.cachedUserUniverse.events.find(e => String(e.EventID) === String(activeEventId));
+
+  document.querySelectorAll('#gd-round1-allocation-toggle .scoring-option').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.value === value);
+  });
+
+  // window.gdAllPlayersPresentValue = value;
+  // activeEvent.AllPlayersPresent = value;
+  // await window.updateEventFieldInFirestore(activeEventId, 'AllPlayersPresent', value);
+
+  // Overriding TO Yes clears every player's playerExclude back to No
+  // if (value === 'Yes') {
+  //   const currentPlayerVersion = activeEvent.CurrentPlayerVersion;
+  //   const players = window.cachedUserUniverse.players.filter(
+  //     p => String(p.PlayerVersion) === String(currentPlayerVersion) && p.playerExclude === 'Yes'
+  //   );
+
+  //   await Promise.all(players.map(p => {
+  //     p.playerExclude = 'No';
+  //     return window.updatePlayerExcludeInFirestore(p.PlayerID, 'No');
+  //   }));
+
+    console.log(`Value changed for court 1 allocation.`);
+  // }
+}
