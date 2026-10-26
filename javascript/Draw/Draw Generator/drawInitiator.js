@@ -95,8 +95,8 @@ function renderGenerateDrawDetails(payload) {
 
   // --- Court 1 Allocation For Progressive Games ---
   if (isProgressive) {
-    const court1Allocate = document.getElementById('gd-court1-allocation');
-    court1Allocate.style.display = 'block';
+    const court1Allocate = document.getElementById('gd-court1-allocation-group');
+    court1Allocate.style.display = 'flex';
   }
 
   // --- NEW: All Players Present toggle ---
