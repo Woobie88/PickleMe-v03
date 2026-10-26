@@ -94,8 +94,8 @@ function renderGenerateDrawDetails(payload) {
   ensureTeamsDefaultForGame(activeEventId, gameProfile);
 
   // --- Court 1 Allocation For Progressive Games ---
+  const court1Allocate = document.getElementById('gd-court1-allocation-group');
   if (isProgressive) {
-    const court1Allocate = document.getElementById('gd-court1-allocation-group');
     court1Allocate.style.display = 'flex';
   }
   else {
