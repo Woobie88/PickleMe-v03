@@ -56,7 +56,8 @@ function bestBalancedPairing(fourPlayers) {
   return best;
 }
 
-function buildProgressiveRound1(activePlayers, courtsCount, eventId, drawVersion, userEmail) {
+function buildProgressiveRound1(activePlayers, courtsCount, eventId, drawVersion, userEmail, progressiveCourt1Allocate) {
+  console.log('Court alloction method is ',progressiveCourt1Allocate);
   // Sort ascending — lowest DUPR first, since top court (Court 1) gets the LOWEST DUPR players
   const sortedAsc = [...activePlayers].sort((a, b) => (parseFloat(a.DUPR) || 0) - (parseFloat(b.DUPR) || 0));
 
@@ -77,7 +78,7 @@ function buildProgressiveRound1(activePlayers, courtsCount, eventId, drawVersion
 
 // ---------- FULL DUMMY SCHEDULE (locks in the bye rotation upfront) ----------
 
-function buildProgressiveDummySchedule(players, numberOfRounds, courtsCount, eventId, drawVersion, userEmail, gameProfile, scorers) {
+function buildProgressiveDummySchedule(players, numberOfRounds, courtsCount, eventId, drawVersion, userEmail, gameProfile, scorers, progressiveCourt1Allocate) {
   const byeSchedule = generateByeSchedule(players, numberOfRounds, courtsCount);
 
   let allMatches = [];
@@ -85,7 +86,7 @@ function buildProgressiveDummySchedule(players, numberOfRounds, courtsCount, eve
   // Round 1 — the real, rule-correct starting round
   const round1Byes = byeSchedule[0] || [];
   const round1ActivePlayers = players.filter(p => !round1Byes.includes(p.PlayerID));
-  allMatches.push(...buildProgressiveRound1(round1ActivePlayers, courtsCount, eventId, drawVersion, userEmail));
+  allMatches.push(...buildProgressiveRound1(round1ActivePlayers, courtsCount, eventId, drawVersion, userEmail, progressiveCourt1Allocate));
 
   // Rounds 2+ — placeholder shells, purely to lock in the bye roster for each round
   for (let i = 1; i < numberOfRounds; i++) {

@@ -550,6 +550,8 @@ async function generateNRoundsAndPreview(numberOfRounds) {
   const drawBuildVariables = penaltyWeightPresets[drawWeightingIndex];
   const scorers = makeScorers(drawBuildVariables); // NEW — build once per run, threaded instead of drawBuildVariables
 
+  const progressiveCourt1Allocate = activeEventId.Court1Allocation;
+
   // TESTING — shows the active weighting preset at draw-generation time. Remove once confirmed.
   // alert(`Draw Build Variables (index ${drawWeightingIndex}):\n\n${JSON.stringify(drawBuildVariables, null, 2)}`);
 
@@ -571,7 +573,7 @@ async function generateNRoundsAndPreview(numberOfRounds) {
     console.log(`Generated Doubles Pro draw: ${newMatches.length} matches across ${numberOfRounds} round(s).`);
 
   } else if (['kings-queens', 'survivor', 'snakes-ladders', 'bridge-the-gap'].includes(gameId)) {
-    newMatches = buildProgressiveDummySchedule(players, numberOfRounds, courtsCount, activeEventId, newDrawVersion, userEmail, gameProfile, scorers);
+    newMatches = buildProgressiveDummySchedule(players, numberOfRounds, courtsCount, activeEventId, newDrawVersion, userEmail, gameProfile, scorers, progressiveCourt1Allocate);
     console.log(`Generated ${gameId} dummy schedule: ${newMatches.length} matches across ${numberOfRounds} round(s).`);
 
   } else if (gameId === 'teams') {
