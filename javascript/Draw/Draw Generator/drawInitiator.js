@@ -95,7 +95,7 @@ function renderGenerateDrawDetails(payload) {
 
   // --- Court 1 Allocation For Progressive Games ---
   const court1Allocate = document.getElementById('gd-court1-allocation-group');
-  const court1AllocationValue = activeEvent.Court1Allocation || 'Desc'; // use your real default
+  const court1AllocationValue = activeEvent.Court1Allocation || 'Asc'; // use your real default
 
   if (isProgressive) {
     court1Allocate.style.display = 'flex';
