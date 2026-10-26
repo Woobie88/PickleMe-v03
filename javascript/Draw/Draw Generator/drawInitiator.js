@@ -95,11 +95,12 @@ function renderGenerateDrawDetails(payload) {
 
   // --- Court 1 Allocation For Progressive Games ---
   const court1Allocate = document.getElementById('gd-court1-allocation-group');
+  const court1AllocationValue = activeEvent.Court1Allocation || 'Desc'; // use your real default
+
   if (isProgressive) {
     court1Allocate.style.display = 'flex';
-    const defaultCourtAllocation = 'Desc';
     document.querySelectorAll('#gd-round1-allocation-toggle .scoring-option').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.value === defaultCourtAllocation);
+      btn.classList.toggle('active', btn.dataset.value === court1AllocationValue);
     });
   }
   else {
