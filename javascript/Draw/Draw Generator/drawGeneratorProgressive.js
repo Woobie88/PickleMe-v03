@@ -57,13 +57,17 @@ function bestBalancedPairing(fourPlayers) {
 }
 
 function buildProgressiveRound1(activePlayers, courtsCount, eventId, drawVersion, userEmail, progressiveCourt1Allocate) {
-  console.log('Court allocation method is ',progressiveCourt1Allocate);
   // Sort ascending — lowest DUPR first, since top court (Court 1) gets the LOWEST DUPR players
-  const sortedAsc = [...activePlayers].sort((a, b) => (parseFloat(a.DUPR) || 0) - (parseFloat(b.DUPR) || 0));
+  if (progressiveCourt1Allocate === 'Asc') {
+    const sorted = [...activePlayers].sort((a, b) => (parseFloat(a.DUPR) || 0) - (parseFloat(b.DUPR) || 0));
+  }
+  else {
+    const sorted = [...activePlayers].sort((a, b) => (parseFloat(b.DUPR) || 0) - (parseFloat(a.DUPR) || 0));
+  }
 
   const courts = [];
   for (let c = 0; c < courtsCount; c++) {
-    courts.push(sortedAsc.slice(c * 4, c * 4 + 4));
+    courts.push(sorted.slice(c * 4, c * 4 + 4));
   }
 
   return courts.map((courtPlayers, idx) => {
