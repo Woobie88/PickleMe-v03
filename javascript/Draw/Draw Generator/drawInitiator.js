@@ -98,6 +98,9 @@ function renderGenerateDrawDetails(payload) {
     const court1Allocate = document.getElementById('gd-court1-allocation-group');
     court1Allocate.style.display = 'flex';
   }
+  else {
+    court1Allocate.style.display = 'none';
+  }
 
   // --- NEW: All Players Present toggle ---
   const currentPlayerVersion = activeEvent.CurrentPlayerVersion;
