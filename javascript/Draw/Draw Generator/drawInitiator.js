@@ -97,6 +97,10 @@ function renderGenerateDrawDetails(payload) {
   const court1Allocate = document.getElementById('gd-court1-allocation-group');
   if (isProgressive) {
     court1Allocate.style.display = 'flex';
+    const defaultCourtAllocation = 'Desc';
+    document.querySelectorAll('#gd-round1-allocation-toggle .scoring-option').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.value === defaultCourtAllocation);
+    });
   }
   else {
     court1Allocate.style.display = 'none';
