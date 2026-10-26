@@ -890,12 +890,17 @@ function handleFlexNext() {
 
 // ---- HANDLE COURT 1 ALLOCATION CHANGE FOR PROGRESSIVE GAMES ---- //
 async function handleCourt1AllocationToggle(value) {
-  // const activeEventId = window.cachedUserUniverse.activeEventId;
-  // const activeEvent = window.cachedUserUniverse.events.find(e => String(e.EventID) === String(activeEventId));
+  const activeEventId = window.cachedUserUniverse.activeEventId;
+  const activeEvent = window.cachedUserUniverse.events.find(e => String(e.EventID) === String(activeEventId));
+
+  if (!activeEvent) return;
 
   document.querySelectorAll('#gd-round1-allocation-toggle .scoring-option').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.value === value);
   });
+
+  // 2. Cache
+  activeEvent.Court1Allocation = value;
 
   // window.gdAllPlayersPresentValue = value;
   // activeEvent.AllPlayersPresent = value;
@@ -913,6 +918,6 @@ async function handleCourt1AllocationToggle(value) {
   //     return window.updatePlayerExcludeInFirestore(p.PlayerID, 'No');
   //   }));
 
-    console.log(`Value changed for court 1 allocation.`);
+    console.log("Value changed for court 1 allocation:", value);
   // }
 }
