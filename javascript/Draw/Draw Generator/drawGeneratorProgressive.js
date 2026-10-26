@@ -57,7 +57,7 @@ function bestBalancedPairing(fourPlayers) {
 }
 
 function buildProgressiveRound1(activePlayers, courtsCount, eventId, drawVersion, userEmail, progressiveCourt1Allocate) {
-  console.log('Court alloction method is ',progressiveCourt1Allocate);
+  console.log('Court allocation method is ',progressiveCourt1Allocate);
   // Sort ascending — lowest DUPR first, since top court (Court 1) gets the LOWEST DUPR players
   const sortedAsc = [...activePlayers].sort((a, b) => (parseFloat(a.DUPR) || 0) - (parseFloat(b.DUPR) || 0));
 
