@@ -900,25 +900,9 @@ async function handleCourt1AllocationToggle(value) {
     btn.classList.toggle('active', btn.dataset.value === value);
   });
 
-  // 2. Cache
+  // --- Update Cache. Note, value is not written to Firestore --- //
   activeEvent.Court1Allocation = value;
+  
+  console.log("Value changed for court 1 allocation:", value);
 
-  // window.gdAllPlayersPresentValue = value;
-  // activeEvent.AllPlayersPresent = value;
-  // await window.updateEventFieldInFirestore(activeEventId, 'AllPlayersPresent', value);
-
-  // Overriding TO Yes clears every player's playerExclude back to No
-  // if (value === 'Yes') {
-  //   const currentPlayerVersion = activeEvent.CurrentPlayerVersion;
-  //   const players = window.cachedUserUniverse.players.filter(
-  //     p => String(p.PlayerVersion) === String(currentPlayerVersion) && p.playerExclude === 'Yes'
-  //   );
-
-  //   await Promise.all(players.map(p => {
-  //     p.playerExclude = 'No';
-  //     return window.updatePlayerExcludeInFirestore(p.PlayerID, 'No');
-  //   }));
-
-    console.log("Value changed for court 1 allocation:", value);
-  // }
 }
