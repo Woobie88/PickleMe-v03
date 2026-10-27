@@ -359,7 +359,7 @@ function renderGenerateDrawTeams(payload, ids = {}) {
   const grouping = gameProfile?.Grouping || 'None';
   const draftSupported = gameProfile?.Draft === 'Yes';
 
-  const groupLabels = { 'Teams': 'Team', 'Pools': 'Pool', 'Divisions': 'Division', 'Pairs': 'Pair', 'Divisional Pairs': 'Pair'};
+  const groupLabels = { 'Teams': 'Team', 'Pools': 'Pool', 'Divisions': 'Division', 'Pairs': 'Pair', 'Divisional Pairs': 'Division'};
   const groupLabel = groupLabels[grouping] || 'Team';
 
   const currentPlayerVersion = activeEvent.CurrentPlayerVersion;
