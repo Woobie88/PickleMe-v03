@@ -391,6 +391,29 @@ const gamesProfile = [
     ScoringDefault: "Points"
   },
   {
+    GameID: "pair-me-up",
+    GameTitle: "Pair Me Up",
+    GamesGroup: "Tiered Groups",
+    Grouping: "Divisional Pairs",
+    Draft: "No",
+    Rounds: "Yes",
+    CycleRounds: "Yes",
+    Lives: "No",
+    DrawWeighting: "No",
+    drawMenuOpt: [{
+      Redivisioning: ["Yes",100],
+      AddMatch: "Yes",
+      PlayerSub: "Yes",
+      PlayerAvailable: "No",
+      ReDraw: "Yes",
+      PlayOffs: "Yes",
+      ResultRefresh: "No",
+      PairingMethod: "No"
+    }],
+    Scoring: ["Points","Wins","None"],
+    ScoringDefault: "Points"
+  },
+  {
     GameID: "pool-fusion",
     GameTitle: "Pool Fusion",
     GamesGroup: "Tiered Groups",
