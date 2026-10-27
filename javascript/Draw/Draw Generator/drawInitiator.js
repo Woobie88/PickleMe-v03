@@ -69,7 +69,8 @@ function renderGenerateDrawDetails(payload) {
   const groupingLabels = {
     'Teams': 'Number Of Teams',
     'Pools': 'Number Of Pools',
-    'Divisions': 'Number Of Divisions'
+    'Divisions': 'Number Of Divisions',
+    'Divisional Pairs': 'Number Of Divisions'
   };
 
   const teamsGroup = document.getElementById('gd-teams-group');
@@ -132,7 +133,7 @@ function updateDetailsNextButtonLabel() {
   const gameProfile = gamesProfile.find(g => g.GameID === activeEvent?.GameID);
 
   const grouping = gameProfile?.Grouping || 'None';
-  const needsTeamsScreen = ['Teams', 'Pools', 'Pairs', 'Divisions'].includes(grouping);
+  const needsTeamsScreen = ['Teams', 'Pools', 'Pairs', 'Divisions', 'Divisional Pairs'].includes(grouping);
 
   const btn = document.getElementById('gd-details-next-btn'); // needs an id on the button — see HTML note below
   if (!btn) return;
@@ -146,7 +147,7 @@ function updateDetailsNextButtonLabel() {
 
 async function ensureTeamsDefaultForGame(activeEventId, gameProfile) {
   const grouping = gameProfile?.Grouping || 'None';
-  const groupingRequiresField = ['Teams', 'Pools', 'Divisions'].includes(grouping);
+  const groupingRequiresField = ['Teams', 'Pools', 'Divisions', 'Divisional Pairs'].includes(grouping);
 
   if (!groupingRequiresField) {
     const activeEvent = window.cachedUserUniverse.events.find(e => String(e.EventID) === String(activeEventId));
@@ -276,7 +277,7 @@ function handleDetailsNext() {
 
   if (grouping === 'Flex') { // NEW
     navigateToScreen('generate-draw-flex');
-  } else if (['Teams', 'Pools', 'Pairs', 'Divisions'].includes(grouping)) {
+  } else if (['Teams', 'Pools', 'Pairs', 'Divisions', 'Divisional Pairs'].includes(grouping)) {
     navigateToScreen('generate-draw-teams');
   } else {
     routeToAvailabilityOrBuild();
@@ -358,7 +359,7 @@ function renderGenerateDrawTeams(payload, ids = {}) {
   const grouping = gameProfile?.Grouping || 'None';
   const draftSupported = gameProfile?.Draft === 'Yes';
 
-  const groupLabels = { 'Teams': 'Team', 'Pools': 'Pool', 'Divisions': 'Division', 'Pairs': 'Pair' };
+  const groupLabels = { 'Teams': 'Team', 'Pools': 'Pool', 'Divisions': 'Division', 'Pairs': 'Pair', 'Divisional Pairs': 'Pair'};
   const groupLabel = groupLabels[grouping] || 'Team';
 
   const currentPlayerVersion = activeEvent.CurrentPlayerVersion;
