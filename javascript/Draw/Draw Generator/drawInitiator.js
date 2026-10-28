@@ -397,13 +397,14 @@ function renderGenerateDrawTeams(payload, ids = {}) {
     const pairs = buildTopBottomPairs(duprSorted);
     pairs.forEach((pair, idx) => { groups[idx] = pair; });
   } else if (grouping === 'Divisional Pairs') {
-    let cursor = 0;
-    playersPerGroup.forEach((count, groupIdx) => {
-      const pairs = buildTopBottomPairs(duprSorted.slice(cursor, cursor + count));
+    const divisions = [];
+    for (d = 0; d < numberOfGroups; d++) {
+      const divPlayers = duprSorted.slice(d + playersPerGroup, (d + 1) * playersPerGroup);
+      const pairs = buildTopBottomPairs(divPlayers);
       pairs.forEach((pair, idx) => { groups[idx] = pair; });
-      cursor += count;
+      
       console.log("The pairs are",pairs);
-    });
+    }
   } else if (draftSupported) {
     const pickOrder = buildDraftPickOrder(numberOfGroups, playersPerGroup);
     pickOrder.forEach((groupIdx, pickIdx) => { groups[groupIdx].push(duprSorted[pickIdx]); });
