@@ -537,7 +537,7 @@ async function commitTeamsAssignment(numberOfGroups, groupsListId = 'gd-teams-gr
 
   try {
     await Promise.all(updates);
-    console.log("Team/Division assignments saved to Firestore.");
+    console.log("Team/Division assignments saved to Firestore.",gameId);
   } catch (err) {
     console.error("Failed to save team assignments:", err);
   }
@@ -660,7 +660,6 @@ async function togglePlayerExclude(playerId, refreshFn) {
 
 function renderGroupsUI(groups, groupLabel, allPlayersForSeedLookup, ids) {
   const { groupsListId, nextBtnId, allPlayersPresentVar } = ids;
-  console.log("The game ID is",gameId);
 
   window.gdGroupAssignment = groups;
 
