@@ -660,6 +660,7 @@ async function togglePlayerExclude(playerId, refreshFn) {
 
 function renderGroupsUI(groups, groupLabel, allPlayersForSeedLookup, ids) {
   const { groupsListId, nextBtnId, allPlayersPresentVar } = ids;
+  console.log("The game ID is",gameId);
 
   window.gdGroupAssignment = groups;
 
