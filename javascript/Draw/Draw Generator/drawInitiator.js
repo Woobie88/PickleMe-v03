@@ -546,7 +546,7 @@ async function commitTeamsAssignment(numberOfGroups, groupsListId = 'gd-teams-gr
 
   try {
     await Promise.all(updates);
-    console.log("Team/Division assignments saved to Firestore.",gameId);
+    console.log("Team/Division assignments saved to Firestore.");
   } catch (err) {
     console.error("Failed to save team assignments:", err);
   }
