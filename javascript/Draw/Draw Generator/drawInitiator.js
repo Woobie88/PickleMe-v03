@@ -400,6 +400,7 @@ function renderGenerateDrawTeams(payload, ids = {}) {
     const divisions = [];
     for (d = 0; d < numberOfGroups; d++) {
       const divPlayers = duprSorted.slice(d + playersPerGroup.length, (d + 1) * playersPerGroup.length);
+      console.log("The playersPerGroup is",playersPerGroup.length);
       const pairs = buildTopBottomPairs(divPlayers);
       pairs.forEach((pair, idx) => { groups[idx] = pair; });
       
