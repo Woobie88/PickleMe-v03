@@ -396,6 +396,15 @@ function renderGenerateDrawTeams(payload, ids = {}) {
   if (grouping === 'Pairs') {
     const pairs = buildTopBottomPairs(duprSorted);
     pairs.forEach((pair, idx) => { groups[idx] = pair; });
+  } else if (grouping === 'Divisional Pairs') {
+    let cursor = 0;
+    playersPerGroup.forEach((count, groupIdx) => {
+      const pairs = buildTopBottomPairs(duprSorted);
+      pairs.forEach((pair, idx) => { groups[idx] = pair; });
+      groups[groupIdx] = duprSorted.slice(cursor, cursor + count);
+      cursor += count;
+      console.log("The pairs are",pairs);
+    });
   } else if (draftSupported) {
     const pickOrder = buildDraftPickOrder(numberOfGroups, playersPerGroup);
     pickOrder.forEach((groupIdx, pickIdx) => { groups[groupIdx].push(duprSorted[pickIdx]); });
