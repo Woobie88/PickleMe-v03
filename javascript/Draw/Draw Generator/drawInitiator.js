@@ -399,7 +399,7 @@ function renderGenerateDrawTeams(payload, ids = {}) {
   } else if (grouping === 'Divisional Pairs') {
     const divisions = [];
     for (d = 0; d < numberOfGroups; d++) {
-      const divPlayers = duprSorted.slice(d + playersPerGroup, (d + 1) * playersPerGroup);
+      const divPlayers = duprSorted.slice(d + playersPerGroup.length, (d + 1) * playersPerGroup.length);
       const pairs = buildTopBottomPairs(divPlayers);
       pairs.forEach((pair, idx) => { groups[idx] = pair; });
       
