@@ -399,9 +399,8 @@ function renderGenerateDrawTeams(payload, ids = {}) {
   } else if (grouping === 'Divisional Pairs') {
     let cursor = 0;
     playersPerGroup.forEach((count, groupIdx) => {
-      const pairs = buildTopBottomPairs(duprSorted);
+      const pairs = buildTopBottomPairs(duprSorted.slice(cursor, cursor + count));
       pairs.forEach((pair, idx) => { groups[idx] = pair; });
-      groups[groupIdx] = duprSorted.slice(cursor, cursor + count);
       cursor += count;
       console.log("The pairs are",pairs);
     });
