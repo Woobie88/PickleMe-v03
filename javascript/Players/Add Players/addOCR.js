@@ -277,7 +277,8 @@ async function commitOpenSportsImport() {
       RandomNumber: Math.random(),
       Team: null,
       playerExclude: 'No',
-      byeOrder: null
+      byeOrder: null,
+      Team2: null
     };
   });
 

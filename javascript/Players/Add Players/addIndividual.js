@@ -78,7 +78,8 @@ async function commitIndividualAdd() {
     RandomNumber: Math.random(),
     Team: null,
     playerExclude: 'No',
-    byeOrder: null
+    byeOrder: null,
+    Team2: null
   };
 
   try {
