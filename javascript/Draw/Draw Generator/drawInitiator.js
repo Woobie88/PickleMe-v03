@@ -552,7 +552,7 @@ async function commitTeamsAssignment(numberOfGroups, groupsListId = 'gd-teams-gr
   }
 }
 
-// ---------- BUTTON CALL: kicks off draw generation (defined in drawGenerator.js) ----------
+// ---------- BUTTON CALL: kicks off draw generation (defined in drawGenerator.js) -----------
 async function handleBuildDraw() {
   const numberOfRounds = parseInt(document.getElementById('gd-rounds-hidden').value) || 1;
 
