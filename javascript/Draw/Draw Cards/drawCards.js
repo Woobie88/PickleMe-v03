@@ -18,7 +18,7 @@
 // ---------- ALL MATCHES TAB ----------
 
 async function renderDrawCards(payload) {
-  console.log('The calling app is',window.currentAppName);
+  
   showLoadingState('active-draw-list', 'Loading draw...');
 
   const container = document.getElementById('active-draw-list');
@@ -595,6 +595,7 @@ async function renderCurrentRoundView(payload) {
 }
 
 async function goToNextRound() {
+  console.log('The calling app is',window.currentAppName);
   const activeEventId = window.cachedUserUniverse.activeEventId;
   const activeEvent = window.cachedUserUniverse.events.find(e => String(e.EventID) === String(activeEventId));
 
