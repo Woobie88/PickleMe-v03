@@ -18,7 +18,7 @@
 // ---------- ALL MATCHES TAB ----------
 
 async function renderDrawCards(payload) {
-  console.log('Calling renderDrawCards');
+  console.log('The calling app is',appName);
   showLoadingState('active-draw-list', 'Loading draw...');
 
   const container = document.getElementById('active-draw-list');
@@ -459,8 +459,6 @@ function toggleFabMenu() {
   const plusIcon = document.getElementById('fab-plus-icon');
   const xIcon = document.getElementById('fab-x-icon');
   const label = document.getElementById('fab-main-label');
-
-  console.log("label element found:", label); // ADD THIS temporarily
 
   const isOpen = menu.classList.toggle('open');
 

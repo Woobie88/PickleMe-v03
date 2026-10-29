@@ -249,7 +249,6 @@ async function handleLogOut() {
 window.addEventListener("DOMContentLoaded", () => {
   // Listener for app calling
   const appName = document.body.dataset.page;
-  console.log('The calling app is',appName);
   // 
   window.onAuthStateChangedListener(async (user) => {
     if (user) {
