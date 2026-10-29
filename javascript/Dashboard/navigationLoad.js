@@ -248,7 +248,7 @@ async function handleLogOut() {
 // Global initialization event listener running on app startup
 window.addEventListener("DOMContentLoaded", () => {
   // Listener for app calling
-  const appName = document.body.dataset.page;
+  window.currentAppName = document.body.dataset.page;
   // 
   window.onAuthStateChangedListener(async (user) => {
     if (user) {

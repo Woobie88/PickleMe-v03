@@ -18,7 +18,7 @@
 // ---------- ALL MATCHES TAB ----------
 
 async function renderDrawCards(payload) {
-  console.log('The calling app is',appName);
+  console.log('The calling app is',window.currentAppName);
   showLoadingState('active-draw-list', 'Loading draw...');
 
   const container = document.getElementById('active-draw-list');
