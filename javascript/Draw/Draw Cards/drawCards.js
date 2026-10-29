@@ -729,7 +729,7 @@ async function goToNextRound() {
   window.currentRoundNumber++;
   updateLocalCurrentRoundCache();
   renderCurrentRoundView(window.cachedUserUniverse);
-  if (window.currentAppName !== "pickleMe") return;
+  if (window.currentAppName !== "pickleMe") return;             // Added so that ONLY pickleMe writes current round to Firestore
   persistCurrentRound();
 }
 
@@ -738,7 +738,7 @@ function goToPreviousRound() {
     window.currentRoundNumber--;
     updateLocalCurrentRoundCache();
     renderCurrentRoundView(window.cachedUserUniverse);
-    if (window.currentAppName !== "pickleMe") return;
+    if (window.currentAppName !== "pickleMe") return;           // Added so that ONLY pickleMe writes current round to Firestore
     persistCurrentRound();
   }
 }
