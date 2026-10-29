@@ -247,6 +247,10 @@ async function handleLogOut() {
 
 // Global initialization event listener running on app startup
 window.addEventListener("DOMContentLoaded", () => {
+  // Listener for app calling
+  const appName = document.body.dataset.page;
+  console.log('The calling app is',appName);
+  // 
   window.onAuthStateChangedListener(async (user) => {
     if (user) {
       // Logged in — fetch profile, store globally, then load the app as normal
