@@ -729,7 +729,7 @@ async function goToNextRound() {
   window.currentRoundNumber++;
   updateLocalCurrentRoundCache();
   renderCurrentRoundView(window.cachedUserUniverse);
-  if (window.CurrentAppName !== "pickleMe") return;
+  if (window.currentAppName !== "pickleMe") return;
   persistCurrentRound();
 }
 
@@ -738,7 +738,7 @@ function goToPreviousRound() {
     window.currentRoundNumber--;
     updateLocalCurrentRoundCache();
     renderCurrentRoundView(window.cachedUserUniverse);
-    if (window.CurrentAppName !== "pickleMe") return;
+    if (window.currentAppName !== "pickleMe") return;
     persistCurrentRound();
   }
 }
