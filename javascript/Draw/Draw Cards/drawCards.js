@@ -595,7 +595,6 @@ async function renderCurrentRoundView(payload) {
 }
 
 async function goToNextRound() {
-  console.log('The calling app is',window.currentAppName);
   const activeEventId = window.cachedUserUniverse.activeEventId;
   const activeEvent = window.cachedUserUniverse.events.find(e => String(e.EventID) === String(activeEventId));
 
