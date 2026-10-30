@@ -17,9 +17,9 @@
 
 // ---------- ALL MATCHES TAB ----------
 
-async function renderDrawCards(payload) {
-  
-  showLoadingState('active-draw-list', 'Loading draw...');
+async function renderDrawCards(payload, { silent = false } = {}) {
+  // silent = true is used by the live Firestore listener: no loading flash, no re-fetch
+  if (!silent) showLoadingState('active-draw-list', 'Loading draw...');
 
   const container = document.getElementById('active-draw-list');
   const placeholder = document.getElementById('placeholder-view-draw');
@@ -37,7 +37,9 @@ async function renderDrawCards(payload) {
   const currentDrawVersion = activeEvent.CurrentDrawVersion;
   const currentPlayerVersion = activeEvent.CurrentPlayerVersion;
 
-  let matches = await window.fetchDrawFromFirestore(activeEventId, currentDrawVersion);
+  let matches = silent
+    ? (window.cachedUserUniverse.draw || [])
+    : await window.fetchDrawFromFirestore(activeEventId, currentDrawVersion);
   window.cachedUserUniverse.draw = matches;
 
   // For Progressive games, only show matches with a result, plus the current round
@@ -379,26 +381,49 @@ function setMatchWinner(team) {
   refreshStandingsIfVisible();
 }
 
-function saveMatchWinLoss(match) {
-  window.updateMatchWinLossInFirestore(match.MatchID, match.Team1WinLoss, match.Team2WinLoss)
-    .then(() => console.log("Win/Loss saved to Firestore."))
-    .catch(err => console.error("Win/Loss save failed:", err));
+// ---------- SCORE SAVING (per-match debounce + live-sync protection) ----------
+// window.pendingMatchSaves is declared in eventCards.js. While a MatchID is in it,
+// the live Firestore listener keeps our local copy instead of overwriting it.
+
+const scoreSaveTimers = {};
+const winLossSaveTimers = {};
+
+function clearPendingIfIdle(matchId) {
+  if (!scoreSaveTimers[matchId] && !winLossSaveTimers[matchId]) {
+    window.pendingMatchSaves.delete(matchId);
+  }
 }
 
-let scoreSaveTimer = null;
 function scheduleScoreSave(match) {
-  clearTimeout(scoreSaveTimer);
-  scoreSaveTimer = setTimeout(() => saveMatchScore(match), 1000);
+  const id = match.MatchID;
+  clearTimeout(scoreSaveTimers[id]);
+  window.pendingMatchSaves.add(id);
+  scoreSaveTimers[id] = setTimeout(() => saveMatchScore(match), 1000);
 }
 
 function saveMatchScore(match) {
-  window.updateMatchScoreInFirestore(match.MatchID, match.Team1Score, match.Team2Score, match.Team1WinLoss, match.Team2WinLoss)
-    .then(() => {
-      console.log("Score saved successfully to Firestore.");
-    })
-    .catch(err => {
-      console.error("Score save failed:", err);
-    });
+  const id = match.MatchID;
+  scoreSaveTimers[id] = null;
+  window.updateMatchScoreInFirestore(id, match.Team1Score, match.Team2Score, match.Team1WinLoss, match.Team2WinLoss)
+    .then(() => console.log("Score saved successfully to Firestore."))
+    .catch(err => console.error("Score save failed:", err))
+    .finally(() => clearPendingIfIdle(id));
+}
+
+function scheduleWinLossSave(match) {
+  const id = match.MatchID;
+  clearTimeout(winLossSaveTimers[id]);
+  window.pendingMatchSaves.add(id);
+  winLossSaveTimers[id] = setTimeout(() => saveMatchWinLoss(match), 600);
+}
+
+function saveMatchWinLoss(match) {
+  const id = match.MatchID;
+  winLossSaveTimers[id] = null;
+  window.updateMatchWinLossInFirestore(id, match.Team1WinLoss, match.Team2WinLoss)
+    .then(() => console.log("Win/Loss saved to Firestore."))
+    .catch(err => console.error("Win/Loss save failed:", err))
+    .finally(() => clearPendingIfIdle(id));
 }
 
 // --- Swipe between courts in the same round ---
@@ -521,8 +546,8 @@ function switchDrawTab(tabId) {
 
 // ---------- CURRENT ROUND TAB ----------
 
-async function renderCurrentRoundView(payload) {
-  showLoadingState('current-round-list', 'Loading current round...');
+async function renderCurrentRoundView(payload, { silent = false } = {}) {
+  if (!silent) showLoadingState('current-round-list', 'Loading current round...');
   const activeEventId = payload.activeEventId;
   const activeEvent = (payload.events || []).find(
     e => String(e.EventID || e.eventId) === String(activeEventId)
@@ -1033,12 +1058,6 @@ function refreshStandingsIfVisible() {
   if (standingsView && standingsView.classList.contains('active')) {
     renderStandingsView(window.cachedUserUniverse);
   }
-}
-
-let winLossSaveTimer = null;
-function scheduleWinLossSave(match) {
-  clearTimeout(winLossSaveTimer);
-  winLossSaveTimer = setTimeout(() => saveMatchWinLoss(match), 600);
 }
 
 // FAB menu visibility

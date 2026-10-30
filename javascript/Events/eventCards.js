@@ -607,8 +607,42 @@ function preFetchUserUniverseData() {
  * event changes (via refreshAllEventScopedViews), tearing down any
  * previous listener first so only one is ever running at a time.
  */
+// function startDrawListener() {
+//   // Stop any previously running listener before starting a new one
+//   if (window.currentDrawUnsubscribe) {
+//     window.currentDrawUnsubscribe();
+//     window.currentDrawUnsubscribe = null;
+//   }
+
+//   const activeEventId = window.cachedUserUniverse.activeEventId;
+//   const activeEvent = window.cachedUserUniverse.events.find(
+//     e => String(e.EventID || e.eventId) === String(activeEventId)
+//   );
+//   if (!activeEvent) return;
+
+//   const drawVersion = activeEvent.CurrentDrawVersion;
+
+//   window.currentDrawUnsubscribe = window.listenToDrawChanges(activeEventId, drawVersion, (matches) => {
+//     console.log("Live draw update received:", matches.length, "matches");
+//     window.cachedUserUniverse.draw = matches;
+
+//     if (document.getElementById('view-current-round')?.classList.contains('active')) {
+//       renderCurrentRoundView(window.cachedUserUniverse);
+//     }
+//     if (document.getElementById('view-standings')?.classList.contains('active')) {
+//       renderStandingsView(window.cachedUserUniverse);
+//     }
+//     if (document.getElementById('screen-draw')?.style.display === 'block') {
+//       renderDrawCards(window.cachedUserUniverse);
+//     }
+//   });
+// }
+
+// ---- NEW CODE TO HAVE DRAW UPDATE ON FIRESTORE CHANGES FOR DRAW SCREENS ---- //
+// MatchIDs with a local edit that hasn't been written yet (or is in flight)
+window.pendingMatchSaves = new Set();
+
 function startDrawListener() {
-  // Stop any previously running listener before starting a new one
   if (window.currentDrawUnsubscribe) {
     window.currentDrawUnsubscribe();
     window.currentDrawUnsubscribe = null;
@@ -620,20 +654,56 @@ function startDrawListener() {
   );
   if (!activeEvent) return;
 
-  const drawVersion = activeEvent.CurrentDrawVersion;
+  window.currentDrawUnsubscribe = window.listenToDrawChanges(
+    activeEventId,
+    activeEvent.CurrentDrawVersion,
+    applyLiveDrawUpdate
+  );
+}
 
-  window.currentDrawUnsubscribe = window.listenToDrawChanges(activeEventId, drawVersion, (matches) => {
-    console.log("Live draw update received:", matches.length, "matches");
-    window.cachedUserUniverse.draw = matches;
+function applyLiveDrawUpdate(incoming) {
+  const cache = window.cachedUserUniverse;
+  const localById = new Map((cache.draw || []).map(m => [m.MatchID, m]));
 
+  // Keep our local copy of any match we're mid-edit on; take server data for the rest
+  cache.draw = incoming.map(remote =>
+    window.pendingMatchSaves.has(remote.MatchID) && localById.has(remote.MatchID)
+      ? localById.get(remote.MatchID)
+      : remote
+  );
+
+  // If the score-entry screen is open, re-point it at the fresh objects
+  const matchScreenOpen = document.getElementById('screen-match-detail')?.style.display === 'block';
+  if (matchScreenOpen && window.currentRoundMatches?.length) {
+    const currentId = window.currentRoundMatches[window.currentMatchIndex]?.MatchID;
+    const byId = new Map(cache.draw.map(m => [m.MatchID, m]));
+
+    window.currentRoundMatches = window.currentRoundMatches
+      .map(m => byId.get(m.MatchID))
+      .filter(Boolean);
+    const newIndex = window.currentRoundMatches.findIndex(m => m.MatchID === currentId);
+
+    if (newIndex === -1) {            // this match was deleted/replaced by someone else
+      exitToCurrentRoundScreen();
+      return;
+    }
+    window.currentMatchIndex = newIndex;
+    renderMatchScoreView();
+  }
+
+  // Draw screen: only re-render what's actually visible, without loading flashes
+  if (document.getElementById('screen-draw')?.style.display === 'block') {
+    renderDrawCards(cache, { silent: true });
     if (document.getElementById('view-current-round')?.classList.contains('active')) {
-      renderCurrentRoundView(window.cachedUserUniverse);
+      renderCurrentRoundView(cache, { silent: true });
     }
     if (document.getElementById('view-standings')?.classList.contains('active')) {
-      renderStandingsView(window.cachedUserUniverse);
+      renderStandingsView(cache);
     }
-    if (document.getElementById('screen-draw')?.style.display === 'block') {
-      renderDrawCards(window.cachedUserUniverse);
-    }
-  });
+  }
+
+  // Ladder screen (renderLadderCards must read cache.draw, not re-fetch)
+  if (document.getElementById('screen-ladder')?.style.display === 'block') {
+    renderLadderCards(cache);
+  }
 }
