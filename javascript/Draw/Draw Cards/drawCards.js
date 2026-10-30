@@ -219,12 +219,19 @@ function renderScoringToggle(currentValue) {
   const container = document.getElementById('scoring-toggle');
   if (!container) return;
 
+  const readOnly = window.currentAppName !== "pickleMe";
+
   container.innerHTML = options.map(opt =>
-    `<button class="scoring-option ${opt === currentValue ? 'active' : ''}" data-value="${opt}" onclick="setScoringMode('${opt}')">${opt}</button>`
+    `<button class="scoring-option ${opt === currentValue ? 'active' : ''}"
+            data-value="${opt}"
+            ${readOnly ? 'disabled' : ''}
+            style="${readOnly ? 'opacity: 0.4; cursor: not-allowed;' : ''}"
+            onclick="setScoringMode('${opt}')">${opt}</button>`
   ).join('');
 }
 
 function setScoringMode(newValue) {
+  if (window.currentAppName !== "pickleMe") return;
   const activeEventId = window.cachedUserUniverse.activeEventId;
   const activeEvent = window.cachedUserUniverse.events.find(
     e => String(e.EventID || e.eventId) === String(activeEventId)
