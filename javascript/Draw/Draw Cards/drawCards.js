@@ -15,6 +15,15 @@
  * ============================================================
  */
 
+// ---------- LIVE-SYNC HELPER ----------
+// Keeps our local copy of any match with an unsaved/in-flight edit, takes server data for the rest.
+function mergeDrawWithPending(incoming) {
+  const pending = window.pendingMatchSaves;
+  if (!pending || pending.size === 0) return incoming;
+  const localById = new Map((window.cachedUserUniverse.draw || []).map(m => [m.MatchID, m]));
+  return incoming.map(m => (pending.has(m.MatchID) && localById.has(m.MatchID)) ? localById.get(m.MatchID) : m);
+}
+
 // ---------- ALL MATCHES TAB ----------
 
 async function renderDrawCards(payload, { silent = false } = {}) {
@@ -39,7 +48,7 @@ async function renderDrawCards(payload, { silent = false } = {}) {
 
   let matches = silent
     ? (window.cachedUserUniverse.draw || [])
-    : await window.fetchDrawFromFirestore(activeEventId, currentDrawVersion);
+    : mergeDrawWithPending(await window.fetchDrawFromFirestore(activeEventId, currentDrawVersion));
   window.cachedUserUniverse.draw = matches;
 
   // For Progressive games, only show matches with a result, plus the current round
@@ -542,6 +551,17 @@ function switchDrawTab(tabId) {
 
   document.getElementById('tab-' + tabId).classList.add('active');
   document.getElementById('view-' + tabId).classList.add('active');
+
+  // Live updates only re-render the tab that's visible at the time, so refresh
+  // the newly opened tab from the cache (no loading flash, no re-fetch).
+  const cache = window.cachedUserUniverse;
+  if (tabId === 'standings') {
+    renderStandingsView(cache);
+  } else if (tabId === 'current-round') {
+    renderCurrentRoundView(cache, { silent: true });
+  } else {
+    renderDrawCards(cache, { silent: true });
+  }
 }
 
 // ---------- CURRENT ROUND TAB ----------

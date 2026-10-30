@@ -65,7 +65,7 @@ function navigateToScreen(screenId) {
     'generate-draw': 'nav-dashboard',
     draw: 'nav-draw',
     'match-detail': 'nav-draw',
-    ladder: 'nav-ladder',
+    // ladder: 'nav-ladder',
     analytics: 'nav-analytics',
     profile: 'nav-profile'
   };
@@ -101,9 +101,9 @@ function navigateToScreen(screenId) {
     case 'player-substitution':
       renderPlayerSubstitutionScreen(window.cachedUserUniverse);
       break;
-    case 'ladder':
-      renderLadderCards(payload);
-      break;
+    // case 'ladder':
+    //   renderLadderCards(payload);
+    //   break;
     case 'analytics':
       window.analyticsScreenIndex = 0; // NEW — always start on Unique Partners/Opponents
       renderAnalyticsCards(payload);

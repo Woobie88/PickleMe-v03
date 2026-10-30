@@ -703,7 +703,7 @@ function applyLiveDrawUpdate(incoming) {
   }
 
   // Ladder screen (renderLadderCards must read cache.draw, not re-fetch)
-  if (document.getElementById('screen-ladder')?.style.display === 'block') {
-    renderLadderCards(cache);
-  }
+  // if (document.getElementById('screen-ladder')?.style.display === 'block') {
+  //   renderLadderCards(cache);
+  // }
 }
