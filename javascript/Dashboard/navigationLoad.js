@@ -243,6 +243,39 @@ async function handleLogOut() {
   navigateToScreen('login');
 }
 
+// ---------- HEADER DROPDOWN MENU ----------
+
+function toggleAppMenu(event) {
+  event.stopPropagation();
+  const dropdown = document.getElementById('app-menu-dropdown');
+  const isOpen = dropdown.classList.toggle('open');
+  document.getElementById('app-menu-btn').setAttribute('aria-expanded', String(isOpen));
+}
+
+function closeAppMenu() {
+  document.getElementById('app-menu-dropdown')?.classList.remove('open');
+  document.getElementById('app-menu-btn')?.setAttribute('aria-expanded', 'false');
+}
+
+function handleAppMenuAction(action) {
+  closeAppMenu();
+  switch (action) {
+    case 'events':  navigateToScreen('events');  break;
+    case 'games':   navigateToScreen('games');   break;
+    case 'dupr':    navigateToScreen('dupr');    break;
+    case 'profile': navigateToScreen('profile'); break;
+    case 'logout':  handleLogOut();              break;
+  }
+}
+
+// Close when tapping anywhere else, or pressing Escape
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#app-menu')) closeAppMenu();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeAppMenu();
+});
+
 // ---------- APP STARTUP ----------
 
 // Global initialization event listener running on app startup

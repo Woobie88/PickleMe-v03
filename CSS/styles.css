@@ -166,6 +166,70 @@ body {
   display: block;
 }
 
+/* HEADER DROPDOWN MENU */
+.app-menu {
+  margin-left: auto;          /* pushes the menu to the right edge of the header */
+  position: relative;
+}
+
+.app-menu-btn {
+  background: none;
+  border: none;
+  color: var(--text-main);
+  padding: 8px;
+  margin-right: -8px;         /* lines the icon up with the header's 20px padding */
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.app-menu-btn:active,
+.app-menu-btn[aria-expanded="true"] {
+  background-color: var(--card-bg);
+  color: var(--accent);
+}
+
+.app-menu-dropdown {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  min-width: 190px;
+  background-color: var(--card-bg);
+  color: var(--text-main);
+  border: 1px solid var(--nav-border);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  padding: 6px;
+}
+
+.app-menu-dropdown.open {
+  display: block;
+}
+
+.app-menu-dropdown button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  font-size: 0.95rem;
+  padding: 12px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.app-menu-dropdown button:active {
+  background-color: var(--nav-bg);
+}
+
+.app-menu-dropdown button.danger {
+  color: #ef4444;
+}
+
 .welcome-banner {
   margin-bottom: 20px;
 }
