@@ -602,50 +602,28 @@ function preFetchUserUniverseData() {
 }
 
 /**
- * Starts a real-time Firestore listener scoped to the current active
- * event's draw. Called on app startup and again every time the active
- * event changes (via refreshAllEventScopedViews), tearing down any
- * previous listener first so only one is ever running at a time.
+ * Starts the real-time Firestore listeners for the current active event:
+ *   1. the event's draw (match scores)
+ *   2. the event document itself — but ONLY for the settings in SYNCED_EVENT_FIELDS
+ * Called on app startup and every time the active event changes, tearing down
+ * any previous listeners first so only one of each is ever running.
  */
-// function startDrawListener() {
-//   // Stop any previously running listener before starting a new one
-//   if (window.currentDrawUnsubscribe) {
-//     window.currentDrawUnsubscribe();
-//     window.currentDrawUnsubscribe = null;
-//   }
 
-//   const activeEventId = window.cachedUserUniverse.activeEventId;
-//   const activeEvent = window.cachedUserUniverse.events.find(
-//     e => String(e.EventID || e.eventId) === String(activeEventId)
-//   );
-//   if (!activeEvent) return;
-
-//   const drawVersion = activeEvent.CurrentDrawVersion;
-
-//   window.currentDrawUnsubscribe = window.listenToDrawChanges(activeEventId, drawVersion, (matches) => {
-//     console.log("Live draw update received:", matches.length, "matches");
-//     window.cachedUserUniverse.draw = matches;
-
-//     if (document.getElementById('view-current-round')?.classList.contains('active')) {
-//       renderCurrentRoundView(window.cachedUserUniverse);
-//     }
-//     if (document.getElementById('view-standings')?.classList.contains('active')) {
-//       renderStandingsView(window.cachedUserUniverse);
-//     }
-//     if (document.getElementById('screen-draw')?.style.display === 'block') {
-//       renderDrawCards(window.cachedUserUniverse);
-//     }
-//   });
-// }
-
-// ---- NEW CODE TO HAVE DRAW UPDATE ON FIRESTORE CHANGES FOR DRAW SCREENS ---- //
 // MatchIDs with a local edit that hasn't been written yet (or is in flight)
 window.pendingMatchSaves = new Set();
+
+// Event fields that stay in sync between users. CurrentRound is deliberately NOT here —
+// each device keeps its own round; only the main PickleMe app writes it to Firestore.
+const SYNCED_EVENT_FIELDS = ['Scoring', 'LadderScoring', 'DrawWeighting', 'PairingMethod'];
 
 function startDrawListener() {
   if (window.currentDrawUnsubscribe) {
     window.currentDrawUnsubscribe();
     window.currentDrawUnsubscribe = null;
+  }
+  if (window.currentEventUnsubscribe) {
+    window.currentEventUnsubscribe();
+    window.currentEventUnsubscribe = null;
   }
 
   const activeEventId = window.cachedUserUniverse.activeEventId;
@@ -659,6 +637,42 @@ function startDrawListener() {
     activeEvent.CurrentDrawVersion,
     applyLiveDrawUpdate
   );
+  window.currentEventUnsubscribe = window.listenToEventChanges(activeEventId, applyLiveEventUpdate);
+}
+
+function applyLiveEventUpdate(remoteEvent) {
+  const cache = window.cachedUserUniverse;
+  const activeEvent = cache.events.find(
+    e => String(e.EventID || e.eventId) === String(cache.activeEventId)
+  );
+  if (!activeEvent) return;
+
+  // Copy only the synced fields; skip the update entirely if nothing changed
+  // (this also swallows the echo of our own writes).
+  let changed = false;
+  SYNCED_EVENT_FIELDS.forEach(field => {
+    if (remoteEvent[field] !== undefined && activeEvent[field] !== remoteEvent[field]) {
+      activeEvent[field] = remoteEvent[field];
+      changed = true;
+    }
+  });
+  if (!changed) return;
+  console.log("Live event settings update received.");
+
+  // Score-entry screen reads Scoring (Points vs Wins vs None), so redraw it if open
+  if (document.getElementById('screen-match-detail')?.style.display === 'block') {
+    renderMatchScoreView();
+  }
+
+  if (document.getElementById('screen-draw')?.style.display === 'block') {
+    if (document.getElementById('view-current-round')?.classList.contains('active')) {
+      renderCurrentRoundView(cache, { silent: true });   // also redraws the Scoring toggle
+    }
+    if (document.getElementById('view-standings')?.classList.contains('active')) {
+      renderStandingsView(cache);                        // also redraws the Ladder toggle
+    }
+    renderDrawCards(cache, { silent: true });
+  }
 }
 
 function applyLiveDrawUpdate(incoming) {
@@ -691,7 +705,7 @@ function applyLiveDrawUpdate(incoming) {
     renderMatchScoreView();
   }
 
-  // Draw screen: only re-render what's actually visible, without loading flashes
+  // Draw screen: only re-render what's visible, without loading flashes
   if (document.getElementById('screen-draw')?.style.display === 'block') {
     renderDrawCards(cache, { silent: true });
     if (document.getElementById('view-current-round')?.classList.contains('active')) {
@@ -701,9 +715,4 @@ function applyLiveDrawUpdate(incoming) {
       renderStandingsView(cache);
     }
   }
-
-  // Ladder screen (renderLadderCards must read cache.draw, not re-fetch)
-  // if (document.getElementById('screen-ladder')?.style.display === 'block') {
-  //   renderLadderCards(cache);
-  // }
 }

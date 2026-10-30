@@ -233,18 +233,23 @@ function renderLadderScoringToggle(activeEvent) {
 
   document.querySelectorAll('#ladder-scoring-toggle .scoring-option').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.value === currentValue);
-    btn.disabled = !!forcedValue; // lock all buttons when forced
-    btn.style.opacity = forcedValue ? '0.4' : '1';
+    const lockedForApp = window.currentAppName !== "pickleMe"; // only the main app may change it
+    btn.disabled = !!forcedValue || lockedForApp;
+    btn.style.opacity = (forcedValue || lockedForApp) ? '0.4' : '1';
+    btn.style.cursor = (forcedValue || lockedForApp) ? 'not-allowed' : '';
   });
 
   // If the stored value doesn't match what's forced, correct it in Firestore
   if (forcedValue && activeEvent.LadderScoring !== forcedValue) {
     activeEvent.LadderScoring = forcedValue;
-    window.updateLadderScoringInFirestore(activeEvent.EventID, forcedValue);
+    if (window.currentAppName === "pickleMe") {   // other apps never write event settings
+      window.updateLadderScoringInFirestore(activeEvent.EventID, forcedValue);
+    }
   }
 }
 
 function setLadderScoringMode(newValue) {
+  if (window.currentAppName !== "pickleMe") return;
   const activeEventId = window.cachedUserUniverse.activeEventId;
   const activeEvent = window.cachedUserUniverse.events.find(
     e => String(e.EventID || e.eventId) === String(activeEventId)

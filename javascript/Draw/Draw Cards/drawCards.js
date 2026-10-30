@@ -219,14 +219,15 @@ function renderScoringToggle(currentValue) {
   const container = document.getElementById('scoring-toggle');
   if (!container) return;
 
+  // Only the main PickleMe app may change scoring; other apps (e.g. PickleMe Lite) see it read-only
   const readOnly = window.currentAppName !== "pickleMe";
 
   container.innerHTML = options.map(opt =>
     `<button class="scoring-option ${opt === currentValue ? 'active' : ''}"
-            data-value="${opt}"
-            ${readOnly ? 'disabled' : ''}
-            style="${readOnly ? 'opacity: 0.4; cursor: not-allowed;' : ''}"
-            onclick="setScoringMode('${opt}')">${opt}</button>`
+             data-value="${opt}"
+             ${readOnly ? 'disabled' : ''}
+             style="${readOnly ? 'opacity: 0.4; cursor: not-allowed;' : ''}"
+             onclick="setScoringMode('${opt}')">${opt}</button>`
   ).join('');
 }
 

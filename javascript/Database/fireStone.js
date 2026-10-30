@@ -138,6 +138,19 @@ window.listenToDrawChanges = function(eventId, drawVersion, onChangeCallback) {
   return unsubscribe;
 };
 
+window.listenToEventChanges = function(eventId, onChangeCallback) {
+  const db = window.db;
+  const eventDocRef = doc(db, "events", String(eventId));
+
+  const unsubscribe = onSnapshot(eventDocRef, (snap) => {
+    if (snap.exists()) onChangeCallback(snap.data());
+  }, (error) => {
+    console.error("Event listener error:", error);
+  });
+
+  return unsubscribe;
+};
+
 window.updateActiveGameInFirestore = async function(eventId, gameId) {
   const db = window.db;
   const eventDocRef = doc(db, "events", String(eventId));
