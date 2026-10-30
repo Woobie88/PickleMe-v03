@@ -284,7 +284,7 @@ async function commitOpenSportsImport() {
 
   try {
     await window.saveGeneratedPlayersToFirestore(newPlayers);
-    window.cachedUserUniverse.players = [...(payload.players || []), ...newPlayers];
+    addPlayersToCache(newPlayers);
 
     alert(`Imported ${newPlayers.length} player(s) successfully.`);
     window.osScannedNames = [];
@@ -295,6 +295,13 @@ async function commitOpenSportsImport() {
     console.error("Failed to import players:", err);
     alert("Import failed — check the console for details.");
   }
+}
+
+// Adds players to the cache without duplicating any the live listener already delivered
+function addPlayersToCache(newPlayers) {
+  const existing = window.cachedUserUniverse.players || [];
+  const ids = new Set(existing.map(p => p.PlayerID));
+  window.cachedUserUniverse.players = [...existing, ...newPlayers.filter(p => !ids.has(p.PlayerID))];
 }
 
 // Utility for building PlayerID

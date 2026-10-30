@@ -289,11 +289,14 @@ async function commitCheckInOrder() {
     updates.push({ playerId: pid, byeOrder: null });
   });
 
+  updates.forEach(u => beginPlayerWrite(u.playerId));
   try {
     await Promise.all(updates.map(u => window.updatePlayerByeOrderInFirestore(u.playerId, u.byeOrder)));
     console.log("Bye order saved to Firestore.");
   } catch (err) {
     console.error("Failed to save bye order:", err);
+  } finally {
+    updates.forEach(u => endPlayerWrite(u.playerId));
   }
 
   renderCheckInView(payload); // re-render to show updated sequence numbers
@@ -301,7 +304,7 @@ async function commitCheckInOrder() {
 
 // ---------- PLAYERS SCREEN (roster list) ----------
 
-async function renderPlayerCards(payload) {
+async function renderPlayerCards(payload, { silent = false } = {}) {
   console.log('Calling renderPlayerCards');
 
   const activeEvent = (payload.events || []).find(
@@ -316,7 +319,10 @@ async function renderPlayerCards(payload) {
   const currentVersion = activeEvent.CurrentPlayerVersion;
   const duprLimit = parseFloat(activeEvent["DUPR Limit"]) || 0;
 
-  const players = await window.fetchPlayersFromFirestore(payload.activeEventId, currentVersion);
+  // silent = called from the live listener: use the cache, don't re-fetch
+  const players = silent
+    ? (window.cachedUserUniverse.players || [])
+    : await window.fetchPlayersFromFirestore(payload.activeEventId, currentVersion);
   window.cachedUserUniverse.players = players;
 
   function getPlayerIssue(player) {
@@ -546,9 +552,12 @@ function handlePlayerUnavailableToggle(value) {
   const messageEl = document.getElementById('player-unavailable-message');
   if (messageEl) messageEl.style.display = value === 'Yes' ? '' : 'none';
 
-  window.updatePlayerFieldInFirestore(window.currentPlayerDetailId, 'playerExclude', value)
+  const playerId = window.currentPlayerDetailId;
+  beginPlayerWrite(playerId);
+  window.updatePlayerFieldInFirestore(playerId, 'playerExclude', value)
     .then(() => console.log("playerExclude saved:", value))
-    .catch(err => console.error("Failed to save playerExclude:", err));
+    .catch(err => console.error("Failed to save playerExclude:", err))
+    .finally(() => endPlayerWrite(playerId));
 }
 
 // Player match summary
@@ -775,16 +784,26 @@ async function handleDeletePlayer() {
   }
 }
 
-let playerFieldSaveTimer = null;
+// One debounce timer per player+field, so editing Name then DUPR quickly doesn't cancel the Name save
+const playerFieldSaveTimers = {};
 function handlePlayerFieldEdit(field, value) {
-  const player = window.cachedUserUniverse.players.find(p => p.PlayerID === window.currentPlayerDetailId);
+  const playerId = window.currentPlayerDetailId;
+  const player = window.cachedUserUniverse.players.find(p => p.PlayerID === playerId);
   if (player) player[field] = value;
 
-  clearTimeout(playerFieldSaveTimer);
-  playerFieldSaveTimer = setTimeout(() => {
-    window.updatePlayerFieldInFirestore(window.currentPlayerDetailId, field, value)
+  const key = playerId + ':' + field;
+  if (playerFieldSaveTimers[key]) {
+    clearTimeout(playerFieldSaveTimers[key]);   // already counted as pending
+  } else {
+    beginPlayerWrite(playerId);
+  }
+
+  playerFieldSaveTimers[key] = setTimeout(() => {
+    delete playerFieldSaveTimers[key];
+    window.updatePlayerFieldInFirestore(playerId, field, value)
       .then(() => console.log(`Saved ${field}`))
-      .catch(err => console.error(`Failed to save ${field}:`, err));
+      .catch(err => console.error(`Failed to save ${field}:`, err))
+      .finally(() => endPlayerWrite(playerId));
   }, 600);
 }
 

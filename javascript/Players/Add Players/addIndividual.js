@@ -84,7 +84,7 @@ async function commitIndividualAdd() {
 
   try {
     await window.saveGeneratedPlayersToFirestore([newPlayer]);
-    window.cachedUserUniverse.players = [...(payload.players || []), newPlayer];
+    addPlayersToCache([newPlayer]);
 
     alert(`${name} added successfully.`);
     navigateToScreen('players');

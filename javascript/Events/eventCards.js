@@ -625,6 +625,10 @@ function startDrawListener() {
     window.currentEventUnsubscribe();
     window.currentEventUnsubscribe = null;
   }
+  if (window.currentPlayerUnsubscribe) {
+    window.currentPlayerUnsubscribe();
+    window.currentPlayerUnsubscribe = null;
+  }
 
   const activeEventId = window.cachedUserUniverse.activeEventId;
   const activeEvent = window.cachedUserUniverse.events.find(
@@ -638,6 +642,74 @@ function startDrawListener() {
     applyLiveDrawUpdate
   );
   window.currentEventUnsubscribe = window.listenToEventChanges(activeEventId, applyLiveEventUpdate);
+  window.currentPlayerUnsubscribe = window.listenToPlayerChanges(
+    activeEventId,
+    activeEvent.CurrentPlayerVersion,
+    applyLivePlayerUpdate
+  );
+}
+
+// ---------- LIVE PLAYER SYNC ----------
+
+// PlayerID -> number of local edits scheduled or in flight. While > 0, the live
+// listener keeps our local copy of that player instead of overwriting it.
+window.pendingPlayerWrites = new Map();
+
+function beginPlayerWrite(playerId) {
+  window.pendingPlayerWrites.set(playerId, (window.pendingPlayerWrites.get(playerId) || 0) + 1);
+}
+
+function endPlayerWrite(playerId) {
+  const n = (window.pendingPlayerWrites.get(playerId) || 0) - 1;
+  if (n <= 0) window.pendingPlayerWrites.delete(playerId);
+  else window.pendingPlayerWrites.set(playerId, n);
+}
+
+function applyLivePlayerUpdate(incoming) {
+  console.log("Live player update received:", incoming.length, "players");
+  const cache = window.cachedUserUniverse;
+  const localById = new Map((cache.players || []).map(p => [p.PlayerID, p]));
+
+  cache.players = incoming.map(remote =>
+    (window.pendingPlayerWrites.get(remote.PlayerID) || 0) > 0 && localById.has(remote.PlayerID)
+      ? localById.get(remote.PlayerID)
+      : remote
+  );
+
+  const isOpen = (id) => document.getElementById(id)?.style.display === 'block';
+
+  // Player detail: leave if the player was deleted elsewhere; don't redraw the edit form while someone is typing in it
+  if (isOpen('screen-player-detail') && window.currentPlayerDetailId) {
+    const stillExists = cache.players.some(p => p.PlayerID === window.currentPlayerDetailId);
+    if (!stillExists) {
+      exitPlayerDetail();
+    } else {
+      const content = document.getElementById('player-detail-content');
+      const typing = window.currentPlayerDetailIndex === 0 && content && content.contains(document.activeElement);
+      if (!typing) renderPlayerDetailView();
+    }
+  }
+
+  // Players screen: Check In tab or roster tab
+  if (isOpen('screen-players')) {
+    if (document.getElementById('view-checkin')?.classList.contains('active')) {
+      if (!document.querySelector('.app-card.dragging')) renderCheckInView(cache);  // never mid-drag
+    } else {
+      renderPlayerCards(cache, { silent: true });
+    }
+  }
+
+  // Names and ladder depend on players too
+  if (isOpen('screen-match-detail')) renderMatchScoreView();
+  if (isOpen('screen-draw')) {
+    renderDrawCards(cache, { silent: true });
+    if (document.getElementById('view-current-round')?.classList.contains('active')) {
+      renderCurrentRoundView(cache, { silent: true });
+    }
+    if (document.getElementById('view-standings')?.classList.contains('active')) {
+      renderStandingsView(cache);
+    }
+  }
 }
 
 function applyLiveEventUpdate(remoteEvent) {

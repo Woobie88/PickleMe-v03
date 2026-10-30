@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, query, where, getDocs, doc, updateDoc, addDoc, onSnapshot, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, query, where, getDocs, doc, updateDoc, addDoc, onSnapshot, deleteDoc, setDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence, updatePassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 const firebaseConfig = {
   apiKey: "AIzaSyAVmJJ-uHf366tdd4T0BcceKkEEP16WIbE",
@@ -138,6 +138,24 @@ window.listenToDrawChanges = function(eventId, drawVersion, onChangeCallback) {
   return unsubscribe;
 };
 
+window.listenToPlayerChanges = function(eventId, playerVersion, onChangeCallback) {
+  const db = window.db;
+
+  const playersQuery = query(
+    collection(db, "players"),
+    where("EventID", "==", eventId),
+    where("PlayerVersion", "==", playerVersion)
+  );
+
+  const unsubscribe = onSnapshot(playersQuery, (snapshot) => {
+    onChangeCallback(snapshot.docs.map(doc => doc.data()));
+  }, (error) => {
+    console.error("Player listener error:", error);
+  });
+
+  return unsubscribe;
+};
+
 window.listenToEventChanges = function(eventId, onChangeCallback) {
   const db = window.db;
   const eventDocRef = doc(db, "events", String(eventId));
@@ -150,6 +168,15 @@ window.listenToEventChanges = function(eventId, onChangeCallback) {
 
   return unsubscribe;
 };
+
+// Writes many docs atomically (Firestore batches max out at 500 writes)
+async function commitInBatches(db, items) {
+  for (let i = 0; i < items.length; i += 400) {
+    const batch = writeBatch(db);
+    items.slice(i, i + 400).forEach(({ ref, data }) => batch.set(ref, data));
+    await batch.commit();
+  }
+}
 
 window.updateActiveGameInFirestore = async function(eventId, gameId) {
   const db = window.db;
@@ -217,12 +244,7 @@ window.updateEventDrawVersionAndRoundInFirestore = async function(eventId, newDr
 window.saveGeneratedDrawToFirestore = async function(matches) {
   const db = window.db;
 
-  const writes = matches.map(match => {
-    const matchDocRef = doc(db, "draw", String(match.MatchID));
-    return setDoc(matchDocRef, match);
-  });
-
-  await Promise.all(writes);
+  await commitInBatches(db, matches.map(match => ({ ref: doc(db, "draw", String(match.MatchID)), data: match })));
   console.log(`Saved ${matches.length} match document(s) to Firestore.`);
 };
 
@@ -241,12 +263,7 @@ window.fetchDuprDatabaseFromFirestore = async function() {
 window.saveGeneratedPlayersToFirestore = async function(players) {
   const db = window.db;
 
-  const writes = players.map(player => {
-    const playerDocRef = doc(db, "players", String(player.PlayerID));
-    return setDoc(playerDocRef, player);
-  });
-
-  await Promise.all(writes);
+  await commitInBatches(db, players.map(player => ({ ref: doc(db, "players", String(player.PlayerID)), data: player })));
   console.log(`Saved ${players.length} player document(s) to Firestore.`);
 };
 
