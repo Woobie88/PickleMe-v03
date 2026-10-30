@@ -29,12 +29,35 @@
 
     <!-- APPLICATION FIXED HEADER -->
     <header class="app-bar">
-      <img src="https://i.postimg.cc/Gp0Mp9vr/App-Logo-Transparent.png" 
-     alt="App-Logo-Transparent" 
-     loading="lazy" 
-     decoding="async"
-     style="width: 60px; height: 60px; object-fit: contain; border-radius: 4px; padding-right: 10px;">
+      <img src="https://i.postimg.cc/Gp0Mp9vr/App-Logo-Transparent.png"
+          alt="App-Logo-Transparent"
+          loading="lazy"
+          decoding="async"
+          style="width: 60px; height: 60px; object-fit: contain; border-radius: 4px; padding-right: 10px;">
       <h1 id="app-header">PickleMe <span style="font-family: Dancing Script, cursive; font-optical-sizing: auto; font-weight: 600; font-style: normal;">Lite</span></h1>
+
+      <!-- Dropdown menu (right-hand side) -->
+      <div class="app-menu" id="app-menu">
+        <button class="app-menu-btn" id="app-menu-btn" aria-label="Menu"
+                aria-haspopup="true" aria-expanded="false" onclick="toggleAppMenu(event)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 768 768" fill="currentColor" aria-hidden="true">
+            <rect x="0"   y="57"  width="768" height="74" rx="36"/>
+            <rect x="67"  y="173" width="634" height="74" rx="36"/>
+            <rect x="133" y="289" width="501" height="74" rx="36"/>
+            <rect x="201" y="405" width="365" height="74" rx="36"/>
+            <rect x="263" y="520" width="242" height="74" rx="36"/>
+            <rect x="327" y="636" width="112" height="74" rx="36"/>
+          </svg>
+        </button>
+
+        <nav class="app-menu-dropdown" id="app-menu-dropdown" role="menu">
+          <button role="menuitem" onclick="handleAppMenuAction('events')">My Events</button>
+          <button role="menuitem" onclick="handleAppMenuAction('games')">Games</button>
+          <button role="menuitem" onclick="handleAppMenuAction('dupr')">DUPR Database</button>
+          <button role="menuitem" onclick="handleAppMenuAction('profile')">Profile</button>
+          <button role="menuitem" class="danger" onclick="handleAppMenuAction('logout')">Log Out</button>
+        </nav>
+      </div>
     </header>
 
     <!-- MAIN VIEWPORT DISPLAY FRAME -->
