@@ -554,6 +554,7 @@ async function updateActiveEventDetails() {
     EventDate: document.getElementById('edit-event-date').value,
     EventLocation: document.getElementById('edit-event-location').value,
     NumberofCourts: parseInt(document.getElementById('edit-event-courts').value, 10) || 1,
+    MatchTime: parseInt(document.getElementById('edit-event-timer').value, 10) || 10,
     "DUPR Limit": parseFloat(document.getElementById('edit-event-dupr').value) || 0
   };
 
