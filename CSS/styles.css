@@ -1654,3 +1654,82 @@ body {
   flex: 1;
   text-align: center;
 }
+
+/* EVENT TIMER BAR */
+:root { --timer-bar-h: 68px; }
+
+.timer-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(64px + env(safe-area-inset-bottom));   /* sits on top of the bottom nav */
+  height: var(--timer-bar-h);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  background-color: var(--card-bg);
+  border-top: 2px solid var(--accent);
+  z-index: 450;                                        /* above content, below the FAB (500) */
+}
+.timer-bar[hidden] { display: none; }
+
+/* Make room: content ends above the bar, and the floating menu lifts clear of it */
+body.timer-visible .app-container {
+  bottom: calc(64px + var(--timer-bar-h) + env(safe-area-inset-bottom));
+}
+body.timer-visible .fab-wrapper {
+  bottom: calc(64px + var(--timer-bar-h) + env(safe-area-inset-bottom) + 20px);
+}
+
+.timer-bar-icon {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  padding: 8px;
+  cursor: pointer;
+}
+
+.timer-bar-main { flex: 1; text-align: center; }
+.timer-bar-time {
+  font-size: 1.9rem;
+  font-weight: 800;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+.timer-bar-status {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.timer-bar-actions { display: flex; gap: 6px; }
+.timer-bar-btn {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  border: 1px solid var(--nav-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.timer-bar-btn.primary { background-color: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* Ready / stopped */
+.timer-bar.timer-idle .timer-bar-time { color: var(--text-main); }
+
+/* Last 30 seconds */
+.timer-bar.timer-warning { border-top-color: #ef4444; background-color: #2a1a22; }
+.timer-bar.timer-warning .timer-bar-time { color: #ef4444; }
+
+/* Time's up */
+.timer-bar.timer-finished { border-top-color: #ef4444; background-color: #3a1620; animation: timer-flash 1s infinite; }
+.timer-bar.timer-finished .timer-bar-time { color: #ef4444; }
+
+@keyframes timer-flash { 50% { opacity: 0.6; } }

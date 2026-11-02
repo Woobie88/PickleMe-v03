@@ -544,6 +544,9 @@ async function handleFabAction(action) {
     case 'playoffs':
       navigateToScreen('playoffs');
       break;
+    case 'timer':
+      toggleEventTimer();
+      break;
   }
 }
 
