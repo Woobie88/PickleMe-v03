@@ -117,21 +117,18 @@ function buildProgressiveDummySchedule(players, numberOfRounds, courtsCount, eve
 // ---------- RESULT HELPERS ----------
 
 function getMatchWinners(match) {
-  console.log("getMatchWinners");
   if (match.Team1WinLoss === 'Win') return [match.Team1Player1, match.Team1Player2];
   if (match.Team2WinLoss === 'Win') return [match.Team2Player1, match.Team2Player2];
   return null;
 }
 
 function getMatchLosers(match) {
-  console.log("getMatchLosers");
   if (match.Team1WinLoss === 'Loss') return [match.Team1Player1, match.Team1Player2];
   if (match.Team2WinLoss === 'Loss') return [match.Team2Player1, match.Team2Player2];
   return null;
 }
 
 function isRoundComplete(matches, roundNumber) {
-  console.log("isRoundComplete");
   const roundMatches = matches.filter(m => parseInt(m.Round) === roundNumber);
   if (roundMatches.length === 0) return false;
   return roundMatches.every(m => m.Team1WinLoss && m.Team2WinLoss);
