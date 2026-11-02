@@ -261,10 +261,9 @@ function closeAppMenu() {
 function handleAppMenuAction(action) {
   closeAppMenu();
   switch (action) {
-    case 'events':  navigateToScreen('events');  break;
-    case 'games':   navigateToScreen('games');   break;
-    case 'dupr':    navigateToScreen('dupr');    break;
+    case 'about':   navigateToScreen('about');   break;
     case 'profile': navigateToScreen('profile'); break;
+    case 'help':    navigateToScreen('help');    break;
     case 'logout':  handleLogOut();              break;
   }
 }
