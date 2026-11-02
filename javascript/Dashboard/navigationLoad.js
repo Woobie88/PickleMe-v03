@@ -40,6 +40,7 @@ function switchScreen(screenId, navButton) {
  * Enhanced to automatically trigger dashboard data loads for the My Events screen
  */
 function navigateToScreen(screenId) {
+  window.currentScreenId = screenId;
   console.log("Routing viewport layout to:", screenId);
   
   const screens = document.querySelectorAll('.app-screen');
@@ -101,9 +102,9 @@ function navigateToScreen(screenId) {
     case 'player-substitution':
       renderPlayerSubstitutionScreen(window.cachedUserUniverse);
       break;
-    // case 'ladder':
-    //   renderLadderCards(payload);
-    //   break;
+    case 'help': 
+      openHelp(); 
+      break;
     case 'analytics':
       window.analyticsScreenIndex = 0; // NEW — always start on Unique Partners/Opponents
       renderAnalyticsCards(payload);

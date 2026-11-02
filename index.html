@@ -1365,6 +1365,19 @@
         </div>
       </section> 
 
+      <!-- Help screen set up -->
+      <section>
+        <div class="help-overlay" id="help-overlay" onclick="if (event.target === this) closeHelp()">
+          <div class="help-sheet" role="dialog" aria-labelledby="help-title">
+            <div class="help-header">
+              <h2 id="help-title">Help</h2>
+              <button class="help-close" onclick="closeHelp()" aria-label="Close help">✕</button>
+            </div>
+            <div id="help-body"></div>
+          </div>
+        </div>
+      </section>
+
     </main>
 
     <!-- FIXED MOBILE BOTTOM NAVIGATION BAR -->
@@ -1452,6 +1465,7 @@
     <script src="javascript/Draw/Draw Generator/pairingMethodChange.js"></script>
     <script src="javascript/Dashboard/cleanUp.js"></script>
     <script src="javascript/Dashboard/analytics.js"></script>
+    <script src="javascript/Dashboard/help.js"></script>
     <script src="javascript/Dashboard/navigationLoad.js"></script>
     <script src="javascript/eventListeners.js"></script>
   </body>
