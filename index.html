@@ -223,6 +223,16 @@
           </div>
 
           <div class="detail-form-group">
+            <label>Match Time</label>
+            <div class="score-control">
+              <button class="score-btn" onclick="adjustAeTimer(-1)">−</button>
+              <span id="ae-timer-value" class="score-value">10</span>
+              <button class="score-btn" onclick="adjustAeTimer(1)">+</button>
+            </div>
+            <input type="hidden" id="ae-event-timer" value="10">
+          </div>
+
+          <div class="detail-form-group">
             <label>DUPR Limit</label>
             <div class="score-control">
               <button class="score-btn" onclick="adjustAeDuprLimit(-1)">−</button>
