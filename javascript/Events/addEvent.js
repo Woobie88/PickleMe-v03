@@ -12,7 +12,7 @@ function renderAddEventDetailScreen() {
   document.getElementById('ae-event-courts').value = 1;
 
   document.getElementById('ae-timer-value').innerText = 10;
-  document.getElementById('ae-event-timer').value = 1;
+  document.getElementById('ae-event-timer').value = 10;
 
   document.getElementById('ae-dupr-value').innerText = 0;
   document.getElementById('ae-event-dupr').value = 0;
@@ -47,8 +47,8 @@ function adjustAeDuprLimit(direction) {
 function adjustAeTimer(direction) {
   const hiddenInput = document.getElementById('ae-event-timer');
   const displaySpan = document.getElementById('ae-timer-value');
-  let current = parseInt(hiddenInput.value) || 1;
-  current = Math.max(1, current + direction);
+  let current = parseInt(hiddenInput.value) || 10;
+  current = Math.min(180, Math.max(1, current + direction));   // 1 to 180 minutes
   hiddenInput.value = current;
   displaySpan.innerText = current;
 }

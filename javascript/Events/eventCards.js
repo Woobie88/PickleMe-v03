@@ -453,6 +453,7 @@ function updateActiveEvent(eventId) {
   if (!detailContainer) return;
 
   const duprVal = targetEvent["DUPR Limit"] !== undefined ? targetEvent["DUPR Limit"] : (targetEvent.duprLimit || 0);
+  const matchTimeVal = targetEvent.MatchTime || 10;
 
   detailContainer.innerHTML = `
     <input type="hidden" id="edit-event-id" value="${targetEvent.EventID || ''}">
@@ -483,6 +484,16 @@ function updateActiveEvent(eventId) {
     </div>
     
     <div class="detail-form-group">
+      <label>Match Time</label>
+      <div class="score-control">
+        <button class="score-btn" onclick="adjustMatchTime(-1)">−</button>
+        <span id="match-time-value" class="score-value">${matchTimeVal}</span>
+        <button class="score-btn" onclick="adjustMatchTime(1)">+</button>
+      </div>
+      <input type="hidden" id="edit-event-timer" value="${matchTimeVal}">
+    </div>
+
+    <div class="detail-form-group">
       <label>DUPR Limit</label>
       <div class="score-control">
         <button class="score-btn" onclick="adjustDuprLimit(-1)">−</button>
@@ -508,6 +519,17 @@ function adjustCourts(direction) {
   let current = parseInt(hiddenInput.value) || 1;
   current += direction;
   current = Math.max(1, current); // minimum 1
+
+  hiddenInput.value = current;
+  displaySpan.innerText = current;
+}
+
+function adjustMatchTime(direction) {
+  const hiddenInput = document.getElementById('edit-event-timer');
+  const displaySpan = document.getElementById('match-time-value');
+
+  let current = parseInt(hiddenInput.value) || 10;
+  current = Math.min(180, Math.max(1, current + direction)); // 1 to 180 minutes
 
   hiddenInput.value = current;
   displaySpan.innerText = current;
@@ -615,7 +637,10 @@ window.pendingMatchSaves = new Set();
 
 // Event fields that stay in sync between users. CurrentRound is deliberately NOT here —
 // each device keeps its own round; only the main PickleMe app writes it to Firestore.
-const SYNCED_EVENT_FIELDS = ['Scoring', 'LadderScoring', 'DrawWeighting', 'PairingMethod'];
+const SYNCED_EVENT_FIELDS = [
+  'GameID', 'Scoring', 'LadderScoring', 'DrawWeighting', 'PairingMethod',
+  'TimerStatus', 'TimerDurationMs', 'TimerEndsAt', 'TimerRemainingMs'   // shared event timer
+];
 
 function startDrawListener() {
   if (window.currentDrawUnsubscribe) {
@@ -648,6 +673,9 @@ function startDrawListener() {
     activeEvent.CurrentPlayerVersion,
     applyLivePlayerUpdate
   );
+
+  // Show (or hide) the shared timer for whichever event is now active
+  if (typeof refreshEventTimer === 'function') refreshEventTimer();
 }
 
 // ---------- LIVE PLAYER SYNC ----------
@@ -722,15 +750,26 @@ function applyLiveEventUpdate(remoteEvent) {
 
   // Copy only the synced fields; skip the update entirely if nothing changed
   // (this also swallows the echo of our own writes).
-  let changed = false;
+  const changedFields = [];
   SYNCED_EVENT_FIELDS.forEach(field => {
     if (remoteEvent[field] !== undefined && activeEvent[field] !== remoteEvent[field]) {
       activeEvent[field] = remoteEvent[field];
-      changed = true;
+      changedFields.push(field);
     }
   });
-  if (!changed) return;
+  if (changedFields.length === 0) return;
+
+  // Shared timer: update the header pill on every screen
+  if (changedFields.some(f => f.startsWith('Timer'))) refreshEventTimer();
+  // A timer-only change has nothing else to redraw
+  if (changedFields.every(f => f.startsWith('Timer'))) return;
+
   console.log("Live event settings update received.");
+
+  // Games screen: move the green "active game" highlight
+  if (document.getElementById('screen-games')?.style.display === 'block') {
+    renderActiveGameHighlight();
+  }
 
   // Score-entry screen reads Scoring (Points vs Wins vs None), so redraw it if open
   if (document.getElementById('screen-match-detail')?.style.display === 'block') {
