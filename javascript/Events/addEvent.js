@@ -11,6 +11,9 @@ function renderAddEventDetailScreen() {
   document.getElementById('ae-courts-value').innerText = 1;
   document.getElementById('ae-event-courts').value = 1;
 
+  document.getElementById('ae-timer-value').innerText = 10;
+  document.getElementById('ae-event-timer').value = 1;
+
   document.getElementById('ae-dupr-value').innerText = 0;
   document.getElementById('ae-event-dupr').value = 0;
 }
