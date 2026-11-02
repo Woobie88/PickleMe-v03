@@ -53,6 +53,18 @@
       </div>
     </header>
 
+    <!-- HELP SCREEN SET UP -->
+    <section id="section-help">
+      <div class="detail-overlay" id="help-overlay">
+        <div class="overlay-handle-bar" onclick="closeHelp()"></div>
+        <div class="overlay-header">
+          <h2 id="help-title">Help</h2>
+          <button class="close-overlay-btn" onclick="closeHelp()" aria-label="Close help">✕</button>
+        </div>
+        <div class="overlay-body" id="help-body-content"></div>
+      </div>
+    </section>
+
     <!-- MAIN VIEWPORT DISPLAY FRAME -->
     <main class="app-container">
 
@@ -1364,19 +1376,6 @@
           </div>
         </div>
       </section> 
-
-      <!-- Help screen set up -->
-      <section>
-        <div class="help-overlay" id="help-overlay" onclick="if (event.target === this) closeHelp()">
-          <div class="help-sheet" role="dialog" aria-labelledby="help-title">
-            <div class="help-header">
-              <h2 id="help-title">Help</h2>
-              <button class="help-close" onclick="closeHelp()" aria-label="Close help">✕</button>
-            </div>
-            <div id="help-body"></div>
-          </div>
-        </div>
-      </section>
 
     </main>
 
