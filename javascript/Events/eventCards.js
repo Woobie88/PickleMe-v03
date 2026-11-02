@@ -484,7 +484,7 @@ function updateActiveEvent(eventId) {
     </div>
     
     <div class="detail-form-group">
-      <label>Match Time (minutes)</label>
+      <label>Match Time</label>
       <div class="score-control">
         <button class="score-btn" onclick="adjustMatchTime(-1)">−</button>
         <span id="match-time-value" class="score-value">${matchTimeVal}</span>
@@ -759,8 +759,11 @@ function applyLiveEventUpdate(remoteEvent) {
   });
   if (changedFields.length === 0) return;
 
-  // Shared timer: update the header pill on every screen
-  if (changedFields.some(f => f.startsWith('Timer'))) refreshEventTimer();
+  // Shared timer: update the bottom bar on every screen (apps without timer.js just skip this)
+  if (changedFields.some(f => f.startsWith('Timer'))) {
+    console.log("Live timer update received:", changedFields.filter(f => f.startsWith('Timer')));
+    if (typeof refreshEventTimer === 'function') refreshEventTimer();
+  }
   // A timer-only change has nothing else to redraw
   if (changedFields.every(f => f.startsWith('Timer'))) return;
 
