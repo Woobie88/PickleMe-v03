@@ -263,7 +263,7 @@ function handleAppMenuAction(action) {
   switch (action) {
     case 'about':   navigateToScreen('about');   break;
     case 'profile': navigateToScreen('profile'); break;
-    case 'help':    navigateToScreen('help');    break;
+    case 'help':    openHelp('help');    break;
     case 'logout':  handleLogOut();              break;
   }
 }
