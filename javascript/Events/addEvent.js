@@ -40,3 +40,12 @@ function adjustAeDuprLimit(direction) {
   hiddenInput.value = current;
   displaySpan.innerText = current;
 }
+
+function adjustAeTimer(direction) {
+  const hiddenInput = document.getElementById('ae-event-timer');
+  const displaySpan = document.getElementById('ae-timer-value');
+  let current = parseInt(hiddenInput.value) || 1;
+  current = Math.max(1, current + direction);
+  hiddenInput.value = current;
+  displaySpan.innerText = current;
+}
