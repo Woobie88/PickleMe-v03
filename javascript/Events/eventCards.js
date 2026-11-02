@@ -484,7 +484,7 @@ function updateActiveEvent(eventId) {
     </div>
     
     <div class="detail-form-group">
-      <label>Match Time (mins)</label>
+      <label>Match Time (minutes)</label>
       <div class="score-control">
         <button class="score-btn" onclick="adjustMatchTime(-1)">−</button>
         <span id="match-time-value" class="score-value">${matchTimeVal}</span>
