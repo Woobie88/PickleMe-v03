@@ -30,6 +30,7 @@ var iterationsPerAttempt = 20000;
 function generateTeamsRoundDraw(players, numberOfRounds, courtsCount, numberOfTeams, activeEventId, newDrawVersion, userEmail) {
   // Get the number of teams
   // const teamCount = new Set(players.map(p => p[0].team)).size;
+  console.log("The players are", players);
 
   // Determine each teams make up
   const teamMap = new Map();
