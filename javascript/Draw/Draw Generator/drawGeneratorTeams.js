@@ -35,8 +35,8 @@ function generateTeamsRoundDraw(players, numberOfRounds, courtsCount, numberOfTe
   // Determine each teams make up
   const teamMap = new Map();
   for (const p of players.flat()) {
-    if (!teamMap.has(p.team)) teamMap.set(p.team, []);
-    teamMap.get(p.team).push(p);
+    if (!teamMap.has(p.Team)) teamMap.set(p.Team, []);
+    teamMap.get(p.Team).push(p);
   }
   const teamArrays = [...teamMap.values()];
   console.log("teamMap", teamArrays);
