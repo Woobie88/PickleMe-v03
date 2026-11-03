@@ -39,6 +39,7 @@ function generateTeamsRoundDraw(players, numberOfRounds, courtsCount, numberOfTe
     teamMap.get(p.team).push(p);
   }
   const teamArrays = [...teamMap.values()];
+  console.log("teamMap", teamArrays);
 
   // Draw setup
   var playersPerTeam = teamArrays[0].length;
