@@ -11,321 +11,267 @@
  * ============================================================
  */
 
-// var numberOfRounds = 10;
-// var players = [[{name: "Emi Landan", team: 3, dupr: 2.919}],[{name: "Patrick Needham", team: 3, dupr: 3.027}],[{name: "Brett Collins", team: 2, dupr: 3.328}],[{name: "Anthony Vriens", team: 1, dupr: 3.85}],[{name: "Matt Featherstone", team: 1, dupr: 3.252}],[{name: "Fiona Boustred", team: 2, dupr: 2.879}],[{name: "Michael Watson", team: 2, dupr: 3.548}],[{name: "Keith Lund", team: 3, dupr: 3.541}],[{name: "Rod Kearns", team: 2, dupr: 3.106}],[{name: "Wendy Fitzgerald", team: 1, dupr: 3.17}],
-// [{name: "Clarence Mok", team: 1, dupr: 3.178}],[{name: "Geoffrey Shuetrim", team: 3, dupr: 3.386}],[{name: "Jaew Senta", team: 3, dupr: 3.21}],[{name: "Liz Haywood", team: 2, dupr: 3.189}],[{name: "Sarah Gibson", team: 1, dupr: 2.069}]];
-var teamByesPerRound = 1;
-var byesByPlayer = 2;
-var roundsBetweenByes = 3;
+// ---------- ROUND STRUCTURE (verified against all 5 examples) ----------
 
-var repeatPenalty = 100;  // cost for repeating a partnership before all pairs have been used
-var matchupPenalty = 100; // cost for repeating a pair-vs-pair matchUp before all have been played
-var byesPenalty = 20;
-
-// Search settings
-var numberOfAttempts = 20;
-var iterationsPerAttempt = 20000;
-var maxRunMs = 300000; // stop early to stay inside the Apps Script time limit
-
-function generateTeamsRoundDraw(players, numberOfRounds, courtsCount, numberOfTeams, activeEventId, newDrawVersion, userEmail) {
-  // Get the number of teams
-  // const numberOfTeams = new Set(players.map(p => p[0].team)).size;
-  console.log("The players are", players);
-
-  // Determine each teams make up
-  const teamMap = new Map();
-  for (const p of players.flat()) {
-    if (!teamMap.has(p.Team)) teamMap.set(p.Team, []);
-    teamMap.get(p.Team).push(p);
-  }
-  const teamArrays = [...teamMap.values()];
-  console.log("teamMap", teamArrays);
-
-  // Draw setup
-  var playersPerTeam = teamArrays[0].length;
-  var pairsPerRound = (playersPerTeam - teamByesPerRound) / 2;
-  var pairsPerTeam = playersPerTeam * (playersPerTeam - 1) / 2;
-  var maxPairRepeats = Math.ceil(numberOfRounds * pairsPerRound / pairsPerTeam);
-  var matchesPerRound = numberOfTeams * (numberOfTeams - 1) / 2;
-  
-  console.log("numberOfTeams", numberOfTeams,
-  "team sizes", teamArrays.map(function(t) { return t.length; }),
-  "playersPerTeam", playersPerTeam,
-  "pairsPerRound", pairsPerRound);
-
-  if (pairsPerRound !== numberOfTeams - 1) throw new Error("Each team needs " + (numberOfTeams - 1) + " pairs per round");
-  if (matchesPerRound > courtsCount) throw new Error("Not enough courts");
-
-  // schedule[t][r] = player order: first teamByesPerRound are byes, then consecutive pairs
-  function buildInitialSchedule() {
-    var sched = [];
-    for (var t = 0; t < numberOfTeams; t++) {
-      sched.push([]);
-      for (var r = 0; r < numberOfRounds; r++) {
-        var order = [];
-        for (var p = 0; p < playersPerTeam; p++) order.push((p + r * teamByesPerRound) % playersPerTeam);
-        // Rotate pair slots each time the pair cycle restarts, so matchUps differ on the second pass
-          if (teamByesPerRound === 1 && playersPerTeam % 2 === 1 && pairsPerRound > 1) {
-            var shift = Math.floor(r / playersPerTeam) % pairsPerRound;
-            if (shift > 0) {
-              var pairsPart = order.slice(teamByesPerRound);
-              var rotated = pairsPart.slice(2 * shift).concat(pairsPart.slice(0, 2 * shift));
-              order = order.slice(0, teamByesPerRound).concat(rotated);
-            }
-          }
-        sched[t].push(order);
-      }
+function determineTeamRoundStructure(totalTeams, courtsCount) {
+  for (let activeTeams = totalTeams; activeTeams >= 2; activeTeams--) {
+    const numPairingsFull = (activeTeams * (activeTeams - 1)) / 2;
+    if (numPairingsFull > 0 && courtsCount % numPairingsFull === 0) {
+      return { mode: 'full', activeTeams, courtsPerPairing: courtsCount / numPairingsFull };
     }
-    return sched;
-  }
-
-  // Total DUPR of team t's pair in a given slot of round r
-  function pairTotal(sched, t, r, slot) {
-    var order = sched[t][r];
-    var a = order[teamByesPerRound + 2 * slot];
-    var b = order[teamByesPerRound + 2 * slot + 1];
-    return teamArrays[t][a].dupr + teamArrays[t][b].dupr;
-  }
-
-  // Team i's slot against team j (i < j) is j - 1; team j's slot against i is i
-  function scoreDraw(sched) {
-    var cost = 0;
-    var byeRounds = [];
-    var seen = [], seenCount = [];
-    for (var t = 0; t < numberOfTeams; t++) {
-      byeRounds.push([]);
-      for (var p = 0; p < playersPerTeam; p++) byeRounds[t].push([]);
-      seen.push({}); seenCount.push(0);
-    }
-
-    // matchUp tracking per team fixture (i vs j)
-    var matchSeen = {}, matchSeenCount = {};
-    var matchupsPerFixture = pairsPerTeam * pairsPerTeam;
-
-    function pairKey(t, r, slot) {
-      var order = sched[t][r];
-      var a = order[teamByesPerRound + 2 * slot];
-      var c = order[teamByesPerRound + 2 * slot + 1];
-      return Math.min(a, c) * playersPerTeam + Math.max(a, c);
-    }
-
-    for (var r = 0; r < numberOfRounds; r++) {
-      // byes and partnership cycle
-      for (var t = 0; t < numberOfTeams; t++) {
-        var order = sched[t][r];
-        for (var b = 0; b < teamByesPerRound; b++) byeRounds[t][order[b]].push(r);
-        for (var k = 0; k < pairsPerRound; k++) {
-          var key = pairKey(t, r, k);
-          if (seen[t][key]) {
-            cost += repeatPenalty;
-          } else {
-            seen[t][key] = true;
-            seenCount[t]++;
-          }
-          if (seenCount[t] === pairsPerTeam) { seen[t] = {}; seenCount[t] = 0; }
-        }
-      }
-
-      // DUPR balance and matchUp cycle
-      for (var i = 0; i < numberOfTeams; i++) {
-        for (var j = i + 1; j < numberOfTeams; j++) {
-          var slotI = j - 1, slotJ = i;
-          cost += Math.abs(pairTotal(sched, i, r, slotI) - pairTotal(sched, j, r, slotJ));
-
-          var fixture = i * numberOfTeams + j;
-          if (!matchSeen[fixture]) { matchSeen[fixture] = {}; matchSeenCount[fixture] = 0; }
-          var mKey = pairKey(i, r, slotI) * playersPerTeam * playersPerTeam + pairKey(j, r, slotJ);
-          if (matchSeen[fixture][mKey]) {
-            cost += matchupPenalty;
-          } else {
-            matchSeen[fixture][mKey] = true;
-            matchSeenCount[fixture]++;
-          }
-          if (matchSeenCount[fixture] === matchupsPerFixture) {
-            matchSeen[fixture] = {}; matchSeenCount[fixture] = 0;
-          }
-        }
-      }
-    }
-
-    for (var t = 0; t < numberOfTeams; t++) {
-      for (var p = 0; p < playersPerTeam; p++) {
-        var rounds = byeRounds[t][p];
-        if (rounds.length > byesByPlayer) cost += (rounds.length - byesByPlayer) * byesPenalty;
-        for (var q = 1; q < rounds.length; q++) {
-          if (rounds[q] - rounds[q - 1] < roundsBetweenByes) cost += byesPenalty;
-        }
-      }
-    }
-    return cost;
-  }
-
-  // Multiple annealing attempts, keep the best draw
-  var startTime = Date.now();
-  var startTemp = 10;
-  var bestCost = Infinity;
-  var bestSchedule = null;
-  var attemptsRun = 0;
-  for (var attempt = 0; attempt < numberOfAttempts; attempt++) {
-    if (Date.now() - startTime > maxRunMs) break;
-    var schedule = buildInitialSchedule();
-    var currentCost = scoreDraw(schedule);
-    var attemptBestCost = currentCost;
-    var attemptBestSchedule = JSON.parse(JSON.stringify(schedule));
-    for (var n = 0; n < iterationsPerAttempt; n++) {
-      var temp = startTemp * (1 - n / iterationsPerAttempt) + 0.01;
-      var t = Math.floor(Math.random() * numberOfTeams);
-      var r = Math.floor(Math.random() * numberOfRounds);
-      var a = Math.floor(Math.random() * playersPerTeam);
-      var b = Math.floor(Math.random() * playersPerTeam);
-      if (a === b) continue;
-      var order = schedule[t][r];
-      var tmp = order[a]; order[a] = order[b]; order[b] = tmp;
-      var newCost = scoreDraw(schedule);
-      if (newCost <= currentCost || Math.random() < Math.exp((currentCost - newCost) / temp)) {
-        currentCost = newCost;
-        if (currentCost < attemptBestCost) {
-          attemptBestCost = currentCost;
-          attemptBestSchedule = JSON.parse(JSON.stringify(schedule));
-        }
-      } else {
-        tmp = order[a]; order[a] = order[b]; order[b] = tmp;
-      }
-    }
-    attemptsRun++;
-    if (attemptBestCost < bestCost) {
-      bestCost = attemptBestCost;
-      bestSchedule = attemptBestSchedule;
-    }
-  }
-
-  // Build the draw
-  var draw = [];
-  var totalDelta = 0;
-  for (var r = 0; r < numberOfRounds; r++) {
-    var court = 1;
-    var byes = [];
-    for (var t = 0; t < numberOfTeams; t++) {
-      for (var b = 0; b < teamByesPerRound; b++) byes.push(teamArrays[t][bestSchedule[t][r][b]].name);
-    }
-    for (var i = 0; i < numberOfTeams; i++) {
-      for (var j = i + 1; j < numberOfTeams; j++) {
-        var slotI = j - 1;
-        var slotJ = i;
-        var orderI = bestSchedule[i][r];
-        var orderJ = bestSchedule[j][r];
-        var totDUPRDelta = Math.round(Math.abs(pairTotal(bestSchedule, i, r, slotI) - pairTotal(bestSchedule, j, r, slotJ)) * 100) / 100;
-        totalDelta += totDUPRDelta;
-        draw.push({
-          round: r + 1,
-          court: court++,
-          team1: teamArrays[i][0].team,
-          player1: teamArrays[i][orderI[teamByesPerRound + 2 * slotI]].name,
-          player2: teamArrays[i][orderI[teamByesPerRound + 2 * slotI + 1]].name,
-          team2: teamArrays[j][0].team,
-          player3: teamArrays[j][orderJ[teamByesPerRound + 2 * slotJ]].name,
-          player4: teamArrays[j][orderJ[teamByesPerRound + 2 * slotJ + 1]].name,
-          totDUPRDelta: totDUPRDelta,
-          byes: byes.join(", ")
-        });
+    if (activeTeams % 2 === 0) {
+      const numPairingsStandard = activeTeams / 2;
+      if (courtsCount % numPairingsStandard === 0) {
+        return { mode: 'standard', activeTeams, courtsPerPairing: courtsCount / numPairingsStandard };
       }
     }
   }
+  return null;
+}
 
-  // Player summary
-  var playerSummary = [];
-  var summaryByName = {};
-  for (var t = 0; t < numberOfTeams; t++) {
-    for (var p = 0; p < playersPerTeam; p++) {
-      var summary = {
-        name: teamArrays[t][p].name,
-        team: teamArrays[t][p].team,
-        gamesPlayed: 0,
-        byes: 0,
-        byeRounds: [],
-        partners: {},
-        opponents: {},
-        totDeltaSum: 0
-      };
-      playerSummary.push(summary);
-      summaryByName[summary.name] = summary;
-    }
+// ---------- GENERIC BYE ROTATION (same mechanism as generateByeSchedule, parameterized) ----------
+// ---------- CHECK AS THIS FUNCTION IS NEVER CALLED ---------------
+
+function generateEntityByeSchedule(entityIds, numberOfRounds, neededPerRound) {
+  const byesByRound = {};
+
+  if (neededPerRound <= 0) {
+    for (let i = 0; i < numberOfRounds; i++) byesByRound[i] = [];
+    return byesByRound;
   }
 
-  // Games, partners, opponents and deltas from each match
-  for (var m = 0; m < draw.length; m++) {
-    var match = draw[m];
-    var sideA = [match.player1, match.player2];
-    var sideB = [match.player3, match.player4];
-    var sides = [[sideA, sideB], [sideB, sideA]];
-    for (var s = 0; s < sides.length; s++) {
-      var ownSide = sides[s][0];
-      var oppSide = sides[s][1];
-      for (var k = 0; k < ownSide.length; k++) {
-        var playerStats = summaryByName[ownSide[k]];
-        playerStats.gamesPlayed++;
-        playerStats.totDeltaSum += match.totDUPRDelta;
-        playerStats.partners[ownSide[1 - k]] = true;
-        for (var o = 0; o < oppSide.length; o++) playerStats.opponents[oppSide[o]] = true;
-      }
+  const baseOrder = shuffle([...entityIds]);
+  let pointer = 0;
+
+  for (let round = 0; round < numberOfRounds; round++) {
+    const byes = [];
+    for (let i = 0; i < neededPerRound; i++) {
+      byes.push(baseOrder[pointer % baseOrder.length]);
+      pointer++;
     }
+    byesByRound[round] = byes;
   }
 
-  // Byes (the same for every match in a round, so read the first match of each round)
-  for (var r = 0; r < numberOfRounds; r++) {
-    var roundByes = draw[r * matchesPerRound].byes.split(", ");
-    for (var b = 0; b < roundByes.length; b++) {
-      summaryByName[roundByes[b]].byes++;
-      summaryByName[roundByes[b]].byeRounds.push(r + 1);
-    }
+  return byesByRound;
+}
+
+/**
+ * Same cycling mechanism as generateEntityByeSchedule, but takes an
+ * ALREADY-ORDERED list instead of shuffling internally — needed
+ * wherever manual bye order must take priority over randomization.
+ */
+function generateEntityByeScheduleOrdered(orderedEntityIds, numberOfRounds, neededPerRound) {
+  const byesByRound = {};
+
+  if (neededPerRound <= 0) {
+    for (let i = 0; i < numberOfRounds; i++) byesByRound[i] = [];
+    return byesByRound;
   }
 
-  // Final shape
-  var playerSummaryOutput = playerSummary.map(function(ps) {
-    return {
-      name: ps.name,
-      team: ps.team,
-      gamesPlayed: ps.gamesPlayed,
-      byes: ps.byes,
-      byeRounds: ps.byeRounds.join(", "),
-      uniquePartners: Object.keys(ps.partners).length,
-      uniqueOpponents: Object.keys(ps.opponents).length,
-      avgMatchUpDUPRDelta: Math.round(ps.totDeltaSum / ps.gamesPlayed * 100) / 100
-    };
+  let pointer = 0;
+  for (let round = 0; round < numberOfRounds; round++) {
+    const byes = [];
+    for (let i = 0; i < neededPerRound; i++) {
+      byes.push(orderedEntityIds[pointer % orderedEntityIds.length]);
+      pointer++;
+    }
+    byesByRound[round] = byes;
+  }
+
+  return byesByRound;
+}
+
+// ---------- TEAM-LEVEL HISTORY (opponent repeats between whole teams) ----------
+
+function buildTeamOpponentHistory(matches) {
+  const teamOpponentCounts = {};
+
+  matches.forEach(m => {
+    if (m.Team1 === undefined || m.Team2 === undefined) return;
+    if (!teamOpponentCounts[m.Team1]) teamOpponentCounts[m.Team1] = {};
+    if (!teamOpponentCounts[m.Team2]) teamOpponentCounts[m.Team2] = {};
+    teamOpponentCounts[m.Team1][m.Team2] = (teamOpponentCounts[m.Team1][m.Team2] || 0) + 1;
+    teamOpponentCounts[m.Team2][m.Team1] = (teamOpponentCounts[m.Team2][m.Team1] || 0) + 1;
   });
 
-  console.log("attemptsRun", attemptsRun, "bestCost", Math.round(bestCost * 100) / 100, "totalDelta", Math.round(totalDelta * 100) / 100);
-  // console.log(JSON.stringify(draw));
-  for (var i = 1; i <= numberOfRounds; i++) {
-    console.log("---------ROUND ",i,"-----------");
-    const roundResults = draw
-        .filter(match => match.round === i)
-        .sort((a, b) => a.court - b.court);
+  return teamOpponentCounts;
+}
 
-    roundResults.forEach(match => {
-        console.log(
-            `Court ${match.court}:`,
-            `${match.team1}`,
-            `${match.player1} / ${match.player2}`,
-            "vs",
-            `${match.team2}`,
-            `${match.player3} / ${match.player4}`,
-            `DUPR Gap: ${match.totDUPRDelta}`
-        );
+// ---------- TEAM PAIRING FOR ONE ROUND ----------
+
+function pairActiveTeamsForRound(activeTeamKeys, mode, teamOpponentCounts) {
+  if (mode === 'full') {
+    // Every active team plays every other — no decision needed, complete graph.
+    const pairings = [];
+    for (let i = 0; i < activeTeamKeys.length; i++) {
+      for (let j = i + 1; j < activeTeamKeys.length; j++) {
+        pairings.push([activeTeamKeys[i], activeTeamKeys[j]]);
+      }
+    }
+    return pairings;
+  }
+
+  // Standard mode — greedily pair teams to minimize opponent repeats,
+  // same random-restart greedy pattern used elsewhere in the app.
+  let best = null, bestCost = Infinity;
+
+  for (let attempt = 0; attempt < 200; attempt++) {
+    const pool = shuffle([...activeTeamKeys]);
+    const pairings = [];
+    const used = new Set();
+    let cost = 0;
+
+    for (let i = 0; i < pool.length; i++) {
+      if (used.has(pool[i])) continue;
+      let bestPartner = null, bestPartnerCost = Infinity;
+
+      for (let j = 0; j < pool.length; j++) {
+        if (i === j || used.has(pool[j])) continue;
+        const repeatCount = (teamOpponentCounts[pool[i]]?.[pool[j]]) || 0;
+        if (repeatCount < bestPartnerCost) { bestPartnerCost = repeatCount; bestPartner = pool[j]; }
+      }
+
+      if (bestPartner) {
+        pairings.push([pool[i], bestPartner]);
+        used.add(pool[i]);
+        used.add(bestPartner);
+        cost += bestPartnerCost;
+      }
+    }
+
+    if (cost < bestCost) { bestCost = cost; best = pairings; }
+  }
+
+  return best;
+}
+
+// ---------- BIPARTITE PLAYER-PAIR ASSIGNMENT (team A's pairs vs team B's pairs) ----------
+
+function assignBipartitePairings(teamAPairs, teamBPairs, opponentCounts) {
+  let best = null, bestCost = Infinity;
+
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const shuffledB = shuffle([...teamBPairs]);
+    let cost = 0;
+
+    teamAPairs.forEach((pairA, idx) => {
+      const pairB = shuffledB[idx];
+      pairA.forEach(p1 => pairB.forEach(p2 => {
+        cost += (opponentCounts[p1.PlayerID]?.[p2.PlayerID]) || 0;
+      }));
     });
 
+    if (cost < bestCost) {
+      bestCost = cost;
+      best = teamAPairs.map((pairA, idx) => ({ teamA: pairA, teamB: shuffledB[idx] }));
+    }
   }
-  // console.log(JSON.stringify(playerSummaryOutput));
-  console.log("---------PLAYER STATS-----------")
-  playerSummaryOutput.forEach(player => {
-    console.log(
-      `${player.name} | Team ${player.team} | ` +
-      `Games: ${player.gamesPlayed} | ` +
-      `Byes: ${player.byes} (${player.byeRounds}) | ` +
-      `Partners: ${player.uniquePartners} | ` +
-      `Opponents: ${player.uniqueOpponents} | ` +
-      `Avg DUPR Delta: ${player.avgMatchUpDUPRDelta.toFixed(2)}`
+
+  return best;
+}
+
+// ---------- MAIN ENTRY POINT: ONE ROUND ----------
+function generateTeamsRoundDraw(players, matches, roundNumber, courtsCount, eventId, drawVersion, userEmail, totalTeamsInput, scorers) {
+  const structure = determineTeamRoundStructure(totalTeamsInput, courtsCount);
+  if (!structure) {
+    console.error(`No valid team round structure found for ${totalTeamsInput} teams / ${courtsCount} courts.`);
+    return [];
+  }
+
+  const allTeams = {};
+  players.forEach(p => { (allTeams[p.Team] = allTeams[p.Team] || []).push(p); });
+  const allTeamKeys = Object.keys(allTeams).sort((a, b) => parseInt(a) - parseInt(b));
+
+  const { partnerCounts, opponentCounts, courtCounts } = buildDrawHistory(matches);
+  const teamOpponentCounts = buildTeamOpponentHistory(matches);
+
+  // --- Determine whole-team byes for this round (manual byeOrder-aware) ---
+  const wholeTeamByesNeeded = allTeamKeys.length - structure.activeTeams;
+
+  const teamGroupsArray = allTeamKeys.map(k => allTeams[k]);
+  const orderedTeamGroups = buildStableTeamOrder(teamGroupsArray);
+  const orderedTeamKeys = orderedTeamGroups.map(team => team[0].Team);
+
+  window.gdTeamByeCache = window.gdTeamByeCache || {};
+  const teamByeCacheKey = `${eventId}_teamByes`;
+  if (!window.gdTeamByeCache[teamByeCacheKey]) {
+    window.gdTeamByeCache[teamByeCacheKey] = generateEntityByeScheduleOrdered(
+      orderedTeamKeys, window.gdCurrentNumberOfRounds || 1, wholeTeamByesNeeded
     );
+  }
+  const wholeTeamByesThisRound = window.gdTeamByeCache[teamByeCacheKey][roundNumber - 1] || [];
+
+  const activeTeamKeys = allTeamKeys.filter(t => !wholeTeamByesThisRound.map(String).includes(String(t)));
+  
+
+  // --- Team pairings for this round ---
+  const teamPairings = pairActiveTeamsForRound(activeTeamKeys, structure.mode, teamOpponentCounts);
+
+  // --- How many pairings is each active team involved in this round? ---
+  const pairingCountPerTeam = {};
+  activeTeamKeys.forEach(t => pairingCountPerTeam[t] = 0);
+  teamPairings.forEach(([a, b]) => { pairingCountPerTeam[a]++; pairingCountPerTeam[b]++; });
+
+  // --- Individual within-team byes (manual byeOrder-aware, only when no whole-team bye applies) ---
+  let individualByesByTeam = {};
+  if (wholeTeamByesNeeded === 0) {
+    activeTeamKeys.forEach(teamKey => {
+      const teamPlayers = allTeams[teamKey];
+      const playersNeeded = 2 * structure.courtsPerPairing * pairingCountPerTeam[teamKey];
+      const byesNeeded = Math.max(0, teamPlayers.length - playersNeeded);
+
+      const orderedTeamPlayers = buildStablePoolOrder(teamPlayers); // manual byeOrder first, same as Pools
+      const orderedIds = orderedTeamPlayers.map(p => p.PlayerID);
+
+      window.gdIndivByeCache = window.gdIndivByeCache || {};
+      const cacheKey = `${eventId}_${teamKey}_indivByes`;
+      if (!window.gdIndivByeCache[cacheKey]) {
+        window.gdIndivByeCache[cacheKey] = generateEntityByeScheduleOrdered(
+          orderedIds, window.gdCurrentNumberOfRounds || 1, byesNeeded
+        );
+      }
+      individualByesByTeam[teamKey] = window.gdIndivByeCache[cacheKey][roundNumber - 1] || [];
+    });
+  }
+
+  // --- Build each active team's FULL pair-pool ONCE per round ---
+  const teamPairPools = {};
+  activeTeamKeys.forEach(teamKey => {
+    const activePlayers = allTeams[teamKey].filter(p => !(individualByesByTeam[teamKey] || []).includes(p.PlayerID));
+    teamPairPools[teamKey] = generateBestPartnerships(activePlayers, partnerCounts, scorers);
   });
-  return {draw: draw, playerSummary: playerSummaryOutput};
+
+  const teamPoolCursor = {};
+  activeTeamKeys.forEach(t => teamPoolCursor[t] = 0);
+
+  const allMatches = [];
+  let courtCursor = 1;
+
+  teamPairings.forEach(([teamAKey, teamBKey]) => {
+    const cpp = structure.courtsPerPairing;
+
+    const teamAChunk = teamPairPools[teamAKey].slice(teamPoolCursor[teamAKey], teamPoolCursor[teamAKey] + cpp);
+    const teamBChunk = teamPairPools[teamBKey].slice(teamPoolCursor[teamBKey], teamPoolCursor[teamBKey] + cpp);
+    teamPoolCursor[teamAKey] += cpp;
+    teamPoolCursor[teamBKey] += cpp;
+
+    if (teamAChunk.length === 0 || teamBChunk.length === 0) {
+      console.warn(`Skipping pairing ${teamAKey} vs ${teamBKey} — pair pool exhausted (likely a stale bye cache or structure mismatch).`);
+      return;
+    }
+
+    const matchups = assignBipartitePairings(teamAChunk, teamBChunk, opponentCounts);
+
+    const courtNumbers = [];
+    for (let i = 0; i < cpp; i++) {
+      courtNumbers.push(courtCursor);
+      courtCursor++;
+    }
+
+    const courted = assignCourts(matchups, courtNumbers, courtCounts);
+    const records = courted.map((m, idx) => buildMatchRecord(m, idx, roundNumber, eventId, drawVersion, userEmail));
+    allMatches.push(...records);
+  });
+
+  return allMatches;
 }
