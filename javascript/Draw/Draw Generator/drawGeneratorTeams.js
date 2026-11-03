@@ -92,7 +92,7 @@ function generateTeamsRoundDraw(players, numberOfRounds, courtsCount, numberOfTe
     var cost = 0;
     var byeRounds = [];
     var seen = [], seenCount = [];
-    for (var t = 0; t < teamCount; t++) {
+    for (var t = 0; t < numberOfTeams; t++) {
       byeRounds.push([]);
       for (var p = 0; p < playersPerTeam; p++) byeRounds[t].push([]);
       seen.push({}); seenCount.push(0);
