@@ -29,7 +29,7 @@ var iterationsPerAttempt = 20000;
 
 function generateTeamsRoundDraw(players, numberOfRounds, courtsCount, numberOfTeams, activeEventId, newDrawVersion, userEmail) {
   // Get the number of teams
-  // const teamCount = new Set(players.map(p => p[0].team)).size;
+  // const numberOfTeams = new Set(players.map(p => p[0].team)).size;
   console.log("The players are", players);
 
   // Determine each teams make up
@@ -111,7 +111,7 @@ function generateTeamsRoundDraw(players, numberOfRounds, courtsCount, numberOfTe
 
     for (var r = 0; r < numberOfRounds; r++) {
       // byes and partnership cycle
-      for (var t = 0; t < teamCount; t++) {
+      for (var t = 0; t < numberOfTeams; t++) {
         var order = sched[t][r];
         for (var b = 0; b < teamByesPerRound; b++) byeRounds[t][order[b]].push(r);
         for (var k = 0; k < pairsPerRound; k++) {
@@ -127,8 +127,8 @@ function generateTeamsRoundDraw(players, numberOfRounds, courtsCount, numberOfTe
       }
 
       // DUPR balance and matchUp cycle
-      for (var i = 0; i < teamCount; i++) {
-        for (var j = i + 1; j < teamCount; j++) {
+      for (var i = 0; i < numberOfTeams; i++) {
+        for (var j = i + 1; j < numberOfTeams; j++) {
           var slotI = j - 1, slotJ = i;
           cost += Math.abs(pairTotal(sched, i, r, slotI) - pairTotal(sched, j, r, slotJ));
 
@@ -148,7 +148,7 @@ function generateTeamsRoundDraw(players, numberOfRounds, courtsCount, numberOfTe
       }
     }
 
-    for (var t = 0; t < teamCount; t++) {
+    for (var t = 0; t < numberOfTeams; t++) {
       for (var p = 0; p < playersPerTeam; p++) {
         var rounds = byeRounds[t][p];
         if (rounds.length > byesByPlayer) cost += (rounds.length - byesByPlayer) * byesPenalty;
@@ -174,7 +174,7 @@ function generateTeamsRoundDraw(players, numberOfRounds, courtsCount, numberOfTe
     var attemptBestSchedule = JSON.parse(JSON.stringify(schedule));
     for (var n = 0; n < iterationsPerAttempt; n++) {
       var temp = startTemp * (1 - n / iterationsPerAttempt) + 0.01;
-      var t = Math.floor(Math.random() * teamCount);
+      var t = Math.floor(Math.random() * numberOfTeams);
       var r = Math.floor(Math.random() * numberOfRounds);
       var a = Math.floor(Math.random() * playersPerTeam);
       var b = Math.floor(Math.random() * playersPerTeam);
@@ -205,11 +205,11 @@ function generateTeamsRoundDraw(players, numberOfRounds, courtsCount, numberOfTe
   for (var r = 0; r < numberOfRounds; r++) {
     var court = 1;
     var byes = [];
-    for (var t = 0; t < teamCount; t++) {
+    for (var t = 0; t < numberOfTeams; t++) {
       for (var b = 0; b < teamByesPerRound; b++) byes.push(teamArrays[t][bestSchedule[t][r][b]].name);
     }
-    for (var i = 0; i < teamCount; i++) {
-      for (var j = i + 1; j < teamCount; j++) {
+    for (var i = 0; i < numberOfTeams; i++) {
+      for (var j = i + 1; j < numberOfTeams; j++) {
         var slotI = j - 1;
         var slotJ = i;
         var orderI = bestSchedule[i][r];
@@ -235,7 +235,7 @@ function generateTeamsRoundDraw(players, numberOfRounds, courtsCount, numberOfTe
   // Player summary
   var playerSummary = [];
   var summaryByName = {};
-  for (var t = 0; t < teamCount; t++) {
+  for (var t = 0; t < numberOfTeams; t++) {
     for (var p = 0; p < playersPerTeam; p++) {
       var summary = {
         name: teamArrays[t][p].name,
