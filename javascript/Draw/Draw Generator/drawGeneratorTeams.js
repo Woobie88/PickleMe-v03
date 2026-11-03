@@ -27,9 +27,9 @@ var numberOfAttempts = 300;
 var iterationsPerAttempt = 20000;
 // var maxRunMs = 300000; // stop early to stay inside the Apps Script time limit
 
-function generateTeamsRoundDraw(players, numberOfRounds, courtsCount, activeEventId, newDrawVersion, userEmail) {
+function generateTeamsRoundDraw(players, numberOfRounds, courtsCount, numberOfTeams, activeEventId, newDrawVersion, userEmail) {
   // Get the number of teams
-  const teamCount = new Set(players.map(p => p[0].team)).size;
+  // const teamCount = new Set(players.map(p => p[0].team)).size;
 
   // Determine each teams make up
   const teamMap = new Map();
@@ -44,16 +44,16 @@ function generateTeamsRoundDraw(players, numberOfRounds, courtsCount, activeEven
   var pairsPerRound = (playersPerTeam - teamByesPerRound) / 2;
   var pairsPerTeam = playersPerTeam * (playersPerTeam - 1) / 2;
   var maxPairRepeats = Math.ceil(numberOfRounds * pairsPerRound / pairsPerTeam);
-  var matchesPerRound = teamCount * (teamCount - 1) / 2;
+  var matchesPerRound = numberOfTeams * (numberOfTeams - 1) / 2;
   
 
-  if (pairsPerRound !== teamCount - 1) throw new Error("Each team needs " + (teamCount - 1) + " pairs per round");
+  if (pairsPerRound !== numberOfTeams - 1) throw new Error("Each team needs " + (numberOfTeams - 1) + " pairs per round");
   if (matchesPerRound > courtsCount) throw new Error("Not enough courts");
 
   // schedule[t][r] = player order: first teamByesPerRound are byes, then consecutive pairs
   function buildInitialSchedule() {
     var sched = [];
-    for (var t = 0; t < teamCount; t++) {
+    for (var t = 0; t < numberOfTeams; t++) {
       sched.push([]);
       for (var r = 0; r < numberOfRounds; r++) {
         var order = [];
@@ -126,7 +126,7 @@ function generateTeamsRoundDraw(players, numberOfRounds, courtsCount, activeEven
           var slotI = j - 1, slotJ = i;
           cost += Math.abs(pairTotal(sched, i, r, slotI) - pairTotal(sched, j, r, slotJ));
 
-          var fixture = i * teamCount + j;
+          var fixture = i * numberOfTeams + j;
           if (!matchSeen[fixture]) { matchSeen[fixture] = {}; matchSeenCount[fixture] = 0; }
           var mKey = pairKey(i, r, slotI) * playersPerTeam * playersPerTeam + pairKey(j, r, slotJ);
           if (matchSeen[fixture][mKey]) {

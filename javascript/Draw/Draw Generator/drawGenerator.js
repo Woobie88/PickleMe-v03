@@ -586,7 +586,7 @@ async function generateNRoundsAndPreview(numberOfRounds) {
     // }
     // newMatches = allMatches;
     // console.log(`Generated Teams draw: ${newMatches.length} matches across ${numberOfRounds} round(s).`);
-    newMatches = generateTeamsRoundDraw(players, numberOfRounds, courtsCount, activeEventId, newDrawVersion, userEmail);
+    newMatches = generateTeamsRoundDraw(players, numberOfRounds, courtsCount, numberOfTeams, activeEventId, newDrawVersion, userEmail);
 
   } else {
     const numberOfTeams = parseInt(activeEvent.NumberOfTeams) || 1;
