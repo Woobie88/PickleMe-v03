@@ -25,7 +25,7 @@ var byesPenalty = 20;
 // Search settings
 var numberOfAttempts = 300;
 var iterationsPerAttempt = 20000;
-// var maxRunMs = 300000; // stop early to stay inside the Apps Script time limit
+var maxRunMs = 300000; // stop early to stay inside the Apps Script time limit
 
 function generateTeamsRoundDraw(players, numberOfRounds, courtsCount, numberOfTeams, activeEventId, newDrawVersion, userEmail) {
   // Get the number of teams
@@ -167,7 +167,7 @@ function generateTeamsRoundDraw(players, numberOfRounds, courtsCount, numberOfTe
   var bestSchedule = null;
   var attemptsRun = 0;
   for (var attempt = 0; attempt < numberOfAttempts; attempt++) {
-    // if (Date.now() - startTime > maxRunMs) break;
+    if (Date.now() - startTime > maxRunMs) break;
     var schedule = buildInitialSchedule();
     var currentCost = scoreDraw(schedule);
     var attemptBestCost = currentCost;
