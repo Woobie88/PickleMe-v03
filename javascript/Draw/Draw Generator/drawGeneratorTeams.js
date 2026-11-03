@@ -23,7 +23,7 @@ var matchupPenalty = 100; // cost for repeating a pair-vs-pair matchUp before al
 var byesPenalty = 20;
 
 // Search settings
-var numberOfAttempts = 300;
+var numberOfAttempts = 20;
 var iterationsPerAttempt = 20000;
 var maxRunMs = 300000; // stop early to stay inside the Apps Script time limit
 
