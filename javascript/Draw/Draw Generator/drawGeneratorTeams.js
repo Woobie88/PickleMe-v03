@@ -46,6 +46,10 @@ function generateTeamsRoundDraw(players, numberOfRounds, courtsCount, numberOfTe
   var maxPairRepeats = Math.ceil(numberOfRounds * pairsPerRound / pairsPerTeam);
   var matchesPerRound = numberOfTeams * (numberOfTeams - 1) / 2;
   
+  console.log("numberOfTeams", numberOfTeams,
+  "team sizes", teamArrays.map(function(t) { return t.length; }),
+  "playersPerTeam", playersPerTeam,
+  "pairsPerRound", pairsPerRound);
 
   if (pairsPerRound !== numberOfTeams - 1) throw new Error("Each team needs " + (numberOfTeams - 1) + " pairs per round");
   if (matchesPerRound > courtsCount) throw new Error("Not enough courts");
