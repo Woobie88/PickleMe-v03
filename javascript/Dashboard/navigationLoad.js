@@ -261,7 +261,7 @@ function closeAppMenu() {
 function handleAppMenuAction(action) {
   closeAppMenu();
   switch (action) {
-    case 'about':   navigateToScreen('about');   break;
+    case 'about':   openAbout('about');   break;
     case 'profile': navigateToScreen('profile'); break;
     case 'help':    openHelp('help');    break;
     case 'logout':  handleLogOut();              break;

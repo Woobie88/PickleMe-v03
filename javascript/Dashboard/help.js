@@ -333,6 +333,23 @@ function closeHelp() {
   document.getElementById('help-overlay')?.classList.remove('open');
 }
 
+function openAbout() {
+  const key = getHelpKey();
+  const content = HELP_CONTENT[key] || HELP_CONTENT[key.split(':')[0]] || HELP_CONTENT._default;
+
+  // Don't stack two sheets if a game detail panel happens to be open
+  document.getElementById('format-detail-overlay')?.classList.remove('open');
+
+  document.getElementById('help-title').innerText = content.title;
+  document.getElementById('help-body-content').innerHTML = buildHelpHtml(content, key);
+  document.getElementById('help-body-content').scrollTop = 0;
+  document.getElementById('help-overlay').classList.add('open');
+}
+
+function closeAbout() {
+  document.getElementById('help-overlay')?.classList.remove('open');
+}
+
 // Close on Escape
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeHelp();
