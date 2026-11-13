@@ -149,7 +149,7 @@ async function renderDrawCards(payload, { silent = false } = {}) {
       metaLine = `Result ${team1Result} - ${team2Result} || Exp Res. ${m.ExpectedTeam1Score} - ${m.ExpectedTeam2Score}`;
     } else {
       const duprDelta = Math.abs((parseFloat(m.Team1AvgDUPR) || 0) - (parseFloat(m.Team2AvgDUPR) || 0)).toFixed(2);
-      metaLine = `DUPR Diff ${duprDelta} || Exp Res. ${m.ExpectedTeam1Score} - ${m.ExpectedTeam2Score}`;
+      metaLine = `DUPR &plusmn; ${duprDelta} || Exp Res. ${m.ExpectedTeam1Score} - ${m.ExpectedTeam2Score}`;
     }
 
     const contentHtml = `
@@ -638,7 +638,7 @@ async function renderCurrentRoundView(payload, { silent = false } = {}) {
       metaLine = `Result ${team1Result} - ${team2Result} || Exp Res. ${m.ExpectedTeam1Score} - ${m.ExpectedTeam2Score}`;
     } else {
       const duprDelta = Math.abs((parseFloat(m.Team1AvgDUPR) || 0) - (parseFloat(m.Team2AvgDUPR) || 0)).toFixed(2);
-      metaLine = `DUPR Diff ${duprDelta} || Exp Res. ${m.ExpectedTeam1Score} - ${m.ExpectedTeam2Score}`;
+      metaLine = `DUPR &plusmn; ${duprDelta} || Exp Res. ${m.ExpectedTeam1Score} - ${m.ExpectedTeam2Score}`;
     }
     const contentHtml = `
       <h4>${team1} vs. ${team2}</h4>
