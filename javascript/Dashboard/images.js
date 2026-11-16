@@ -9,7 +9,7 @@ const daysOfWeek = [{
 }];
 
 const courts = [{
-  "court-1": "https://Woobie88/PickleMe-v03/icons/courts/1.png",
+  "court-1": "Woobie88/PickleMe-v03/icons/courts/1.png",
   "court-2": "https://i.postimg.cc/rpsgwWPC/2.png",
   "court-3": "https://i.postimg.cc/N0nD9M31/3.png",
   "court-4": "https://i.postimg.cc/9f01QTnd/4.png",
