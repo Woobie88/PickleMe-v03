@@ -196,7 +196,6 @@ async function renderStandingsView(payload) {
       : (parseInt(activeEvent.NumberOfTeams) || 1);
     for (let g = 1; g <= numberOfGroups; g++) {
       const groupEntries = standings.filter(entry => String(entry.player.Team) === String(g));
-      console.log('Matches entries is', matches);
       if (groupEntries.length === 0) continue;
 
       const teamStats = calculateTeamStats(g, matches);
@@ -282,8 +281,8 @@ function calculateTeamStats(teamNumber, matches) {
   matches.forEach(m => {
     if (!m.Team1WinLoss || !m.Team2WinLoss) return; // only completed matches
 
-    const onTeam1 = String(m.Team1Number) === String(teamNumber);
-    const onTeam2 = String(m.Team2Number) === String(teamNumber);
+    const onTeam1 = String(m.Team1) === String(teamNumber);
+    const onTeam2 = String(m.Team2) === String(teamNumber);
     if (!onTeam1 && !onTeam2) return;
 
     games++;
