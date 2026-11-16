@@ -301,8 +301,5 @@ function calculateTeamStats(teamNumber, matches) {
     expPointsFor += myExpScore;
     expPointsAgainst += oppExpScore;
   });
-  console.log(
-    `G:${games} W:${wins} L:${losses} PF:${pointsFor} PA:${pointsAgainst} ExpPF:${expPointsFor} ExpPA:${expPointsAgainst}`
-  );
   return { games, wins, losses, pointsFor, pointsAgainst, expPointsFor, expPointsAgainst };
 }
