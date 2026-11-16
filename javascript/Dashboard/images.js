@@ -17,18 +17,18 @@ const courts = [{
   "court-6": "https://i.postimg.cc/q7FwhRPL/6.png",
   "court-7": "https://i.postimg.cc/k5Hs640N/7.png",
   "court-8": "https://i.postimg.cc/Pq7ypxgM/8.png",
-  "court-9": "https://i.postimg.cc/wMRDJ6Qs/9.png",
-  "court-10": "https://i.postimg.cc/90wyTWY4/10.png",
-  "court-11": "https://i.postimg.cc/pr5K82Jy/11.png",
-  "court-12": "https://i.postimg.cc/LXbznqLz/12.png",
-  "court-13": "https://i.postimg.cc/fLrxJ3m9/13.png",
-  "court-14": "https://i.postimg.cc/bJBQsGkG/14.png",
-  "court-15": "https://i.postimg.cc/KzHnRKB1/15.png",
-  "court-16": "https://i.postimg.cc/LXbznqLh/16.png",
-  "court-17": "https://i.postimg.cc/76WgfC04/17.png",
-  "court-18": "https://i.postimg.cc/Jn2bGyZm/18.png",
-  "court-19": "https://i.postimg.cc/26K4VqhD/19.png",
-  "court-20": "https://i.postimg.cc/KzHnRKBh/20.png"
+  "court-9": "https://i.postimg.cc/Zqy4yn9K/9.png",
+  "court-10": "https://i.postimg.cc/x1Z9CMdn/10.png",
+  "court-11": "https://i.postimg.cc/Y99N3cHk/11.png",
+  "court-12": "https://i.postimg.cc/FH6hR3Kh/12.png",
+  "court-13": "https://i.postimg.cc/Bv141b8T/13.png",
+  "court-14": "https://i.postimg.cc/q7C4CqtJ/14.png",
+  "court-15": "https://i.postimg.cc/Pq8T8JLD/15.png",
+  "court-16": "https://i.postimg.cc/Bv141b8n/16.png",
+  "court-17": "https://i.postimg.cc/htYKjTGn/17.png",
+  "court-18": "https://i.postimg.cc/52rf0Lt1/18.png",
+  "court-19": "https://i.postimg.cc/g06m6jwj/19.png",
+  "court-20": "https://i.postimg.cc/yNSsSxJZ/20.png"
 }];
 
 const playerSeeds = [{
