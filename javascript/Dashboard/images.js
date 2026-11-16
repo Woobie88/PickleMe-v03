@@ -16,7 +16,19 @@ const courts = [{
   "court-5": "https://i.postimg.cc/q7qQvn5c/5.png",
   "court-6": "https://i.postimg.cc/q7FwhRPL/6.png",
   "court-7": "https://i.postimg.cc/k5Hs640N/7.png",
-  "court-8": "https://i.postimg.cc/Pq7ypxgM/8.png"
+  "court-8": "https://i.postimg.cc/Pq7ypxgM/8.png",
+  "court-9": "https://i.postimg.cc/Pq7ypxgM/8.png",
+  "court-10": "https://i.postimg.cc/Pq7ypxgM/8.png",
+  "court-11": "https://i.postimg.cc/Pq7ypxgM/8.png",
+  "court-12": "https://i.postimg.cc/Pq7ypxgM/8.png",
+  "court-13": "https://i.postimg.cc/Pq7ypxgM/8.png",
+  "court-14": "https://i.postimg.cc/Pq7ypxgM/8.png",
+  "court-15": "https://i.postimg.cc/Pq7ypxgM/8.png",
+  "court-16": "https://i.postimg.cc/Pq7ypxgM/8.png",
+  "court-17": "https://i.postimg.cc/Pq7ypxgM/8.png",
+  "court-18": "https://i.postimg.cc/Pq7ypxgM/8.png",
+  "court-19": "https://i.postimg.cc/Pq7ypxgM/8.png",
+  "court-20": "https://i.postimg.cc/Pq7ypxgM/8.png"
 }];
 
 const playerSeeds = [{
