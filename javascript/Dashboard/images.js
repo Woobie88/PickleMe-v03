@@ -9,14 +9,14 @@ const daysOfWeek = [{
 }];
 
 const courts = [{
-  "court-1": "https://i.postimg.cc/cJCTLYbB/1.png",
-  "court-2": "https://i.postimg.cc/rpsgwWPC/2.png",
-  "court-3": "https://i.postimg.cc/N0nD9M31/3.png",
-  "court-4": "https://i.postimg.cc/9f01QTnd/4.png",
-  "court-5": "https://i.postimg.cc/q7qQvn5c/5.png",
-  "court-6": "https://i.postimg.cc/q7FwhRPL/6.png",
-  "court-7": "https://i.postimg.cc/k5Hs640N/7.png",
-  "court-8": "https://i.postimg.cc/Pq7ypxgM/8.png",
+  "court-1": "https://i.postimg.cc/wxt6JtDj/1.png",
+  "court-2": "https://i.postimg.cc/3ryKpy28/2.png",
+  "court-3": "https://i.postimg.cc/fW3wX3Yw/3.png",
+  "court-4": "https://i.postimg.cc/dQ7qd7GJ/4.png",
+  "court-5": "https://i.postimg.cc/DfW2sWLY/5.png",
+  "court-6": "https://i.postimg.cc/DfW2sWLD/6.png",
+  "court-7": "https://i.postimg.cc/44KJtKVS/7.png",
+  "court-8": "https://i.postimg.cc/nVsH7sBW/8.png",
   "court-9": "https://i.postimg.cc/wMRDJ6Qs/9.png",
   "court-10": "https://i.postimg.cc/90wyTWY4/10.png",
   "court-11": "https://i.postimg.cc/pr5K82Jy/11.png",
