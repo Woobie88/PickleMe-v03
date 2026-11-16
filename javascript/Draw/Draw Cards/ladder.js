@@ -194,7 +194,7 @@ async function renderStandingsView(payload) {
     const numberOfGroups = grouping === 'Pairs'
       ? Math.ceil(players.length / 2)
       : (parseInt(activeEvent.NumberOfTeams) || 1);
-
+    console.log('The number of groups is',numberOfGroups);
     for (let g = 1; g <= numberOfGroups; g++) {
       const groupEntries = standings.filter(entry => String(entry.player.Team) === String(g));
       if (groupEntries.length === 0) continue;
