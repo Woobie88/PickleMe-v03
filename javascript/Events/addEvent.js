@@ -21,10 +21,16 @@ function renderAddEventDetailScreen() {
 function adjustAeCourts(direction) {
   const hiddenInput = document.getElementById('ae-event-courts');
   const displaySpan = document.getElementById('ae-courts-value');
-  let current = parseInt(hiddenInput.value) || 1;
-  current = Math.max(1, current + direction);
+
+  let current = parseInt(hiddenInput.value, 10) || 1;
+  current = Math.min(20, Math.max(1, current + direction));
+
   hiddenInput.value = current;
   displaySpan.innerText = current;
+
+  const buttons = displaySpan.parentElement.querySelectorAll('.score-btn');
+  buttons[0].disabled = current <= 1;
+  buttons[1].disabled = current >= 20;
 }
 
 function adjustAeDuprLimit(direction) {

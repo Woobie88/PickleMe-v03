@@ -750,6 +750,11 @@ body {
   background-color: #243249;
 }
 
+#screen-event-detail .score-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 #screen-event-detail .score-value {
   font-size: 1.3rem;
   font-weight: 700;
