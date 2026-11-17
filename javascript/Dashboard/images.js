@@ -71,7 +71,17 @@ const playerSeeds = [{
   "seed-37": "https://i.postimg.cc/Pq4JyBNS/37.png",
   "seed-38": "https://i.postimg.cc/xdYqK0j6/38.png",
   "seed-39": "https://i.postimg.cc/rw5K0dTw/39.png",
-  "seed-40": "https://i.postimg.cc/sg5vQBz1/40.png"
+  "seed-40": "https://i.postimg.cc/sg5vQBz1/40.png",
+  "seed-41": "https://i.postimg.cc/jjH3ZcRp/41.png",
+  "seed-42": "https://i.postimg.cc/s2YHwmV3/42.png",
+  "seed-43": "https://i.postimg.cc/zfC207qd/43.png",
+  "seed-44": "https://i.postimg.cc/CKGrm7w6/44.png",
+  "seed-45": "https://i.postimg.cc/hGLZpsSB/45.png",
+  "seed-46": "https://i.postimg.cc/R07pXdvp/46.png",
+  "seed-47": "https://i.postimg.cc/VNqZDgY1/47.png",
+  "seed-48": "https://i.postimg.cc/pdfcqCPG/48.png",
+  "seed-49": "https://i.postimg.cc/pdfcqC2v/49.png",
+  "seed-50": "https://i.postimg.cc/7L3tm9qc/50.png"
 }];
 
 const ladderRankings = [{
