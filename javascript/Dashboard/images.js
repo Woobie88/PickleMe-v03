@@ -44,15 +44,14 @@ const playerSeeds = [{
   "seed-10": "https://i.postimg.cc/dQXQDTsp/10.png",
   "seed-11": "https://i.postimg.cc/7Z1qBsgF/11.png",
   "seed-12": "https://i.postimg.cc/L8FH3KZt/12.png",
-  "seed-13": "https://i.postimg.cc/jq3xWr2w/13.png",
-  "seed-14": "https://i.postimg.cc/BZ7S8Gbx/14.png",
-  "seed-15": "https://i.postimg.cc/tRvq1HJd/15.png",
-  "seed-16": "https://i.postimg.cc/WbD2gfqh/16.png",
-  "seed-17": "https://i.postimg.cc/4NKJVFHh/17.png",
-  "seed-18": "https://i.postimg.cc/PrLtYFvW/18.png",
-  "seed-19": "https://i.postimg.cc/4NKJVFHv/19.png",
-  "seed-20": "https://i.postimg.cc/fT3wmgSx/20.png",
-  "seed-21": "https://i.postimg.cc/pT63XN2D/21.png"
+  "seed-13": "https://i.postimg.cc/vTf3fSjt/13.png",
+  "seed-14": "https://i.postimg.cc/j2PZPk92/14.png",
+  "seed-15": "https://i.postimg.cc/WzgXgfKn/15.png",
+  "seed-16": "https://i.postimg.cc/90ZJZNSz/16.png",
+  "seed-17": "https://i.postimg.cc/Fz3D3nqy/17.png",
+  "seed-18": "https://i.postimg.cc/PJY2YFc8/18.png",
+  "seed-19": "https://i.postimg.cc/hvTpT3ws/19.png",
+  "seed-20": "https://i.postimg.cc/90ZJZNS7/20.png"
 }];
 
 const ladderRankings = [{
