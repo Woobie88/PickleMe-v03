@@ -19,7 +19,6 @@ function renderAddEventDetailScreen() {
 }
 
 function adjustAeCourts(direction) {
-  console.log('adjustAeCourts running, new version');
   const hiddenInput = document.getElementById('ae-event-courts');
   const displaySpan = document.getElementById('ae-courts-value');
 
