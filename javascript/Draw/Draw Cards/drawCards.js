@@ -141,12 +141,12 @@ async function renderDrawCards(payload, { silent = false } = {}) {
 
     let metaLine;
     if (isComplete && hasRealScore) {
-      metaLine = `Score ${m.Team1Score} - ${m.Team2Score} || Exp Res. ${m.ExpectedTeam1Score} - ${m.ExpectedTeam2Score}`;
+      metaLine = `Score ${m.Team1Score} - ${m.Team2Score}`;
     } else if (isComplete) {
       // Wins-mode result — no score was ever entered, just show W/L
       const team1Result = m.Team1WinLoss === 'Win' ? 'W' : 'L';
       const team2Result = m.Team2WinLoss === 'Win' ? 'W' : 'L';
-      metaLine = `Result ${team1Result} - ${team2Result} || Exp Res. ${m.ExpectedTeam1Score} - ${m.ExpectedTeam2Score}`;
+      metaLine = `Result ${team1Result} - ${team2Result}`;
     } else {
       const duprDelta = Math.abs((parseFloat(m.Team1AvgDUPR) || 0) - (parseFloat(m.Team2AvgDUPR) || 0)).toFixed(2);
       metaLine = `DUPR &plusmn; ${duprDelta} || Exp Res. ${m.ExpectedTeam1Score} - ${m.ExpectedTeam2Score}`;
@@ -631,11 +631,11 @@ async function renderCurrentRoundView(payload, { silent = false } = {}) {
     const hasRealScore = (parseInt(m.Team1Score) || 0) > 0 || (parseInt(m.Team2Score) || 0) > 0;
     let metaLine;
     if (isComplete && hasRealScore) {
-      metaLine = `Score ${m.Team1Score} - ${m.Team2Score} || Exp Res. ${m.ExpectedTeam1Score} - ${m.ExpectedTeam2Score}`;
+      metaLine = `Score ${m.Team1Score} - ${m.Team2Score}`;
     } else if (isComplete) {
       const team1Result = m.Team1WinLoss === 'Win' ? 'W' : 'L';
       const team2Result = m.Team2WinLoss === 'Win' ? 'W' : 'L';
-      metaLine = `Result ${team1Result} - ${team2Result} || Exp Res. ${m.ExpectedTeam1Score} - ${m.ExpectedTeam2Score}`;
+      metaLine = `Result ${team1Result} - ${team2Result}`;
     } else {
       const duprDelta = Math.abs((parseFloat(m.Team1AvgDUPR) || 0) - (parseFloat(m.Team2AvgDUPR) || 0)).toFixed(2);
       metaLine = `DUPR &plusmn; ${duprDelta} || Exp Res. ${m.ExpectedTeam1Score} - ${m.ExpectedTeam2Score}`;
