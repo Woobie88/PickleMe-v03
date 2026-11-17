@@ -65,14 +65,14 @@ const playerSeeds = [{
 }];
 
 const ladderRankings = [{
-  "rank-1": "https://i.postimg.cc/FHPQWfBQ/1.png",
-  "rank-2": "https://i.postimg.cc/K89yqKHS/2.png",
-  "rank-3": "https://i.postimg.cc/Qd6r4Byd/3.png",
-  "rank-4": "https://i.postimg.cc/sgnR6BNQ/4.png",
-  "rank-5": "https://i.postimg.cc/wjWdftGx/5.png",
-  "rank-6": "https://i.postimg.cc/pL0tG96P/6.png",
-  "rank-7": "https://i.postimg.cc/zGd1tLc5/7.png",
-  "rank-8": "https://i.postimg.cc/Mps8PcFS/8.png",
+  "rank-1": "https://i.postimg.cc/g27Cd1vr/1.png",
+  "rank-2": "https://i.postimg.cc/Pq8BqK4m/2.png",
+  "rank-3": "https://i.postimg.cc/fRPGZ1xK/3.png",
+  "rank-4": "https://i.postimg.cc/P57gh0mr/4.png",
+  "rank-5": "https://i.postimg.cc/T3szGBrw/5.png",
+  "rank-6": "https://i.postimg.cc/P57gh0mq/6.png",
+  "rank-7": "https://i.postimg.cc/Bv1dvNgc/7.png",
+  "rank-8": "https://i.postimg.cc/t4cKy8hh/8.png",
   "rank-9": "https://i.postimg.cc/Qd6r4ByV/9.png",
   "rank-10": "https://i.postimg.cc/GmM17B5t/10.png",
   "rank-11": "https://i.postimg.cc/XY20HZDt/11.png",
