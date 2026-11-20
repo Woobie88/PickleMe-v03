@@ -1,4 +1,4 @@
-function generateTeamsRoundDraw(players, allMatches, numberOfRounds, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfTeams, scorers) {
+function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfTeams, scorers) {
     // --- Determine the structure of the match ups based on the number of teams & number of courts --- //
     const structure = determineTeamRoundStructure(numberOfTeams, courtsCount);
     if (!structure) {

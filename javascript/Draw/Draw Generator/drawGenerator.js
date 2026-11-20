@@ -579,7 +579,7 @@ async function generateNRoundsAndPreview(numberOfRounds) {
   } else if (gameId === 'teams') {
     const numberOfTeams = parseInt(activeEvent.NumberOfTeams) || 2;
     let allMatches = [];
-    newMatches = generateTeamsRoundDraw(players, allMatches, numberOfRounds, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfTeams, scorers);
+    newMatches = generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfTeams, scorers);
     return;
     
     // for (let i = 0; i < numberOfRounds; i++) {
