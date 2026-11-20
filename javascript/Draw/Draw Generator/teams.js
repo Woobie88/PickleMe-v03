@@ -24,6 +24,10 @@ function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount
     // --- ****************** --- //
 
     // --- Build bye order based on first selecting team with manual bye, then applying byes accross all teams based on DUPR ranking --- //
+    const wholeTeamByesNeeded = allTeamKeys.length - structure.activeTeams;
+
+    const teamGroupsArray = allTeamKeys.map(k => allTeams[k]);
+    console.log(`Byes needed are ${wholeTeamByesNeeded}, with the teamsGroupApp of`, teamGroupsArray);
     
     
 
