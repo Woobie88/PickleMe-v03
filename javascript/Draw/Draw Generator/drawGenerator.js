@@ -577,7 +577,7 @@ async function generateNRoundsAndPreview(numberOfRounds) {
     console.log(`Generated ${gameId} dummy schedule: ${newMatches.length} matches across ${numberOfRounds} round(s).`);
 
   } else if (gameId === 'teams') {
-    newMatches = generateTeamsRoundDraw(players, allMatches, numberOfRounds, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfTeams, scorers);
+    newMatches = generateTeamsRoundDraw(players, numberOfRounds, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfTeams, scorers);
     return;
     // const numberOfTeams = parseInt(activeEvent.NumberOfTeams) || 2;
     // let allMatches = [];
