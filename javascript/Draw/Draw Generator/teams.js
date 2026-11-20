@@ -6,7 +6,7 @@ function generateTeamsRoundDraw(players, allMatches, numberOfRounds, courtsCount
     const allTeams = {};
     players.forEach(p => { (allTeams[p.Team] = allTeams[p.Team] || []).push(p); });
     const allTeamKeys = Object.keys(allTeams).sort((a, b) => parseInt(a) - parseInt(b));
-    console.log(`All teams is ${allTeamKeys}`);
+    console.log(`All teams key is ${allTeamKeys}, with the teams being ${allTeams}`);
     return;
 
     // --- NOTE MAY DO AT END --- //
