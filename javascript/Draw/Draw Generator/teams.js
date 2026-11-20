@@ -1,6 +1,10 @@
 function generateTeamsRoundDraw(players, allMatches, numberOfRounds, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfTeams, scorers) {
     // --- Determine the structure of the match ups based on the number of teams & number of courts --- //
-    
+    const structure = determineTeamRoundStructure(numberOfTeams, courtsCount);
+    if (!structure) {
+        console.error(`No valid team round structure found for ${numberOfTeams} teams / ${courtsCount} courts.`);
+        return [];
+    }
 
     // --- Build the players into each team, sorting rank by DUPR rating --- //
     const allTeams = {};
