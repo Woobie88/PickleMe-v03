@@ -14,7 +14,6 @@ function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount
 
     const allTeamKeys = Object.keys(allTeams).sort((a, b) => parseInt(a) - parseInt(b));
     console.log(`All teams key is ${allTeamKeys}, with the teams being`, allTeams);
-    return;
 
     // --- NOTE MAY DO AT END --- //
 
