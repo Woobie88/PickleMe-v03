@@ -577,15 +577,17 @@ async function generateNRoundsAndPreview(numberOfRounds) {
     console.log(`Generated ${gameId} dummy schedule: ${newMatches.length} matches across ${numberOfRounds} round(s).`);
 
   } else if (gameId === 'teams') {
-    const numberOfTeams = parseInt(activeEvent.NumberOfTeams) || 2;
-    let allMatches = [];
-    for (let i = 0; i < numberOfRounds; i++) {
-      const roundNumber = startRound + i;
-      const roundMatches = generateTeamsRoundDraw(players, allMatches, roundNumber, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfTeams, scorers);
-      allMatches.push(...roundMatches);
-    }
-    newMatches = allMatches;
-    console.log(`Generated Teams draw: ${newMatches.length} matches across ${numberOfRounds} round(s).`);
+    newMatches = generateTeamsRoundDraw(players, allMatches, numberOfRounds, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfTeams, scorers);
+    return;
+    // const numberOfTeams = parseInt(activeEvent.NumberOfTeams) || 2;
+    // let allMatches = [];
+    // for (let i = 0; i < numberOfRounds; i++) {
+    //   const roundNumber = startRound + i;
+    //   const roundMatches = generateTeamsRoundDraw(players, allMatches, roundNumber, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfTeams, scorers);
+    //   allMatches.push(...roundMatches);
+    // }
+    // newMatches = allMatches;
+    // console.log(`Generated Teams draw: ${newMatches.length} matches across ${numberOfRounds} round(s).`);
 
   } else {
     const numberOfTeams = parseInt(activeEvent.NumberOfTeams) || 1;
