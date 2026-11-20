@@ -92,7 +92,7 @@ function generateTeamsRoundDraw(players, allMatches, numberOfRounds, courtsCount
     const teamPoolCursor = {};
     activeTeamKeys.forEach(t => teamPoolCursor[t] = 0);
 
-    const allMatches = [];
+    // const allMatches = [];
     let courtCursor = 1;
 
     teamPairings.forEach(([teamAKey, teamBKey]) => {
