@@ -4,7 +4,10 @@ function generateTeamsRoundDraw(players, allMatches, numberOfRounds, courtsCount
 
     // --- Build the players into each team, sorting rank by DUPR rating --- //
     const allTeams = {};
-    players.forEach(p => { (allTeams[p.Team] = allTeams[p.Team] || []).push(p); });
+    [...players]
+    .sort((a, b) => (parseFloat(b.DUPR) || 0) - (parseFloat(a.DUPR) || 0))
+    .forEach(p => { (allTeams[p.Team] = allTeams[p.Team] || []).push(p); });
+
     const allTeamKeys = Object.keys(allTeams).sort((a, b) => parseInt(a) - parseInt(b));
     console.log(`All teams key is ${allTeamKeys}, with the teams being`, allTeams);
     return;
