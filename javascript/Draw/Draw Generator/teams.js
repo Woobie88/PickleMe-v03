@@ -5,6 +5,7 @@ function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount
         console.error(`No valid team round structure found for ${numberOfTeams} teams / ${courtsCount} courts.`);
         return [];
     }
+    console.log('The structure is', structure);
 
     // --- Build the players into each team, sorting rank by DUPR rating --- //
     const allTeams = {};
