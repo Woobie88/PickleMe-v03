@@ -65,8 +65,8 @@ function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount
     alert(
         `Type: ${isTeamStructure.type}\n` +
         `Valid: ${isTeamStructure.valid ? "Yes" : "No"}\n` +
-        `Reason: ${isTeamStructure.reason}` +
-        `Number of Courts: ${courtsCount}` +
+        `Reason: ${isTeamStructure.reason}\n` +
+        `Number of Courts: ${courtsCount}\n` +
         `Number of Teams; ${numberOfTeams}`
     );
 
