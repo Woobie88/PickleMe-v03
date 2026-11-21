@@ -4,14 +4,7 @@
 // --- 2. More than 2 teams & courts <= number of teams; ALWAYS valid provided there are enough players --- //
 // --- 3. More than 2 teams & courts  > number of teams; ONLY valid if courts are divisible by number teams & there are enough players --- //
 // --- 4. More than 2 teams & courts  > number of teams; NOT valid if courts are not divisible by number of teams--- //
-// --- isValidPlayer is number of players / 4 >= courtsCount
-/ *** Team Structure Validation *** //
-// --- Valid team structures --- //
-// --- 1. Number of teams = 2; ALWAYS valid, provided there are enough players --- //
-// --- 2. More than 2 teams & courts <= number of teams; ALWAYS valid provided there are enough players --- //
-// --- 3. More than 2 teams & courts  > number of teams; ONLY valid if courts are divisible by number teams & there are enough players --- //
-// --- 4. More than 2 teams & courts  > number of teams; NOT valid if courts are not divisible by number of teams--- //
-// --- isValidPlayer is number of players / 4 >= courtsCount
+// --- isValidPlayer is number of players / 4 >= courtsCount //
 function teamStructureType(players, courtsCount, numberOfTeams, allTeams) {
     // players can be a count or an array of players
     const playerCount = Array.isArray(players) ? players.length : players;
