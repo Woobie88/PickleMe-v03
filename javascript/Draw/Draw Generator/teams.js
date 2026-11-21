@@ -1,12 +1,62 @@
-function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfTeams, scorers) {
-    // --- Determine the structure of the match ups based on the number of teams & number of courts --- //
-    const structure = determineTeamRoundStructure(numberOfTeams, courtsCount);
-    if (!structure) {
-        console.error(`No valid team round structure found for ${numberOfTeams} teams / ${courtsCount} courts.`);
-        return [];
-    }
-    console.log('The structure is', structure);
+// *** Team Structure Validation *** //
+// --- Valid team structures --- //
+// --- 1. Number of teams = 2; ALWAYS valid, provided there are enough players --- //
+// --- 2. More than 2 teams & courts <= number of teams; ALWAYS valid provided there are enough players --- //
+// --- 3. More than 2 teams & courts  > number of teams; ONLY valid if courts are divisible by number teams & there are enough players --- //
+// --- 4. More than 2 teams & courts  > number of teams; NOT valid if courts are not divisible by number of teams--- //
+// --- isValidPlayer is number of players / 4 >= courtsCount
+/ *** Team Structure Validation *** //
+// --- Valid team structures --- //
+// --- 1. Number of teams = 2; ALWAYS valid, provided there are enough players --- //
+// --- 2. More than 2 teams & courts <= number of teams; ALWAYS valid provided there are enough players --- //
+// --- 3. More than 2 teams & courts  > number of teams; ONLY valid if courts are divisible by number teams & there are enough players --- //
+// --- 4. More than 2 teams & courts  > number of teams; NOT valid if courts are not divisible by number of teams--- //
+// --- isValidPlayer is number of players / 4 >= courtsCount
+function teamStructureType(players, courtsCount, numberOfTeams, allTeams) {
+    // players can be a count or an array of players
+    const playerCount = Array.isArray(players) ? players.length : players;
 
+    // Fall back to allTeams.length if numberOfTeams isn't supplied
+    const teamCount = numberOfTeams ?? (Array.isArray(allTeams) ? allTeams.length : 0);
+
+    // allTeams (if provided) must agree with numberOfTeams
+    if (Array.isArray(allTeams) && allTeams.length !== teamCount) {
+        return { type: 0, valid: false, reason: "allTeams length does not match numberOfTeams" };
+    }
+
+    // Need at least 2 teams
+    if (teamCount < 2) {
+        return { type: 0, valid: false, reason: "At least 2 teams are required" };
+    }
+
+    // Player check: players / 4 >= courtsCount
+    const isValidPlayer = playerCount / 4 >= courtsCount;
+    if (!isValidPlayer) {
+        return { type: 0, valid: false, reason: "Not enough players for the number of courts" };
+    }
+
+    // 1. Exactly 2 teams: always valid
+    if (teamCount === 2) {
+        return { type: 1, valid: true, reason: "Two teams" };
+    }
+
+    // 2. More than 2 teams, courts <= teams: always valid
+    if (courtsCount <= teamCount) {
+        return { type: 2, valid: true, reason: "Courts do not exceed number of teams" };
+    }
+
+    // 3. More than 2 teams, courts > teams: valid only if courts divisible by teams
+    if (courtsCount % teamCount === 0) {
+        return { type: 3, valid: true, reason: "Courts are divisible by number of teams" };
+    }
+
+    // 4. More than 2 teams, courts > teams, not divisible: invalid
+    return { type: 4, valid: false, reason: "Courts are not divisible by number of teams" };
+}
+
+// *** CORE FUNCTION CALLED TO GENERATE TEAM DRAW *** //
+function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfTeams, scorers) {
+    
     // --- Build the players into each team, sorting rank by DUPR rating --- //
     const allTeams = {};
     [...players]
@@ -15,6 +65,15 @@ function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount
 
     const allTeamKeys = Object.keys(allTeams).sort((a, b) => parseInt(a) - parseInt(b));
     console.log(`All teams key is ${allTeamKeys}, with the teams being`, allTeams);
+
+    // --- Determine the structure of the match ups based on the number of teams & number of courts --- //
+    const isTeamStructure = teamStructureType(players, courtsCount, numberOfTeams, allTeams);
+
+    alert(
+        `Type: ${isTeamStructure.type}\n` +
+        `Valid: ${isTeamStructure.valid ? "Yes" : "No"}\n` +
+        `Reason: ${isTeamStructure.reason}`
+    );
 
     // --- NOTE MAY DO AT END --- //
 
