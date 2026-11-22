@@ -30,17 +30,17 @@ function teamStructureType(players, courtsCount, numberOfTeams, allTeams) {
 
     // 1. Exactly 2 teams: always valid
     if (teamCount === 2) {
-        return { type: 1, valid: true, reason: "Two teams" };
+        return { type: 1, valid: true, reason: "Two teams", teamsPerRound: 2, playersNeededPerRound: courtsCount * 2 };
     }
 
     // 2. More than 2 teams, courts <= teams: always valid
     if (courtsCount <= teamCount) {
-        return { type: 2, valid: true, reason: "Courts do not exceed number of teams" };
+        return { type: 2, valid: true, reason: "Courts do not exceed number of teams", teamsPerRound: 2, playersNeededPerTeam: 2 * 2 };
     }
 
     // 3. More than 2 teams, courts > teams: valid only if courts divisible by teams
     if (courtsCount % teamCount === 0) {
-        return { type: 3, valid: true, reason: "Courts are divisible by number of teams" };
+        return { type: 3, valid: true, reason: "Courts are divisible by number of teams", teamsPerRound: numberOfTeams, playersNeededPerTeam: courtsCount / teamCount * 2 };
     }
 
     // 4. More than 2 teams, courts > teams, not divisible: invalid
@@ -92,7 +92,9 @@ function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount
         `Valid: ${isTeamStructure.valid ? "Yes" : "No"}\n` +
         `Reason: ${isTeamStructure.reason}\n` +
         `Number of Courts: ${courtsCount}\n` +
-        `Number of Teams: ${numberOfTeams}`
+        `Number of Teams: ${numberOfTeams}\n` +
+        `Teams playing per round': ${isTeamStructure.teamsPerRound}\n` +
+        `Players needed per team: ${isTeamStructure.playersNeededPerTeam}`
     );
 
     // --- Determine bye structure --- //
