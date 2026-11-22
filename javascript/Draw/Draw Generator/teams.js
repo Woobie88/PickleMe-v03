@@ -79,7 +79,7 @@ function byeStructure(players, courtsCount, numberOfTeams, allTeams) {
         const playersOnBye = Math.max(0, size - playersNeededPerTeam);
         const [teamKey, roster] = teamEntries[i] ?? [String(i + 1), null];
         return {
-            team: teamsArePlayerArrays || roster === null ? `Team ${teamKey}` : roster, // names if allTeams holds strings
+            team: teamsArePlayerArrays || roster === null ? `Team ${teamKey}` : roster,
             teamKey,
             teamSize: size,
             playersNeeded: playersNeededPerTeam,
@@ -100,12 +100,8 @@ function byeStructure(players, courtsCount, numberOfTeams, allTeams) {
     };
 }
 
-// --- Build all eligible partnerships within each team --- //
-// --- For each team, every possible pairing of two players from that team, with the average DUPR --- //
-// *** Pairing Matrix Per Team *** //
-// --- For each team, every pairing of two players from that team, with the average DUPR --- //
 // *** Pairing List Per Team *** //
-// --- For each team, one entry per pairing: player1 fields, player2 fields, then avgDUPR --- //
+// --- For each team, every possible pairing of two players from that team, with the average DUPR --- //
 function buildPairingMatrices(allTeams) {
     const result = {};
 
@@ -139,7 +135,7 @@ function buildPairingMatrices(allTeams) {
     return result;
 }
 
-/// *** Step 1: Team-level combos *** //
+// *** Step 1: Team-level combos *** //
 // --- courtsCount = combo length (one match per court, but no court is allocated) --- //
 // --- A team never plays itself --- //
 // --- If wholeTeamByes, the excluded team(s) rotate through each combo --- //
@@ -167,7 +163,6 @@ function buildTeamCombos(players, courtsCount, numberOfTeams, allTeams) {
             : playing.map((team, i) => [team, playing[(i + 1) % playing.length]]);
 
         // One match per court slot; the ring repeats if there are more courts than ring matches
-        // (no court number is assigned)
         const matches = Array.from({ length: courtsCount }, (_, c) => {
             const [team1, team2] = ring[c % ring.length];
             return { team1, team2 };
@@ -182,7 +177,6 @@ function buildTeamCombos(players, courtsCount, numberOfTeams, allTeams) {
 // *** Step 2: Player-level combos *** //
 // --- Fills each match with a pairing from each team, no player used twice within a combo --- //
 // --- pairings = output of buildPairingMatrices(allTeams) --- //
-// --- No court is allocated; combo length = number of matches (courtsCount) --- //
 function buildPlayerCombos(teamCombos, pairings, maxCombos = 100000) {
     const results = [];
     const round3 = n => Math.round(n * 1000) / 1000;
@@ -266,7 +260,8 @@ function buildPlayerCombos(teamCombos, pairings, maxCombos = 100000) {
 // --- Priority 1: unique partnerships (hard cap per cycle) --- //
 // --- Priority 2: lowest total absDUPR + penalty among the valid cycles --- //
 // --- Full pool restored at the start of each cycle; combos used before carry the 1000000 penalty --- //
-function buildRounds(playerCombos, numberOfRounds, byeSchedule = []) {
+// --- Round numbers start at startRound --- //
+function buildRounds(playerCombos, numberOfRounds, startRound = 1, byeSchedule = []) {
     const score = c => c.comboAbsTotal + c.penalty;
     const pairKey = (a, b) => [a, b].sort().join("|");
     const teamsKey = teams => [...teams].map(String).sort().join(",");
@@ -309,8 +304,10 @@ function buildRounds(playerCombos, numberOfRounds, byeSchedule = []) {
 
     const rounds = [];
 
+    // start / end / i are positions within this run (0-based); round numbers add startRound
     for (let start = 0; start < numberOfRounds; start += cycleLength) {
         const end = Math.min(start + cycleLength, numberOfRounds);
+        const cycleLabel = `${startRound + start}-${startRound + end - 1}`;
 
         // --- Full pool for each round of this cycle, grouped by partnership set, best score first --- //
         const groupsByLevel = [];
@@ -337,7 +334,7 @@ function buildRounds(playerCombos, numberOfRounds, byeSchedule = []) {
         }
 
         if (groupsByLevel.some(g => g.length === 0)) {
-            console.log(`Cycle starting round ${start + 1}: a round has no eligible combos`);
+            console.log(`Cycle rounds ${cycleLabel}: a round has no eligible combos`);
             break;
         }
 
@@ -394,31 +391,32 @@ function buildRounds(playerCombos, numberOfRounds, byeSchedule = []) {
             const result = search(cap);
             if (result.best) {
                 chosen = result.best;
-                console.log(`Cycle rounds ${start + 1}-${end}: cap ${cap} | total score ${result.bestCost}${result.hitLimit ? " (node limit hit, best found so far)" : " (optimal)"}`);
+                console.log(`Cycle rounds ${cycleLabel}: cap ${cap} | total score ${result.bestCost}${result.hitLimit ? " (node limit hit, best found so far)" : " (optimal)"}`);
                 break;
             }
         }
         if (!chosen) {
-            console.log(`Cycle rounds ${start + 1}-${end}: no valid cycle found`);
+            console.log(`Cycle rounds ${cycleLabel}: no valid cycle found`);
             break;
         }
 
         // --- Record the rounds and penalise the combos used --- //
         chosen.forEach((selected, idx) => {
             const i = start + idx;
+            const roundNumber = startRound + i;
             const byes = byeSchedule[i] ?? { excludedTeams: [], playersOnBye: [] };
             const roundScore = score(selected);   // score before the penalty is applied
             selected.penalty += 1000000;
 
             rounds.push({
-                round: i + 1,
+                round: roundNumber,
                 combo: selected,
                 score: roundScore,
                 teamsOnBye: byes.excludedTeams,
                 playersOnBye: byes.playersOnBye
             });
 
-            console.log(`===== Round ${i + 1} | Abs DUPR total: ${roundScore} | Teams on bye: ${byes.excludedTeams.join(", ") || "none"} | Players on bye: ${byes.playersOnBye.join(", ") || "none"} =====`);
+            console.log(`===== Round ${roundNumber} | Abs DUPR total: ${roundScore} | Teams on bye: ${byes.excludedTeams.join(", ") || "none"} | Players on bye: ${byes.playersOnBye.join(", ") || "none"} =====`);
             console.table(selected.matches.map(m => ({
                 match: `Team ${m.team1} v Team ${m.team2}`,
                 pair1: `${m.pair1.player1PlayerID} / ${m.pair1.player2PlayerID}`,
@@ -493,7 +491,7 @@ function summarisePlayerHistory(rounds, players = []) {
                 maxSameOpponent: mo.max,
                 totalPartnerings: sumOf(s.partners),
                 totalOpponentings: sumOf(s.opponents),
-                maxPartnerIDs: mp.ids.join(", "),       // who the max was with
+                maxPartnerIDs: mp.ids.join(", "),
                 maxOpponentIDs: mo.ids.join(", "),
                 partnerIDs: [...s.partners.keys()].join(", "),
                 opponentIDs: [...s.opponents.keys()].join(", ")
@@ -515,8 +513,8 @@ function summarisePlayerHistory(rounds, players = []) {
 // *** Build byes by round *** //
 // --- A. Whole team byes: shuffle the rotation order once, then repeat the sequence --- //
 // --- B. Player byes: shuffle seeds in one team, every team uses the same seed(s), repeat the cycle --- //
-// --- Even teams only for now --- //
-function buildByeSchedule(allTeams, teamCombos, byeInfo, numberOfRounds) {
+// --- Even teams only. Round numbers start at startRound --- //
+function buildByeSchedule(allTeams, teamCombos, byeInfo, numberOfRounds, startRound = 1) {
     // A1-A3. Each team combo already has its own excluded team(s), so every team gets a bye per cycle
     const teamOrder = shuffle(teamCombos.map(c => c.excludedTeams));
 
@@ -545,7 +543,7 @@ function buildByeSchedule(allTeams, teamCombos, byeInfo, numberOfRounds) {
             }
         });
 
-        schedule.push({ round: r + 1, excludedTeams, playersOnBye });
+        schedule.push({ round: startRound + r, excludedTeams, playersOnBye });
     }
 
     console.log("===== Bye schedule =====");
@@ -559,7 +557,7 @@ function buildByeSchedule(allTeams, teamCombos, byeInfo, numberOfRounds) {
 }
 
 // *** Convert buildRounds output into match records (same format as newMatches) *** //
-function buildMatchRecordsFromRounds(rounds, players, courtsCount, eventId, drawVersion, userEmail) {
+function buildMatchRecordsFromRounds(rounds, players, courtsCount, eventId, drawVersion, userEmail, existingMatches = []) {
     const playerById = {};
     players.forEach(p => { playerById[p.PlayerID] = p; });
 
@@ -573,8 +571,8 @@ function buildMatchRecordsFromRounds(rounds, players, courtsCount, eventId, draw
             teamB: [playerById[m.pair2.player1PlayerID], playerById[m.pair2.player2PlayerID]]
         }));
 
-        // Allocate courts using the court history built from earlier rounds
-        const { courtCounts } = buildDrawHistory(allRecords);
+        // Court history includes matches that already existed before this run
+        const { courtCounts } = buildDrawHistory([...existingMatches, ...allRecords]);
         const courted = assignCourts(matchups, courtNumbers, courtCounts);
 
         courted.forEach((m, idx) => {
@@ -586,7 +584,7 @@ function buildMatchRecordsFromRounds(rounds, players, courtsCount, eventId, draw
 }
 
 // *** CORE FUNCTION CALLED TO GENERATE TEAM DRAW *** //
-function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfTeams, scorers) {
+function generateTeamsRoundTest(players, allMatches, numberOfRounds, startRound, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfTeams, scorers) {
     // --- Build the players into each team, sorting rank by DUPR rating --- //
     const allTeams = {};
     [...players]
@@ -628,6 +626,7 @@ function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount
     const totalPlayersOnBye = teamByeDetails.reduce((sum, t) => sum + t.playersOnBye, 0);
     alert(
         `Type: ${isTeamStructure.type} | Courts: ${courtsCount} | Teams: ${numberOfTeams}\n` +
+        `Rounds: ${startRound} to ${startRound + numberOfRounds - 1}\n` +
         `Teams playing per round: ${isTeamStructure.teamsPerRound}\n` +
         `Players needed per team: ${isTeamStructure.playersNeededPerTeam}\n` +
         `Whole Team Byes: ${wholeTeamByes ? "Yes" : "No"}` +
@@ -647,7 +646,7 @@ function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount
     }
 
     // --- Build byes by round --- //
-    const byeSchedule = buildByeSchedule(allTeams, teamCombos.combos, isByeStructures, numberOfRounds);
+    const byeSchedule = buildByeSchedule(allTeams, teamCombos.combos, isByeStructures, numberOfRounds, startRound);
 
     // --- Build player level combos --- //
     const playerCombos = buildPlayerCombos(teamCombos.combos, pairings);
@@ -658,12 +657,12 @@ function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount
     console.log(`Player combos built: ${playerCombos.length}`);
 
     // *** BUILD MATCHUPS FOR EACH ROUND *** //
-    const rounds = buildRounds(playerCombos, numberOfRounds, byeSchedule);
+    const rounds = buildRounds(playerCombos, numberOfRounds, startRound, byeSchedule);
     if (rounds.length < numberOfRounds) {
-        console.warn(`Only ${rounds.length} of ${numberOfRounds} rounds could be built.`);
+        console.warn(`Only ${rounds.length} of ${numberOfRounds} rounds could be built (rounds ${startRound}-${startRound + numberOfRounds - 1} requested).`);
     }
     summarisePlayerHistory(rounds, players);
 
     // Same format as newMatches
-    return buildMatchRecordsFromRounds(rounds, players, courtsCount, activeEventId, newDrawVersion, userEmail);
+    return buildMatchRecordsFromRounds(rounds, players, courtsCount, activeEventId, newDrawVersion, userEmail, allMatches);
 }

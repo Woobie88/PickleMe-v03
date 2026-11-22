@@ -579,11 +579,9 @@ async function generateNRoundsAndPreview(numberOfRounds) {
   } else if (gameId === 'teams') {
     const numberOfTeams = parseInt(activeEvent.NumberOfTeams) || 2;
     let allMatches = [];
-    newMatches = generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfTeams, scorers);
+    newMatches = generateTeamsRoundTest(players, allMatches, numberOfRounds, startRound, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfTeams, scorers);
     console.log(`Generated Teams draw: ${newMatches.length} matches across ${numberOfRounds} round(s).`);
 
- 
-    
     // for (let i = 0; i < numberOfRounds; i++) {
     //   const roundNumber = startRound + i;
     //   const roundMatches = generateTeamsRoundDraw(players, allMatches, roundNumber, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfTeams, scorers);
