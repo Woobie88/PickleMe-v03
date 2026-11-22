@@ -263,7 +263,6 @@ function buildPlayerCombos(teamCombos, pairings, maxCombos = 100000) {
 }
 
 // *** BUILD MATCHUPS FOR EACH ROUND *** //
-// --- The match selected MUST NOT include the team(s) or player(s) having a bye that round --- //
 function buildRounds(playerCombos, numberOfRounds, byeSchedule = []) {
     const score = c => c.comboAbsTotal + c.penalty;
     const pairKey = (a, b) => [a, b].sort().join("|");
@@ -280,48 +279,53 @@ function buildRounds(playerCombos, numberOfRounds, byeSchedule = []) {
             m.pair2.player1PlayerID, m.pair2.player2PlayerID
         ]));
         c.excludedKey = teamsKey(c.excludedTeams);
+        c.penalty = 0;
     });
 
-    let available = [...playerCombos];
-    let removed = [];
+    const sortPool = pool => pool.sort((a, b) => score(a) - score(b));
+
+    let available = sortPool([...playerCombos]);   // live pool, always sorted by absDUPR + penalty
+    let holding = [];                              // holding pool
     const rounds = [];
 
     for (let i = 0; i < numberOfRounds; i++) {
         const byes = byeSchedule[i] ?? { excludedTeams: [], playersOnBye: [] };
         const byeKey = teamsKey(byes.excludedTeams);
-        const byePlayers = new Set(byes.playersOnBye);
 
-        // Only combos with this round's excluded team(s) and none of the bye players
+        // Eligible = right excluded team(s) and none of this round's bye players
         const isEligible = c =>
             (byeSchedule.length === 0 || c.excludedKey === byeKey) &&
-            ![...byePlayers].some(id => c.playerIDs.has(id));
+            !byes.playersOnBye.some(id => c.playerIDs.has(id));
 
-        // --- A. Pick best scoring eligible match; if none, add back in all of C --- //
-        let candidates = available.filter(isEligible);
-        if (candidates.length === 0 && removed.length > 0) {
-            available = available.concat(removed);
-            removed = [];
-            candidates = available.filter(isEligible);
+        // 1. Best rated eligible combo
+        let selected = available.find(isEligible);
+
+        // 4. Not enough left to fill the round: drag back the holding pool and resort
+        if (!selected && holding.length > 0) {
+            available = sortPool(available.concat(holding));
+            holding = [];
+            console.log(`Round ${i + 1}: holding pool added back (${available.length} combos)`);
+            selected = available.find(isEligible);
         }
-        if (candidates.length === 0) {
-            console.log(`Round ${i + 1}: no eligible combos left`);
+
+        if (!selected) {
+            console.log(`Round ${i + 1}: no eligible combos`);
             break;
         }
 
-        const selected = candidates.reduce((best, c) => (score(c) < score(best) ? c : best));
         const roundScore = score(selected);   // score before the penalty is applied
 
-        // --- B. Add 1000000 to the penalty of the selected match up --- //
+        // 2. Add 1000000 to the selected combo
         selected.penalty += 1000000;
 
-        // --- C. Remove all instances of those players partnering together & store --- //
+        // 3. Move every combo sharing a partnership with it (including itself) to the holding pool
         const usedPairs = new Set(selected.pairKeys);
         const stillAvailable = [];
         available.forEach(c => {
-            if (c.pairKeys.some(k => usedPairs.has(k))) removed.push(c);
+            if (c === selected || c.pairKeys.some(k => usedPairs.has(k))) holding.push(c);
             else stillAvailable.push(c);
         });
-        available = stillAvailable;
+        available = stillAvailable;   // order is preserved, so it stays sorted
 
         rounds.push({
             round: i + 1,
@@ -340,7 +344,7 @@ function buildRounds(playerCombos, numberOfRounds, byeSchedule = []) {
             pair2Avg: m.pair2.avgDUPR,
             absDiff: m.absDiff
         })));
-        console.log(`Combos remaining: ${available.length} | Stored (removed): ${removed.length}`);
+        console.log(`Available: ${available.length} | Holding: ${holding.length}`);
     }
 
     return rounds;
