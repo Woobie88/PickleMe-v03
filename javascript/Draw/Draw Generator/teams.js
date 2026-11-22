@@ -63,6 +63,8 @@ function byeStructure(players, courtsCount, numberOfTeams, allTeams) {
 
     const result = {
         wholeTeamByes,
+        // Teams sitting out once every court is filled
+        teamByes: wholeTeamByes ? teamCount - courtsCount : 0,
         playerByes,
         // Players left over once every court is filled (4 per court)
         playersOnBye: playerByes ? playerCount - courtsCount * 4 : 0
@@ -98,6 +100,7 @@ function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount
 
     alert(
         `Whole Team Byes: ${isByeStructures.wholeTeamByes ? "Yes" : "No"}\n` +
+        (isByeStructures.wholeTeamByes ? `\nNumber of team byes: ${result.teamByes}` : "") +
         `Player Byes: ${isByeStructures.playerByes ? "Yes" : "No"}` +
         (isByeStructures.playerByes ? `\nPlayers on bye: ${isByeStructures.playersOnBye}` : "")
     );
