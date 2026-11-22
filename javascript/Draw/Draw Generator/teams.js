@@ -409,16 +409,6 @@ function summarisePlayerHistory(rounds, players = []) {
     return summary;   // full version, including partnerIDs and opponentIDs
 }
 
-// *** Helper: Fisher-Yates shuffle (returns a new array) *** //
-function shuffle(arr) {
-    const a = [...arr];
-    for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
-}
-
 // *** Build byes by round *** //
 // --- A. Whole team byes: shuffle the rotation order once, then repeat the sequence --- //
 // --- B. Player byes: shuffle seeds in one team, every team uses the same seed(s), repeat the cycle --- //
