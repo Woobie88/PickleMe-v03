@@ -358,11 +358,20 @@ function summarisePlayerHistory(rounds, players = []) {
         Name: info[id]?.Name ?? "",
         Team: info[id]?.Team ?? "",
         roundsPlayed: 0,
-        partners: new Set(),
-        opponents: new Set(),
-        totalPartnerings: 0,
-        totalOpponentings: 0
+        partners: new Map(),    // PlayerID -> times partnered
+        opponents: new Map()    // PlayerID -> times opposed
     });
+
+    const bump = (map, id) => map.set(id, (map.get(id) ?? 0) + 1);
+
+    // Highest count in a map, plus who it was with (ties are all listed)
+    const maxOf = map => {
+        let max = 0;
+        map.forEach(v => { if (v > max) max = v; });
+        const ids = [...map.entries()].filter(([, v]) => v === max).map(([id]) => id);
+        return { max, ids };
+    };
+    const sumOf = map => [...map.values()].reduce((a, b) => a + b, 0);
 
     rounds.forEach(r => {
         r.combo.matches.forEach(m => {
@@ -374,14 +383,8 @@ function summarisePlayerHistory(rounds, players = []) {
                     const s = get(id);
                     s.roundsPlayed++;
 
-                    const partner = own.find(x => x !== id);
-                    s.partners.add(partner);
-                    s.totalPartnerings++;
-
-                    other.forEach(o => {
-                        s.opponents.add(o);
-                        s.totalOpponentings++;
-                    });
+                    bump(s.partners, own.find(x => x !== id));
+                    other.forEach(o => bump(s.opponents, o));
                 });
             });
         });
@@ -389,24 +392,37 @@ function summarisePlayerHistory(rounds, players = []) {
 
     // Flat summary, one row per player
     const summary = Object.values(stats)
-        .map(s => ({
-            PlayerID: s.PlayerID,
-            Name: s.Name,
-            Team: s.Team,
-            roundsPlayed: s.roundsPlayed,
-            uniquePartners: s.partners.size,
-            uniqueOpponents: s.opponents.size,
-            totalPartnerings: s.totalPartnerings,
-            totalOpponentings: s.totalOpponentings,
-            partnerIDs: [...s.partners].join(", "),
-            opponentIDs: [...s.opponents].join(", ")
-        }))
+        .map(s => {
+            const mp = maxOf(s.partners);
+            const mo = maxOf(s.opponents);
+            return {
+                PlayerID: s.PlayerID,
+                Name: s.Name,
+                Team: s.Team,
+                roundsPlayed: s.roundsPlayed,
+                uniquePartners: s.partners.size,
+                uniqueOpponents: s.opponents.size,
+                maxSamePartner: mp.max,
+                maxSameOpponent: mo.max,
+                totalPartnerings: sumOf(s.partners),
+                totalOpponentings: sumOf(s.opponents),
+                maxPartnerIDs: mp.ids.join(", "),       // who the max was with
+                maxOpponentIDs: mo.ids.join(", "),
+                partnerIDs: [...s.partners.keys()].join(", "),
+                opponentIDs: [...s.opponents.keys()].join(", ")
+            };
+        })
         .sort((a, b) => String(a.Team).localeCompare(String(b.Team)) || a.PlayerID.localeCompare(b.PlayerID));
 
     console.log("===== Partner & Opponent Summary By Player =====");
-    console.table(summary.map(({ partnerIDs, opponentIDs, ...rest }) => rest));
+    console.table(summary.map(({ partnerIDs, opponentIDs, maxPartnerIDs, maxOpponentIDs, ...rest }) => rest));
 
-    return summary;   // full version, including partnerIDs and opponentIDs
+    // Overall maximums across all players
+    const overallMaxPartner = Math.max(0, ...summary.map(s => s.maxSamePartner));
+    const overallMaxOpponent = Math.max(0, ...summary.map(s => s.maxSameOpponent));
+    console.log(`Overall max same partner: ${overallMaxPartner} | Overall max same opponent: ${overallMaxOpponent}`);
+
+    return summary;   // full version, including the ID lists
 }
 
 // *** Build byes by round *** //
