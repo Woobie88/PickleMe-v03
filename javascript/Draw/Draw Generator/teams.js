@@ -263,42 +263,55 @@ function buildPlayerCombos(teamCombos, pairings, maxCombos = 100000) {
 }
 
 // *** BUILD MATCHUPS FOR EACH ROUND *** //
-function buildRounds(playerCombos, numberOfRounds) {
+// --- The match selected MUST NOT include the team(s) or player(s) having a bye that round --- //
+function buildRounds(playerCombos, numberOfRounds, byeSchedule = []) {
     const score = c => c.comboAbsTotal + c.penalty;
     const pairKey = (a, b) => [a, b].sort().join("|");
+    const teamsKey = teams => [...teams].map(String).sort().join(",");
 
-    // Every same-team partnership used in a combo, e.g. "JOLJDrSK|WI0THs5q"
-    const getPairKeys = combo =>
-        combo.matches.flatMap(m => [
+    // Precompute per combo: partnerships, players used, excluded-team key
+    playerCombos.forEach(c => {
+        c.pairKeys = c.matches.flatMap(m => [
             pairKey(m.pair1.player1PlayerID, m.pair1.player2PlayerID),
             pairKey(m.pair2.player1PlayerID, m.pair2.player2PlayerID)
         ]);
+        c.playerIDs = new Set(c.matches.flatMap(m => [
+            m.pair1.player1PlayerID, m.pair1.player2PlayerID,
+            m.pair2.player1PlayerID, m.pair2.player2PlayerID
+        ]));
+        c.excludedKey = teamsKey(c.excludedTeams);
+    });
 
-    // Compute pair keys once per combo
-    playerCombos.forEach(c => { c.pairKeys = getPairKeys(c); });
-
-    let available = [...playerCombos];   // combos still in play
-    let removed = [];                    // C. stored combos
+    let available = [...playerCombos];
+    let removed = [];
     const rounds = [];
 
     for (let i = 0; i < numberOfRounds; i++) {
-        // --- A. Pick best scoring matches --- //
-        // --- If combo length = 0, add back in all of C. --- //
-        if (available.length === 0) {
-            available = removed;
+        const byes = byeSchedule[i] ?? { excludedTeams: [], playersOnBye: [] };
+        const byeKey = teamsKey(byes.excludedTeams);
+        const byePlayers = new Set(byes.playersOnBye);
+
+        // Only combos with this round's excluded team(s) and none of the bye players
+        const isEligible = c =>
+            (byeSchedule.length === 0 || c.excludedKey === byeKey) &&
+            ![...byePlayers].some(id => c.playerIDs.has(id));
+
+        // --- A. Pick best scoring eligible match; if none, add back in all of C --- //
+        let candidates = available.filter(isEligible);
+        if (candidates.length === 0 && removed.length > 0) {
+            available = available.concat(removed);
             removed = [];
+            candidates = available.filter(isEligible);
         }
-        if (available.length === 0) {
-            console.log(`Round ${i + 1}: no combos left`);
+        if (candidates.length === 0) {
+            console.log(`Round ${i + 1}: no eligible combos left`);
             break;
         }
 
-        // --- If combo length > 0, pick the lowest comboAbsTotal + penalty --- //
-        available.sort((a, b) => score(a) - score(b));
-        const selected = available[0];
+        const selected = candidates.reduce((best, c) => (score(c) < score(best) ? c : best));
         const roundScore = score(selected);   // score before the penalty is applied
 
-        // --- B. For the match up selected, add 1000000 to the penalty --- //
+        // --- B. Add 1000000 to the penalty of the selected match up --- //
         selected.penalty += 1000000;
 
         // --- C. Remove all instances of those players partnering together & store --- //
@@ -310,10 +323,15 @@ function buildRounds(playerCombos, numberOfRounds) {
         });
         available = stillAvailable;
 
-        rounds.push({ round: i + 1, combo: selected, score: roundScore });
+        rounds.push({
+            round: i + 1,
+            combo: selected,
+            score: roundScore,
+            teamsOnBye: byes.excludedTeams,
+            playersOnBye: byes.playersOnBye
+        });
 
-        // --- Console log the result for this round --- //
-        console.log(`===== Round ${i + 1} | Abs DUPR total: ${roundScore} | Excluded teams: ${selected.excludedTeams.join(", ") || "none"} =====`);
+        console.log(`===== Round ${i + 1} | Abs DUPR total: ${roundScore} | Teams on bye: ${byes.excludedTeams.join(", ") || "none"} | Players on bye: ${byes.playersOnBye.join(", ") || "none"} =====`);
         console.table(selected.matches.map(m => ({
             match: `Team ${m.team1} v Team ${m.team2}`,
             pair1: `${m.pair1.player1PlayerID} / ${m.pair1.player2PlayerID}`,
@@ -391,6 +409,62 @@ function summarisePlayerHistory(rounds, players = []) {
     return summary;   // full version, including partnerIDs and opponentIDs
 }
 
+// *** Helper: Fisher-Yates shuffle (returns a new array) *** //
+function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
+// *** Build byes by round *** //
+// --- A. Whole team byes: shuffle the rotation order once, then repeat the sequence --- //
+// --- B. Player byes: shuffle seeds in one team, every team uses the same seed(s), repeat the cycle --- //
+// --- Even teams only for now --- //
+function buildByeSchedule(allTeams, teamCombos, byeInfo, numberOfRounds) {
+    // A1-A3. Each team combo already has its own excluded team(s), so every team gets a bye per cycle
+    const teamOrder = shuffle(teamCombos.map(c => c.excludedTeams));
+
+    // B. Teams that need player byes (team size > players needed per round)
+    const byTeams = byeInfo.teamByeDetails.filter(d => d.playersOnBye > 0);
+
+    // B1-B2. Random seed order taken from one randomly chosen team
+    let seedOrder = [];
+    if (byTeams.length > 0) {
+        const refKey = byTeams[Math.floor(Math.random() * byTeams.length)].teamKey;
+        seedOrder = shuffle([...Array(allTeams[refKey].length).keys()]);
+    }
+
+    const schedule = [];
+    for (let r = 0; r < numberOfRounds; r++) {
+        const excludedTeams = (teamOrder[r % teamOrder.length] ?? []).map(String);
+        const playersOnBye = [];
+
+        // B3-B4. Same seeds in every team that plays this round, cycling once all have had a bye
+        byTeams.forEach(d => {
+            if (excludedTeams.includes(String(d.teamKey))) return;   // whole team is out anyway
+            const roster = allTeams[d.teamKey];                      // already sorted by DUPR, so index = seed
+            for (let b = 0; b < d.playersOnBye; b++) {
+                const seed = seedOrder[(r * d.playersOnBye + b) % seedOrder.length] % roster.length;
+                playersOnBye.push(roster[seed].PlayerID);
+            }
+        });
+
+        schedule.push({ round: r + 1, excludedTeams, playersOnBye });
+    }
+
+    console.log("===== Bye schedule =====");
+    console.table(schedule.map(s => ({
+        round: s.round,
+        teamsOnBye: s.excludedTeams.join(", ") || "none",
+        playersOnBye: s.playersOnBye.join(", ") || "none"
+    })));
+
+    return schedule;
+}
+
 // *** CORE FUNCTION CALLED TO GENERATE TEAM DRAW *** //
 function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfTeams, scorers) {
     // --- Build the players into each team, sorting rank by DUPR rating --- //
@@ -447,30 +521,38 @@ function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount
 
     // --- ****************** --- //
 
-    // --- Build bye order based on first selecting team with manual bye, then applying byes accross all teams based on DUPR ranking --- /
+    // --- Build byes by round --- //
+    // --- A. Whole Team Byes = Yes --- //
+        // --- A1. Calculate number of teams needed for bye per round: Number of teams - teams playing per round --- //
+        // --- A2. Randomise teams selected such that each team gets a bye --- //
+        // --- A3. Build off A2, which team(s) have a bye each round. Once all are exhausted, repeat the sequence built in A2 --- //
+    // --- B. By team, take the number of players needed each round - total players per team --- //
+        // --- B1. If each team is even, randomise the PlayerID selected in 1 of the team --- //
+        // --- B2. Do B1 until all players within that team have been selected --- //
+        // --- B3. For the remaining teams, match the seeded player (by DUPR) selected in B2 above. For example if seed 1 is first then all seed 1s --- //
+        // --- B4. Build byes per round, repeating the cycle once all players have their first bye --- //
+        // --- NOTE: I will do If each team is even = No later --- //
     
 
     // --- Build matrix of team pairings, with Avg. DUPR & Delta DUPR --- //
     const pairings = buildPairingMatrices(allTeams);
     console.log('The eligible team pairings', pairings);
 
-        const teamCombos = buildTeamCombos(players, courtsCount, numberOfTeams, allTeams);
+    const teamCombos = buildTeamCombos(players, courtsCount, numberOfTeams, allTeams);
 
-    if (!teamCombos.valid) {
-        alert(`Invalid structure: ${teamCombos.reason}`);
-        return [];   // nothing to build
+    if (!teamCombos.valid || !isByeStructures.valid) {
+        alert(`Invalid structure: ${teamCombos.reason ?? isByeStructures.reason}`);
+        return [];
     }
 
-    console.log(teamCombos.combos);   // e.g. 4 teams / 3 courts -> 4 combos
-    const playerCombos = buildPlayerCombos(teamCombos.combos, pairings);
+    // --- Build byes by round --- //
+    const byeSchedule = buildByeSchedule(allTeams, teamCombos.combos, isByeStructures, numberOfRounds);
 
-    // Sort by absolute DUPR difference total, ascending (most balanced first)
+    const playerCombos = buildPlayerCombos(teamCombos.combos, pairings);
     playerCombos.sort((a, b) => (a.comboAbsTotal + a.penalty) - (b.comboAbsTotal + b.penalty));
-    console.log('The best match up', playerCombos[0]?.comboAbsTotal);
-    console.log('The worst match up', playerCombos[playerCombos.length - 1]?.comboAbsTotal);
 
     // *** BUILD MATCHUPS FOR EACH ROUND *** //
-    const rounds = buildRounds(playerCombos, numberOfRounds);
+    const rounds = buildRounds(playerCombos, numberOfRounds, byeSchedule);
     summarisePlayerHistory(rounds, players);
 
     return rounds;
