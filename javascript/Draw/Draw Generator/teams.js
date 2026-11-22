@@ -1,3 +1,10 @@
+// *** Helper: normalise allTeams (keyed object or array) into [teamKey, roster] pairs *** //
+function getTeamEntries(allTeams) {
+    if (Array.isArray(allTeams)) return allTeams.map((team, i) => [String(i + 1), team]);
+    if (allTeams && typeof allTeams === "object") return Object.entries(allTeams);
+    return [];
+}
+
 // *** Team Structure Validation *** //
 // --- Valid team structures --- //
 // --- 1. Number of teams = 2; ALWAYS valid, provided there are enough players --- //
@@ -6,10 +13,12 @@
 // --- 4. More than 2 teams & courts  > number of teams; NOT valid if courts are not divisible by number of teams--- //
 // --- isValidPlayer is number of players / 4 >= courtsCount //
 function teamStructureType(players, courtsCount, numberOfTeams, allTeams) {
+    const teamEntries = getTeamEntries(allTeams);
     const playerCount = Array.isArray(players) ? players.length : players;
-    const teamCount = numberOfTeams ?? (Array.isArray(allTeams) ? allTeams.length : 0);
+    const teamCount = numberOfTeams ?? teamEntries.length;
 
-    if (Array.isArray(allTeams) && allTeams.length !== teamCount) {
+    // allTeams (if provided) must agree with numberOfTeams
+    if (teamEntries.length > 0 && teamEntries.length !== teamCount) {
         return { type: 0, valid: false, reason: "allTeams length does not match numberOfTeams" };
     }
 
@@ -42,12 +51,12 @@ function teamStructureType(players, courtsCount, numberOfTeams, allTeams) {
 }
 
 // *** Bye Structure Determination *** //
-// --- Depending on the number of teams, players & court count, will determine if wholeTeamByes & playerByes are needed --- //
 // --- wholeTeamByes = Yes if numberOfTeams > courtCounts --- //
 // --- playerByes = Yes if players in each team > playersNeededPerTeam --- //
 function byeStructure(players, courtsCount, numberOfTeams, allTeams) {
+    const teamEntries = getTeamEntries(allTeams);
     const playerCount = Array.isArray(players) ? players.length : players;
-    const teamCount = numberOfTeams ?? (Array.isArray(allTeams) ? allTeams.length : 0);
+    const teamCount = numberOfTeams ?? teamEntries.length;
 
     const structure = teamStructureType(players, courtsCount, teamCount, allTeams);
     if (!structure.valid) {
@@ -55,21 +64,23 @@ function byeStructure(players, courtsCount, numberOfTeams, allTeams) {
     }
     const playersNeededPerTeam = structure.playersNeededPerTeam;
 
+    // Real team sizes if each team is an array of players, otherwise assume an even split
     const teamsArePlayerArrays =
-        Array.isArray(allTeams) && allTeams.every(team => Array.isArray(team));
+        teamEntries.length > 0 && teamEntries.every(([, roster]) => Array.isArray(roster));
     const teamSizes = teamsArePlayerArrays
-        ? allTeams.map(team => team.length)
+        ? teamEntries.map(([, roster]) => roster.length)
         : Array(teamCount).fill(Math.floor(playerCount / teamCount));
 
-    // True if every team has the same number of players
     const evenPlayersPerTeam = teamsArePlayerArrays
         ? teamSizes.every(size => size === teamSizes[0])
         : playerCount % teamCount === 0;
 
     const teamByeDetails = teamSizes.map((size, i) => {
         const playersOnBye = Math.max(0, size - playersNeededPerTeam);
+        const [teamKey, roster] = teamEntries[i] ?? [String(i + 1), null];
         return {
-            team: Array.isArray(allTeams) && !teamsArePlayerArrays ? allTeams[i] : `Team ${i + 1}`,
+            team: teamsArePlayerArrays || roster === null ? `Team ${teamKey}` : roster, // names if allTeams holds strings
+            teamKey,
             teamSize: size,
             playersNeeded: playersNeededPerTeam,
             playerByes: playersOnBye > 0,
