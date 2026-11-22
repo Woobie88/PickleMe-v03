@@ -391,39 +391,23 @@ function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount
     const pairings = buildPairingMatrices(allTeams);
     console.log('The eligible team pairings', pairings);
 
-    const teamCombos = buildTeamCombos(players, courtsCount, numberOfTeams, allTeams);
+        const teamCombos = buildTeamCombos(players, courtsCount, numberOfTeams, allTeams);
 
     if (!teamCombos.valid) {
         alert(`Invalid structure: ${teamCombos.reason}`);
-    } else {
-        console.log(teamCombos.combos);   // e.g. 4 teams / 3 courts -> 4 combos
-        const playerCombos = buildPlayerCombos(teamCombos.combos, pairings);
-        // Sort by absolute DUPR difference total, ascending (most balanced first)
-        playerCombos.sort((a, b) => (a.comboAbsTotal + a.penalty) - (b.comboAbsTotal + b.penalty));
-        console.log('The best match up', playerCombos[0].comboAbsTotal);   // lowest
-        console.log('The worst match up', playerCombos[playerCombos.length - 1].comboAbsTotal);   // highest
+        return [];   // nothing to build
     }
 
-    // *** BUILD MATCHUPS FOR EACH ROUND *** //
-    const allMatches = buildRounds(playerCombos, numberOfRounds);
+    console.log(teamCombos.combos);   // e.g. 4 teams / 3 courts -> 4 combos
+    const playerCombos = buildPlayerCombos(teamCombos.combos, pairings);
 
-
-
-   
-
-    // --- Build all potential court pairings for the full event, including DUPR delta --- //
-
-    // --- Define stored data variables --- //
+    // Sort by absolute DUPR difference total, ascending (most balanced first)
+    playerCombos.sort((a, b) => (a.comboAbsTotal + a.penalty) - (b.comboAbsTotal + b.penalty));
+    console.log('The best match up', playerCombos[0]?.comboAbsTotal);
+    console.log('The worst match up', playerCombos[playerCombos.length - 1]?.comboAbsTotal);
 
     // *** BUILD MATCHUPS FOR EACH ROUND *** //
-    // --- Pick best scoring matches, excluding players having a bye --- //
+    const rounds = buildRounds(playerCombos, numberOfRounds);
 
-    // --- Revise scoring of round match ups --- //
-
-    // --- Move all instances of pairings to partnership played --- //
-
-    // --- Resort potential round match ups --- //
-
-    
-    return allMatches;
+    return rounds;
 }
