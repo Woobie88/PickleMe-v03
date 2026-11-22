@@ -612,6 +612,24 @@ function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount
     // --- Determine bye structure --- //
     const isByeStructures = byeStructure(players, courtsCount, numberOfTeams, allTeams);
 
+    // --- HARD RULE: every team must have the same number of players. Otherwise warn & stop --- //
+    if (!isByeStructures.valid) {
+        alert(`Invalid structure: ${isByeStructures.reason}`);
+        return [];
+    }
+
+    if (!isByeStructures.evenPlayersPerTeam) {
+        const sizes = Object.entries(allTeams)
+            .map(([teamKey, roster]) => `Team ${teamKey}: ${roster.length} players`)
+            .join("\n");
+
+        alert(
+            `Draw stopped: every team must have the same number of players.\n\n${sizes}\n\n` +
+            `Please add or remove players so the teams are even, then generate the draw again.`
+        );
+        return [];
+    }
+
     if (!isByeStructures.valid) {
         alert(`Invalid structure: ${isByeStructures.reason}`);
     } else {
