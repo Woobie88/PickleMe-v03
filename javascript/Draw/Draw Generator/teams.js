@@ -328,6 +328,69 @@ function buildRounds(playerCombos, numberOfRounds) {
     return rounds;
 }
 
+// *** Partner & Opponent Summary By PlayerID *** //
+// --- rounds = output of buildRounds; players (optional) adds names and teams to the summary --- //
+function summarisePlayerHistory(rounds, players = []) {
+    const info = {};
+    players.forEach(p => { info[p.PlayerID] = { Name: p.Name, Team: p.Team }; });
+
+    const stats = {};
+    const get = id => (stats[id] ??= {
+        PlayerID: id,
+        Name: info[id]?.Name ?? "",
+        Team: info[id]?.Team ?? "",
+        roundsPlayed: 0,
+        partners: new Set(),
+        opponents: new Set(),
+        totalPartnerings: 0,
+        totalOpponentings: 0
+    });
+
+    rounds.forEach(r => {
+        r.combo.matches.forEach(m => {
+            const pairA = [m.pair1.player1PlayerID, m.pair1.player2PlayerID];
+            const pairB = [m.pair2.player1PlayerID, m.pair2.player2PlayerID];
+
+            [[pairA, pairB], [pairB, pairA]].forEach(([own, other]) => {
+                own.forEach(id => {
+                    const s = get(id);
+                    s.roundsPlayed++;
+
+                    const partner = own.find(x => x !== id);
+                    s.partners.add(partner);
+                    s.totalPartnerings++;
+
+                    other.forEach(o => {
+                        s.opponents.add(o);
+                        s.totalOpponentings++;
+                    });
+                });
+            });
+        });
+    });
+
+    // Flat summary, one row per player
+    const summary = Object.values(stats)
+        .map(s => ({
+            PlayerID: s.PlayerID,
+            Name: s.Name,
+            Team: s.Team,
+            roundsPlayed: s.roundsPlayed,
+            uniquePartners: s.partners.size,
+            uniqueOpponents: s.opponents.size,
+            totalPartnerings: s.totalPartnerings,
+            totalOpponentings: s.totalOpponentings,
+            partnerIDs: [...s.partners].join(", "),
+            opponentIDs: [...s.opponents].join(", ")
+        }))
+        .sort((a, b) => String(a.Team).localeCompare(String(b.Team)) || a.PlayerID.localeCompare(b.PlayerID));
+
+    console.log("===== Partner & Opponent Summary By Player =====");
+    console.table(summary.map(({ partnerIDs, opponentIDs, ...rest }) => rest));
+
+    return summary;   // full version, including partnerIDs and opponentIDs
+}
+
 // *** CORE FUNCTION CALLED TO GENERATE TEAM DRAW *** //
 function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfTeams, scorers) {
     // --- Build the players into each team, sorting rank by DUPR rating --- //
@@ -408,6 +471,7 @@ function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount
 
     // *** BUILD MATCHUPS FOR EACH ROUND *** //
     const rounds = buildRounds(playerCombos, numberOfRounds);
+    summarisePlayerHistory(rounds, players);
 
     return rounds;
 }
