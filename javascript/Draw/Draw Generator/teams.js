@@ -262,6 +262,72 @@ function buildPlayerCombos(teamCombos, pairings, maxCombos = 100000) {
     return results;
 }
 
+// *** BUILD MATCHUPS FOR EACH ROUND *** //
+function buildRounds(playerCombos, numberOfRounds) {
+    const score = c => c.comboAbsTotal + c.penalty;
+    const pairKey = (a, b) => [a, b].sort().join("|");
+
+    // Every same-team partnership used in a combo, e.g. "JOLJDrSK|WI0THs5q"
+    const getPairKeys = combo =>
+        combo.matches.flatMap(m => [
+            pairKey(m.pair1.player1PlayerID, m.pair1.player2PlayerID),
+            pairKey(m.pair2.player1PlayerID, m.pair2.player2PlayerID)
+        ]);
+
+    // Compute pair keys once per combo
+    playerCombos.forEach(c => { c.pairKeys = getPairKeys(c); });
+
+    let available = [...playerCombos];   // combos still in play
+    let removed = [];                    // C. stored combos
+    const rounds = [];
+
+    for (let i = 0; i < numberOfRounds; i++) {
+        // --- A. Pick best scoring matches --- //
+        // --- If combo length = 0, add back in all of C. --- //
+        if (available.length === 0) {
+            available = removed;
+            removed = [];
+        }
+        if (available.length === 0) {
+            console.log(`Round ${i + 1}: no combos left`);
+            break;
+        }
+
+        // --- If combo length > 0, pick the lowest comboAbsTotal + penalty --- //
+        available.sort((a, b) => score(a) - score(b));
+        const selected = available[0];
+        const roundScore = score(selected);   // score before the penalty is applied
+
+        // --- B. For the match up selected, add 1000000 to the penalty --- //
+        selected.penalty += 1000000;
+
+        // --- C. Remove all instances of those players partnering together & store --- //
+        const usedPairs = new Set(selected.pairKeys);
+        const stillAvailable = [];
+        available.forEach(c => {
+            if (c.pairKeys.some(k => usedPairs.has(k))) removed.push(c);
+            else stillAvailable.push(c);
+        });
+        available = stillAvailable;
+
+        rounds.push({ round: i + 1, combo: selected, score: roundScore });
+
+        // --- Console log the result for this round --- //
+        console.log(`===== Round ${i + 1} | Abs DUPR total: ${roundScore} | Excluded teams: ${selected.excludedTeams.join(", ") || "none"} =====`);
+        console.table(selected.matches.map(m => ({
+            match: `Team ${m.team1} v Team ${m.team2}`,
+            pair1: `${m.pair1.player1PlayerID} / ${m.pair1.player2PlayerID}`,
+            pair1Avg: m.pair1.avgDUPR,
+            pair2: `${m.pair2.player1PlayerID} / ${m.pair2.player2PlayerID}`,
+            pair2Avg: m.pair2.avgDUPR,
+            absDiff: m.absDiff
+        })));
+        console.log(`Combos remaining: ${available.length} | Stored (removed): ${removed.length}`);
+    }
+
+    return rounds;
+}
+
 // *** CORE FUNCTION CALLED TO GENERATE TEAM DRAW *** //
 function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfTeams, scorers) {
     // --- Build the players into each team, sorting rank by DUPR rating --- //
@@ -337,6 +403,12 @@ function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount
         console.log('The best match up', playerCombos[0].comboAbsTotal);   // lowest
         console.log('The worst match up', playerCombos[playerCombos.length - 1].comboAbsTotal);   // highest
     }
+
+    // *** BUILD MATCHUPS FOR EACH ROUND *** //
+    const allMatches = buildRounds(playerCombos, numberOfRounds);
+
+
+
    
 
     // --- Build all potential court pairings for the full event, including DUPR delta --- //
