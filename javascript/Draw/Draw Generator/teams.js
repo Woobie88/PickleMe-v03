@@ -590,39 +590,31 @@ function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount
     // --- Build the players into each team, sorting rank by DUPR rating --- //
     const allTeams = {};
     [...players]
-    .sort((a, b) => (parseFloat(b.DUPR) || 0) - (parseFloat(a.DUPR) || 0))
-    .forEach(p => { (allTeams[p.Team] = allTeams[p.Team] || []).push(p); });
+        .sort((a, b) => (parseFloat(b.DUPR) || 0) - (parseFloat(a.DUPR) || 0))
+        .forEach(p => { (allTeams[p.Team] = allTeams[p.Team] || []).push(p); });
 
     const allTeamKeys = Object.keys(allTeams).sort((a, b) => parseInt(a) - parseInt(b));
     console.log(`All teams key is ${allTeamKeys}, with the teams being`, allTeams);
 
     // --- Determine the structure of the match ups based on the number of teams & number of courts --- //
     const isTeamStructure = teamStructureType(players, courtsCount, numberOfTeams, allTeams);
-
-    alert(
-        `Type: ${isTeamStructure.type}\n` +
-        `Valid: ${isTeamStructure.valid ? "Yes" : "No"}\n` +
-        `Reason: ${isTeamStructure.reason}\n` +
-        `Number of Courts: ${courtsCount}\n` +
-        `Number of Teams: ${numberOfTeams}\n` +
-        `Teams playing per round: ${isTeamStructure.teamsPerRound}\n` +
-        `Players needed per team: ${isTeamStructure.playersNeededPerTeam}`
-    );
-
-    // --- Determine bye structure --- //
-    const isByeStructures = byeStructure(players, courtsCount, numberOfTeams, allTeams);
-
-    // --- HARD RULE: every team must have the same number of players. Otherwise warn & stop --- //
-    if (!isByeStructures.valid) {
-        alert(`Invalid structure: ${isByeStructures.reason}`);
+    if (!isTeamStructure.valid) {
+        alert(`Draw stopped: ${isTeamStructure.reason}`);
         return [];
     }
 
+    // --- Determine bye structure --- //
+    const isByeStructures = byeStructure(players, courtsCount, numberOfTeams, allTeams);
+    if (!isByeStructures.valid) {
+        alert(`Draw stopped: ${isByeStructures.reason}`);
+        return [];
+    }
+
+    // --- HARD RULE: every team must have the same number of players --- //
     if (!isByeStructures.evenPlayersPerTeam) {
         const sizes = Object.entries(allTeams)
             .map(([teamKey, roster]) => `Team ${teamKey}: ${roster.length} players`)
             .join("\n");
-
         alert(
             `Draw stopped: every team must have the same number of players.\n\n${sizes}\n\n` +
             `Please add or remove players so the teams are even, then generate the draw again.`
@@ -630,67 +622,46 @@ function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount
         return [];
     }
 
-    if (!isByeStructures.valid) {
-        alert(`Invalid structure: ${isByeStructures.reason}`);
-    } else {
-        const { wholeTeamByes, teamByes, evenPlayersPerTeam, teamByeDetails } = isByeStructures;
+    // --- TESTING ALERT (remove when happy) --- //
+    const { wholeTeamByes, teamByes, teamByeDetails } = isByeStructures;
+    const anyPlayerByes = teamByeDetails.some(t => t.playerByes);
+    const totalPlayersOnBye = teamByeDetails.reduce((sum, t) => sum + t.playersOnBye, 0);
+    alert(
+        `Type: ${isTeamStructure.type} | Courts: ${courtsCount} | Teams: ${numberOfTeams}\n` +
+        `Teams playing per round: ${isTeamStructure.teamsPerRound}\n` +
+        `Players needed per team: ${isTeamStructure.playersNeededPerTeam}\n` +
+        `Whole Team Byes: ${wholeTeamByes ? "Yes" : "No"}` +
+        (wholeTeamByes ? ` (${teamByes} per round)` : "") +
+        `\nPlayer Byes: ${anyPlayerByes ? "Yes" : "No"}` +
+        (anyPlayerByes ? ` (${totalPlayersOnBye} per round in total)` : "")
+    );
 
-        const anyPlayerByes = teamByeDetails.some(t => t.playerByes);
-        const totalPlayersOnBye = teamByeDetails.reduce((sum, t) => sum + t.playersOnBye, 0);
-
-        const perTeamLines = teamByeDetails
-            .filter(t => t.playerByes)
-            .map(t => `  ${t.team}: ${t.playersOnBye} (${t.teamSize} players, ${t.playersNeeded} needed)`)
-            .join("\n");
-
-        alert(
-            `Even Players Per Team: ${evenPlayersPerTeam ? "Yes" : "No"}\n` +
-            `Whole Team Byes: ${wholeTeamByes ? "Yes" : "No"}` +
-            (wholeTeamByes ? `\nNumber of team byes: ${teamByes}` : "") +
-            `\nPlayer Byes: ${anyPlayerByes ? "Yes" : "No"}` +
-            (anyPlayerByes ? `\nTotal players on bye: ${totalPlayersOnBye}\n${perTeamLines}` : "")
-        );
-    }
-
-    // --- NOTE MAY DO AT END --- //
-
-    // const { partnerCounts, opponentCounts, courtCounts } = buildDrawHistory(matches);
-    // const teamOpponentCounts = buildTeamOpponentHistory(matches);
-
-    // --- ****************** --- //
-
-    // --- Build byes by round --- //
-    // --- A. Whole Team Byes = Yes --- //
-        // --- A1. Calculate number of teams needed for bye per round: Number of teams - teams playing per round --- //
-        // --- A2. Randomise teams selected such that each team gets a bye --- //
-        // --- A3. Build off A2, which team(s) have a bye each round. Once all are exhausted, repeat the sequence built in A2 --- //
-    // --- B. By team, take the number of players needed each round - total players per team --- //
-        // --- B1. If each team is even, randomise the PlayerID selected in 1 of the team --- //
-        // --- B2. Do B1 until all players within that team have been selected --- //
-        // --- B3. For the remaining teams, match the seeded player (by DUPR) selected in B2 above. For example if seed 1 is first then all seed 1s --- //
-        // --- B4. Build byes per round, repeating the cycle once all players have their first bye --- //
-        // --- NOTE: I will do If each team is even = No later --- //
-    
-
-    // --- Build matrix of team pairings, with Avg. DUPR & Delta DUPR --- //
+    // --- Build all eligible partnerships within each team --- //
     const pairings = buildPairingMatrices(allTeams);
-    console.log('The eligible team pairings', pairings);
 
+    // --- Build team level combos --- //
     const teamCombos = buildTeamCombos(players, courtsCount, numberOfTeams, allTeams);
-
-    if (!teamCombos.valid || !isByeStructures.valid) {
-        alert(`Invalid structure: ${teamCombos.reason ?? isByeStructures.reason}`);
+    if (!teamCombos.valid) {
+        alert(`Draw stopped: ${teamCombos.reason}`);
         return [];
     }
 
     // --- Build byes by round --- //
     const byeSchedule = buildByeSchedule(allTeams, teamCombos.combos, isByeStructures, numberOfRounds);
 
+    // --- Build player level combos --- //
     const playerCombos = buildPlayerCombos(teamCombos.combos, pairings);
-    playerCombos.sort((a, b) => (a.comboAbsTotal + a.penalty) - (b.comboAbsTotal + b.penalty));
+    if (playerCombos.length === 0) {
+        alert("Draw stopped: no valid match combinations could be built. Check that each team has enough players for the number of courts.");
+        return [];
+    }
+    console.log(`Player combos built: ${playerCombos.length}`);
 
     // *** BUILD MATCHUPS FOR EACH ROUND *** //
     const rounds = buildRounds(playerCombos, numberOfRounds, byeSchedule);
+    if (rounds.length < numberOfRounds) {
+        console.warn(`Only ${rounds.length} of ${numberOfRounds} rounds could be built.`);
+    }
     summarisePlayerHistory(rounds, players);
 
     // Same format as newMatches
