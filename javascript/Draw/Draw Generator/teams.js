@@ -99,7 +99,7 @@ function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount
     alert(
         `Whole Team Byes: ${isByeStructures.wholeTeamByes ? "Yes" : "No"}\n` +
         `Player Byes: ${isByeStructures.playerByes ? "Yes" : "No"}` +
-        (playerByes ? `\nPlayers on bye: ${isByeStructures.playersOnBye}` : "")
+        (isByeStructures.playerByes ? `\nPlayers on bye: ${isByeStructures.playersOnBye}` : "")
     );
 
     // --- NOTE MAY DO AT END --- //
