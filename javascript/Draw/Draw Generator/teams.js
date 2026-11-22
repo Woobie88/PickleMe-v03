@@ -89,6 +89,58 @@ function byeStructure(players, courtsCount, numberOfTeams, allTeams) {
     };
 }
 
+// --- Build all eligible partnerships within each team --- //
+// --- For each team, every possible pairing of two players from that team, with the average DUPR --- //
+function buildPairingMatrices(allTeams) {
+    return allTeams.map((team, teamIndex) => {
+        const roster = Array.isArray(team) ? team : (team.players ?? []);
+
+        // Keep only the fields we need
+        const players = roster.map(p => ({
+            PlayerID: p.PlayerID,
+            DUPR: Number(p.DUPR),
+            ByeOrder: p.ByeOrder,
+            playerExclude: p.playerExclude
+        }));
+
+        // playerExclude is assumed to be an array of PlayerIDs this player must not be paired with
+        const isExcluded = (a, b) => {
+            const aExcludesB = Array.isArray(a.playerExclude) && a.playerExclude.includes(b.PlayerID);
+            const bExcludesA = Array.isArray(b.playerExclude) && b.playerExclude.includes(a.PlayerID);
+            return aExcludesB || bExcludesA;
+        };
+
+        const size = players.length;
+        const matrix = Array.from({ length: size }, () => Array(size).fill(null));
+        const pairings = [];
+
+        for (let i = 0; i < size; i++) {
+            for (let j = i + 1; j < size; j++) {
+                const a = players[i];
+                const b = players[j];
+
+                const pairing = {
+                    player1: a,
+                    player2: b,
+                    avgDUPR: Math.round(((a.DUPR + b.DUPR) / 2) * 1000) / 1000,
+                    excluded: isExcluded(a, b)
+                };
+
+                matrix[i][j] = pairing;
+                matrix[j][i] = pairing;   // symmetric, so either order finds the pairing
+                pairings.push(pairing);   // flat list, each pair once
+            }
+        }
+
+        return {
+            team: Array.isArray(team) ? `Team ${teamIndex + 1}` : (team.name ?? `Team ${teamIndex + 1}`),
+            playerIDs: players.map(p => p.PlayerID),  // row/column order of the matrix
+            matrix,                                    // matrix[i][j] = pairing, diagonal = null
+            pairings                                   // flat list of unique pairings
+        };
+    });
+}
+
 // *** CORE FUNCTION CALLED TO GENERATE TEAM DRAW *** //
 function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfTeams, scorers) {
     // --- Build the players into each team, sorting rank by DUPR rating --- //
@@ -154,6 +206,8 @@ function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount
     
 
     // --- Build matrix of team pairings, with Avg. DUPR & Delta DUPR --- //
+    const eligibleTeamPairs = buildPairingMatrices(allTeams);
+    console.log('The eligible pairing are', eligibleTeamPairs);
    
 
     // --- Build all potential court pairings for the full event, including DUPR delta --- //
