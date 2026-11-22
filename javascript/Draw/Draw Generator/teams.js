@@ -263,19 +263,22 @@ function buildPlayerCombos(teamCombos, pairings, maxCombos = 100000) {
 }
 
 // *** BUILD MATCHUPS FOR EACH ROUND *** //
-// --- Each bye cycle is solved as a whole: every partnership used once per cycle --- //
+// --- Priority 1: unique partnerships (hard cap per bye cycle) --- //
+// --- Priority 2: lowest total absDUPR + penalty among the valid cycles --- //
 // --- Full pool restored at the start of each cycle; combos used before carry the 1000000 penalty --- //
 function buildRounds(playerCombos, numberOfRounds, byeSchedule = []) {
     const score = c => c.comboAbsTotal + c.penalty;
     const pairKey = (a, b) => [a, b].sort().join("|");
     const teamsKey = teams => [...teams].map(String).sort().join(",");
+    const NODE_LIMIT = 2000000;
 
+    // Precompute per combo
     playerCombos.forEach(c => {
         c.pairKeys = c.matches.flatMap(m => [
             pairKey(m.pair1.player1PlayerID, m.pair1.player2PlayerID),
             pairKey(m.pair2.player1PlayerID, m.pair2.player2PlayerID)
         ]);
-        c.pairSig = [...c.pairKeys].sort().join(";");
+        c.pairSig = [...c.pairKeys].sort().join(";");   // same partnerships = same signature
         c.playerIDs = new Set(c.matches.flatMap(m => [
             m.pair1.player1PlayerID, m.pair1.player2PlayerID,
             m.pair2.player1PlayerID, m.pair2.player2PlayerID
@@ -284,7 +287,7 @@ function buildRounds(playerCombos, numberOfRounds, byeSchedule = []) {
         c.penalty = 0;
     });
 
-    // --- Cycle length: rounds before the bye pattern repeats --- //
+    // --- Cycle length: rounds before the bye pattern repeats (5 for teams of 5, 1 bye per round) --- //
     let cycleLength = numberOfRounds;
     for (let j = 1; j < numberOfRounds; j++) {
         const a = byeSchedule[0], b = byeSchedule[j];
@@ -297,7 +300,6 @@ function buildRounds(playerCombos, numberOfRounds, byeSchedule = []) {
     }
     console.log(`Bye cycle length: ${cycleLength}`);
 
-    const NODE_LIMIT = 500000;
     const rounds = [];
 
     for (let start = 0; start < numberOfRounds; start += cycleLength) {
@@ -309,6 +311,7 @@ function buildRounds(playerCombos, numberOfRounds, byeSchedule = []) {
             const byes = byeSchedule[i] ?? { excludedTeams: [], playersOnBye: [] };
             const byeKey = teamsKey(byes.excludedTeams);
 
+            // Eligible = right excluded team(s) and none of this round's bye players
             const eligible = playerCombos.filter(c =>
                 (byeSchedule.length === 0 || c.excludedKey === byeKey) &&
                 !byes.playersOnBye.some(id => c.playerIDs.has(id))
@@ -319,6 +322,7 @@ function buildRounds(playerCombos, numberOfRounds, byeSchedule = []) {
                 if (!bySig.has(c.pairSig)) bySig.set(c.pairSig, []);
                 bySig.get(c.pairSig).push(c);
             });
+
             const groups = [...bySig.values()];
             groups.forEach(g => g.sort((a, b) => score(a) - score(b)));
             groups.sort((a, b) => score(a[0]) - score(b[0]));
@@ -330,47 +334,73 @@ function buildRounds(playerCombos, numberOfRounds, byeSchedule = []) {
             break;
         }
 
-        // --- Backtracking search: no partnership used more than `cap` times in this cycle --- //
+        // --- Branch and bound --- //
+        const levels = groupsByLevel.length;
+
+        // Cheapest possible score for the remaining rounds, used to prune hopeless paths early
+        const minFrom = Array(levels + 1).fill(0);
+        for (let l = levels - 1; l >= 0; l--) {
+            minFrom[l] = minFrom[l + 1] + score(groupsByLevel[l][0][0]);
+        }
+
         const search = cap => {
             const counts = {};
             const path = [];
+            let best = null;
+            let bestCost = Infinity;
             let nodes = 0;
+            let hitLimit = false;
 
-            const dfs = level => {
-                if (level === groupsByLevel.length) return true;
+            const dfs = (level, cost) => {
+                if (hitLimit) return;
+
+                if (level === levels) {
+                    if (cost < bestCost) { bestCost = cost; best = [...path]; }
+                    return;
+                }
 
                 for (const group of groupsByLevel[level]) {
-                    if (++nodes > NODE_LIMIT) return false;
-                    const combo = group[0];
+                    if (++nodes > NODE_LIMIT) { hitLimit = true; return; }
+
+                    const combo = group[0];                                     // best-scoring combo for this partnership set
+                    const newCost = cost + score(combo);
+                    if (newCost + minFrom[level + 1] >= bestCost) continue;    // cannot beat the best found
                     if (combo.pairKeys.some(k => (counts[k] || 0) >= cap)) continue;
 
                     combo.pairKeys.forEach(k => { counts[k] = (counts[k] || 0) + 1; });
                     path.push(combo);
 
-                    if (dfs(level + 1)) return true;
+                    dfs(level + 1, newCost);
 
                     path.pop();
                     combo.pairKeys.forEach(k => { counts[k]--; });
                 }
-                return false;
             };
 
-            return dfs(0) ? [...path] : null;
+            dfs(0, 0);
+            return { best, bestCost, hitLimit };
         };
 
-        let chosen = null, capUsed = null;
+        // Strictest uniqueness first; only relax the cap if no valid cycle exists
+        let chosen = null;
         for (const cap of [1, 2, 3, Infinity]) {
-            chosen = search(cap);
-            if (chosen) { capUsed = cap; break; }
+            const result = search(cap);
+            if (result.best) {
+                chosen = result.best;
+                console.log(`Cycle rounds ${start + 1}-${end}: cap ${cap} | total score ${result.bestCost}${result.hitLimit ? " (node limit hit, best found so far)" : " (optimal)"}`);
+                break;
+            }
         }
-        console.log(`Cycle rounds ${start + 1}-${end}: partnership cap ${capUsed}`);
-        if (!chosen) break;
+        if (!chosen) {
+            console.log(`Cycle rounds ${start + 1}-${end}: no valid cycle found`);
+            break;
+        }
 
         // --- Record the rounds and penalise the combos used --- //
         chosen.forEach((selected, idx) => {
             const i = start + idx;
             const byes = byeSchedule[i] ?? { excludedTeams: [], playersOnBye: [] };
-            const roundScore = score(selected);
+            const roundScore = score(selected);   // score before the penalty is applied
             selected.penalty += 1000000;
 
             rounds.push({
