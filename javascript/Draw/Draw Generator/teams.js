@@ -6,23 +6,17 @@
 // --- 4. More than 2 teams & courts  > number of teams; NOT valid if courts are not divisible by number of teams--- //
 // --- isValidPlayer is number of players / 4 >= courtsCount //
 function teamStructureType(players, courtsCount, numberOfTeams, allTeams) {
-    // players can be a count or an array of players
     const playerCount = Array.isArray(players) ? players.length : players;
-
-    // Fall back to allTeams.length if numberOfTeams isn't supplied
     const teamCount = numberOfTeams ?? (Array.isArray(allTeams) ? allTeams.length : 0);
 
-    // allTeams (if provided) must agree with numberOfTeams
     if (Array.isArray(allTeams) && allTeams.length !== teamCount) {
         return { type: 0, valid: false, reason: "allTeams length does not match numberOfTeams" };
     }
 
-    // Need at least 2 teams
     if (teamCount < 2) {
         return { type: 0, valid: false, reason: "At least 2 teams are required" };
     }
 
-    // Player check: players / 4 >= courtsCount
     const isValidPlayer = playerCount / 4 >= courtsCount;
     if (!isValidPlayer) {
         return { type: 0, valid: false, reason: "Not enough players for the number of courts" };
@@ -30,7 +24,7 @@ function teamStructureType(players, courtsCount, numberOfTeams, allTeams) {
 
     // 1. Exactly 2 teams: always valid
     if (teamCount === 2) {
-        return { type: 1, valid: true, reason: "Two teams", teamsPerRound: 2, playersNeededPerRound: courtsCount * 2 };
+        return { type: 1, valid: true, reason: "Two teams", teamsPerRound: 2, playersNeededPerTeam: courtsCount * 2 };
     }
 
     // 2. More than 2 teams, courts <= teams: always valid
@@ -40,37 +34,52 @@ function teamStructureType(players, courtsCount, numberOfTeams, allTeams) {
 
     // 3. More than 2 teams, courts > teams: valid only if courts divisible by teams
     if (courtsCount % teamCount === 0) {
-        return { type: 3, valid: true, reason: "Courts are divisible by number of teams", teamsPerRound: numberOfTeams, playersNeededPerTeam: courtsCount / teamCount * 2 };
+        return { type: 3, valid: true, reason: "Courts are divisible by number of teams", teamsPerRound: teamCount, playersNeededPerTeam: (courtsCount / teamCount) * 2 };
     }
 
     // 4. More than 2 teams, courts > teams, not divisible: invalid
     return { type: 4, valid: false, reason: "Courts are not divisible by number of teams" };
 }
 
-// *** Bye Structure Determination *** // 
+// *** Bye Structure Determination *** //
 // --- Depending on the number of teams, players & court count, will determine if wholeTeamByes & playerByes are needed --- //
 // --- wholeTeamByes = Yes if numberOfTeams > courtCounts --- //
-// --- playerByes = Yes if players.length / 4 > courtCounts --- //
+// --- playerByes = Yes if players in each team > playersNeededPerTeam --- //
 function byeStructure(players, courtsCount, numberOfTeams, allTeams) {
-    // players can be a count or an array of players
     const playerCount = Array.isArray(players) ? players.length : players;
-
-    // Fall back to allTeams.length if numberOfTeams isn't supplied
     const teamCount = numberOfTeams ?? (Array.isArray(allTeams) ? allTeams.length : 0);
 
-    const wholeTeamByes = teamCount > courtsCount;
-    const playerByes = playerCount / 4 > courtsCount;
+    // Get playersNeededPerTeam from the structure check
+    const structure = teamStructureType(players, courtsCount, teamCount, allTeams);
+    if (!structure.valid) {
+        return { valid: false, reason: structure.reason };
+    }
+    const playersNeededPerTeam = structure.playersNeededPerTeam;
 
-    const result = {
+    // Team sizes: use the actual teams if they are arrays of players,
+    // otherwise assume players are split evenly across teams
+    const teamsArePlayerArrays =
+        Array.isArray(allTeams) && allTeams.every(team => Array.isArray(team));
+    const teamSizes = teamsArePlayerArrays
+        ? allTeams.map(team => team.length)
+        : Array(teamCount).fill(Math.floor(playerCount / teamCount));
+
+    // Extra players in each team beyond what is needed
+    const playersOnByePerTeam = teamSizes.map(size => Math.max(0, size - playersNeededPerTeam));
+
+    const wholeTeamByes = teamCount > courtsCount;
+    const playerByes = playersOnByePerTeam.some(extra => extra > 0);
+
+    return {
+        valid: true,
         wholeTeamByes,
         // Teams sitting out once every court is filled
         teamByes: wholeTeamByes ? teamCount - courtsCount : 0,
         playerByes,
-        // Players left over once every court is filled (4 per court)
-        playersOnBye: playerByes ? playerCount - courtsCount * 4 : 0
+        playersNeededPerTeam,
+        playersOnByePerTeam,                                         // one entry per team
+        playersOnBye: playersOnByePerTeam.reduce((a, b) => a + b, 0) // total across all teams
     };
-
-    return result;
 }
 
 // *** CORE FUNCTION CALLED TO GENERATE TEAM DRAW *** //
@@ -93,7 +102,7 @@ function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount
         `Reason: ${isTeamStructure.reason}\n` +
         `Number of Courts: ${courtsCount}\n` +
         `Number of Teams: ${numberOfTeams}\n` +
-        `Teams playing per round': ${isTeamStructure.teamsPerRound}\n` +
+        `Teams playing per round: ${isTeamStructure.teamsPerRound}\n` +
         `Players needed per team: ${isTeamStructure.playersNeededPerTeam}`
     );
 
