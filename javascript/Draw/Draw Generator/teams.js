@@ -93,50 +93,36 @@ function byeStructure(players, courtsCount, numberOfTeams, allTeams) {
 // --- For each team, every possible pairing of two players from that team, with the average DUPR --- //
 // *** Pairing Matrix Per Team *** //
 // --- For each team, every pairing of two players from that team, with the average DUPR --- //
+// *** Pairing List Per Team *** //
+// --- For each team, one entry per pairing: player1 fields, player2 fields, then avgDUPR --- //
 function buildPairingMatrices(allTeams) {
     const result = {};
 
     Object.entries(allTeams).forEach(([teamKey, roster]) => {
-        // Keep only the fields we need
-        const players = roster.map(p => ({
-            PlayerID: p.PlayerID,
-            DUPR: Number(p.DUPR),
-            byeOrder: p.byeOrder,
-            playerExclude: p.playerExclude
-        }));
-
-        // playerExclude is "Yes"/"No"; a pairing is excluded if either player is excluded
-        const isExcluded = p => String(p.playerExclude).toLowerCase() === "yes";
-
-        const size = players.length;
-        const matrix = Array.from({ length: size }, () => Array(size).fill(null));
-        const avgMatrix = Array.from({ length: size }, () => Array(size).fill(null));
         const pairings = [];
 
-        for (let i = 0; i < size; i++) {
-            for (let j = i + 1; j < size; j++) {
-                const a = players[i];
-                const b = players[j];
+        for (let i = 0; i < roster.length; i++) {
+            for (let j = i + 1; j < roster.length; j++) {
+                const a = roster[i];
+                const b = roster[j];
 
-                const pairing = {
-                    player1: a,
-                    player2: b,
-                    avgDUPR: Math.round(((a.DUPR + b.DUPR) / 2) * 1000) / 1000,
-                    excluded: isExcluded(a) || isExcluded(b)
-                };
+                pairings.push({
+                    player1PlayerID: a.PlayerID,
+                    player1DUPR: Number(a.DUPR),
+                    player1ByeOrder: a.byeOrder,
+                    player1PlayerExclude: a.playerExclude,
 
-                matrix[i][j] = matrix[j][i] = pairing;
-                avgMatrix[i][j] = avgMatrix[j][i] = pairing.avgDUPR;
-                pairings.push(pairing);
+                    player2PlayerID: b.PlayerID,
+                    player2DUPR: Number(b.DUPR),
+                    player2ByeOrder: b.byeOrder,
+                    player2PlayerExclude: b.playerExclude,
+
+                    avgDUPR: Math.round(((Number(a.DUPR) + Number(b.DUPR)) / 2) * 1000) / 1000
+                });
             }
         }
 
-        result[teamKey] = {
-            playerIDs: players.map(p => p.PlayerID), // row/column order for both matrices
-            matrix,                                   // full pairing objects, diagonal = null
-            avgMatrix,                                // just the avgDUPR values, easy to read
-            pairings                                  // flat list, each pair once
-        };
+        result[teamKey] = pairings;
     });
 
     return result;
