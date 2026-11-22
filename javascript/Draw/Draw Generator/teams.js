@@ -263,17 +263,19 @@ function buildPlayerCombos(teamCombos, pairings, maxCombos = 100000) {
 }
 
 // *** BUILD MATCHUPS FOR EACH ROUND *** //
+// --- Best absDUPR first, but no partnership may be used more than `cap` times --- //
+// --- If a round can't be filled, back up and try the next best choice --- //
 function buildRounds(playerCombos, numberOfRounds, byeSchedule = []) {
-    const score = c => c.comboAbsTotal + c.penalty;
     const pairKey = (a, b) => [a, b].sort().join("|");
     const teamsKey = teams => [...teams].map(String).sort().join(",");
 
-    // Precompute per combo: partnerships, players used, excluded-team key
+    // Precompute per combo
     playerCombos.forEach(c => {
         c.pairKeys = c.matches.flatMap(m => [
             pairKey(m.pair1.player1PlayerID, m.pair1.player2PlayerID),
             pairKey(m.pair2.player1PlayerID, m.pair2.player2PlayerID)
         ]);
+        c.pairSig = [...c.pairKeys].sort().join(";");   // same partnerships = same signature
         c.playerIDs = new Set(c.matches.flatMap(m => [
             m.pair1.player1PlayerID, m.pair1.player2PlayerID,
             m.pair2.player1PlayerID, m.pair2.player2PlayerID
@@ -282,50 +284,92 @@ function buildRounds(playerCombos, numberOfRounds, byeSchedule = []) {
         c.penalty = 0;
     });
 
-    const sortPool = pool => pool.sort((a, b) => score(a) - score(b));
-
-    let available = sortPool([...playerCombos]);   // live pool, always sorted by absDUPR + penalty
-    let holding = [];                              // holding pool
-    const rounds = [];
-
+    // --- Eligible combos per round (no bye team, no bye player), grouped by partnership set --- //
+    const groupsByRound = [];
+    let roundsToBuild = numberOfRounds;
     for (let i = 0; i < numberOfRounds; i++) {
         const byes = byeSchedule[i] ?? { excludedTeams: [], playersOnBye: [] };
         const byeKey = teamsKey(byes.excludedTeams);
 
-        // Eligible = right excluded team(s) and none of this round's bye players
-        const isEligible = c =>
+        const eligible = playerCombos.filter(c =>
             (byeSchedule.length === 0 || c.excludedKey === byeKey) &&
-            !byes.playersOnBye.some(id => c.playerIDs.has(id));
+            !byes.playersOnBye.some(id => c.playerIDs.has(id))
+        );
 
-        // 1. Best rated eligible combo
-        let selected = available.find(isEligible);
+        const bySig = new Map();
+        eligible.forEach(c => {
+            if (!bySig.has(c.pairSig)) bySig.set(c.pairSig, []);
+            bySig.get(c.pairSig).push(c);
+        });
 
-        // 4. Not enough left to fill the round: drag back the holding pool and resort
-        if (!selected && holding.length > 0) {
-            available = sortPool(available.concat(holding));
-            holding = [];
-            console.log(`Round ${i + 1}: holding pool added back (${available.length} combos)`);
-            selected = available.find(isEligible);
-        }
+        const groups = [...bySig.values()];
+        groups.forEach(g => g.sort((a, b) => a.comboAbsTotal - b.comboAbsTotal));
+        groups.sort((a, b) => a[0].comboAbsTotal - b[0].comboAbsTotal);
 
-        if (!selected) {
+        if (groups.length === 0) {
             console.log(`Round ${i + 1}: no eligible combos`);
+            roundsToBuild = i;
             break;
         }
+        groupsByRound.push(groups);
+    }
 
-        const roundScore = score(selected);   // score before the penalty is applied
+    // --- Search with a cap on how often any partnership can be used --- //
+    const distinctPairs = new Set(playerCombos.flatMap(c => c.pairKeys)).size;
+    const pairsPerRound = playerCombos[0]?.pairKeys.length ?? 0;
+    const startCap = Math.max(1, Math.ceil((pairsPerRound * roundsToBuild) / Math.max(1, distinctPairs)));
+    const NODE_LIMIT = 500000;
 
-        // 2. Add 1000000 to the selected combo
+    const search = cap => {
+        const pairCounts = {};
+        const used = new Set();
+        const path = [];
+        let nodes = 0;
+
+        const dfs = level => {
+            if (level === roundsToBuild) return true;
+
+            for (const group of groupsByRound[level]) {
+                if (++nodes > NODE_LIMIT) return false;
+
+                const combo = group.find(c => !used.has(c));    // best not-yet-used combo for this partnership set
+                if (!combo) continue;
+                if (combo.pairKeys.some(k => (pairCounts[k] || 0) >= cap)) continue;
+
+                combo.pairKeys.forEach(k => { pairCounts[k] = (pairCounts[k] || 0) + 1; });
+                used.add(combo);
+                path.push(combo);
+
+                if (dfs(level + 1)) return true;
+
+                path.pop();
+                used.delete(combo);
+                combo.pairKeys.forEach(k => { pairCounts[k]--; });
+            }
+            return false;
+        };
+
+        return dfs(0) ? [...path] : null;
+    };
+
+    let chosen = null;
+    let capUsed = null;
+    for (let cap = startCap; cap <= startCap + 3 && !chosen; cap++) {
+        chosen = search(cap);
+        if (chosen) capUsed = cap;
+    }
+    if (!chosen) {
+        chosen = search(Infinity);   // last resort: plain best-first, no cap
+        capUsed = "none";
+    }
+    console.log(`Partnership cap used: ${capUsed} (starting cap ${startCap})`);
+
+    // --- Build the rounds output --- //
+    const rounds = [];
+    (chosen ?? []).forEach((selected, i) => {
+        const byes = byeSchedule[i] ?? { excludedTeams: [], playersOnBye: [] };
+        const roundScore = selected.comboAbsTotal;
         selected.penalty += 1000000;
-
-        // 3. Move every combo sharing a partnership with it (including itself) to the holding pool
-        const usedPairs = new Set(selected.pairKeys);
-        const stillAvailable = [];
-        available.forEach(c => {
-            if (c === selected || c.pairKeys.some(k => usedPairs.has(k))) holding.push(c);
-            else stillAvailable.push(c);
-        });
-        available = stillAvailable;   // order is preserved, so it stays sorted
 
         rounds.push({
             round: i + 1,
@@ -344,8 +388,7 @@ function buildRounds(playerCombos, numberOfRounds, byeSchedule = []) {
             pair2Avg: m.pair2.avgDUPR,
             absDiff: m.absDiff
         })));
-        console.log(`Available: ${available.length} | Holding: ${holding.length}`);
-    }
+    });
 
     return rounds;
 }
