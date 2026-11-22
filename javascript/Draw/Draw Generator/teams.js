@@ -263,7 +263,7 @@ function buildPlayerCombos(teamCombos, pairings, maxCombos = 100000) {
 }
 
 // *** BUILD MATCHUPS FOR EACH ROUND *** //
-// --- Priority 1: unique partnerships (hard cap per bye cycle) --- //
+// --- Priority 1: unique partnerships (hard cap per cycle) --- //
 // --- Priority 2: lowest total absDUPR + penalty among the valid cycles --- //
 // --- Full pool restored at the start of each cycle; combos used before carry the 1000000 penalty --- //
 function buildRounds(playerCombos, numberOfRounds, byeSchedule = []) {
@@ -287,7 +287,7 @@ function buildRounds(playerCombos, numberOfRounds, byeSchedule = []) {
         c.penalty = 0;
     });
 
-    // --- Cycle length: rounds before the bye pattern repeats (5 for teams of 5, 1 bye per round) --- //
+    // --- Cycle length: rounds before the bye pattern repeats --- //
     let cycleLength = numberOfRounds;
     for (let j = 1; j < numberOfRounds; j++) {
         const a = byeSchedule[0], b = byeSchedule[j];
@@ -298,7 +298,14 @@ function buildRounds(playerCombos, numberOfRounds, byeSchedule = []) {
             break;
         }
     }
-    console.log(`Bye cycle length: ${cycleLength}`);
+
+    // Fallback: no bye pattern found, so size the cycle by how long it takes to use every partnership once
+    if (cycleLength === 1) {
+        const distinctPairs = new Set(playerCombos.flatMap(c => c.pairKeys)).size;
+        const pairsPerRound = playerCombos[0]?.pairKeys.length || 1;
+        cycleLength = Math.max(1, Math.floor(distinctPairs / pairsPerRound));
+    }
+    console.log(`Cycle length: ${cycleLength}`);
 
     const rounds = [];
 
