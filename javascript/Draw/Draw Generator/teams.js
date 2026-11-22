@@ -49,36 +49,38 @@ function byeStructure(players, courtsCount, numberOfTeams, allTeams) {
     const playerCount = Array.isArray(players) ? players.length : players;
     const teamCount = numberOfTeams ?? (Array.isArray(allTeams) ? allTeams.length : 0);
 
-    // Get playersNeededPerTeam from the structure check
     const structure = teamStructureType(players, courtsCount, teamCount, allTeams);
     if (!structure.valid) {
         return { valid: false, reason: structure.reason };
     }
     const playersNeededPerTeam = structure.playersNeededPerTeam;
 
-    // Team sizes: use the actual teams if they are arrays of players,
-    // otherwise assume players are split evenly across teams
     const teamsArePlayerArrays =
         Array.isArray(allTeams) && allTeams.every(team => Array.isArray(team));
     const teamSizes = teamsArePlayerArrays
         ? allTeams.map(team => team.length)
         : Array(teamCount).fill(Math.floor(playerCount / teamCount));
 
-    // Extra players in each team beyond what is needed
-    const playersOnByePerTeam = teamSizes.map(size => Math.max(0, size - playersNeededPerTeam));
+    // One entry per team
+    const teamByeDetails = teamSizes.map((size, i) => {
+        const playersOnBye = Math.max(0, size - playersNeededPerTeam);
+        return {
+            team: Array.isArray(allTeams) && !teamsArePlayerArrays ? allTeams[i] : `Team ${i + 1}`,
+            teamSize: size,
+            playersNeeded: playersNeededPerTeam,
+            playerByes: playersOnBye > 0,
+            playersOnBye
+        };
+    });
 
     const wholeTeamByes = teamCount > courtsCount;
-    const playerByes = playersOnByePerTeam.some(extra => extra > 0);
 
     return {
         valid: true,
         wholeTeamByes,
-        // Teams sitting out once every court is filled
         teamByes: wholeTeamByes ? teamCount - courtsCount : 0,
-        playerByes,
         playersNeededPerTeam,
-        playersOnByePerTeam,                                         // one entry per team
-        playersOnBye: playersOnByePerTeam.reduce((a, b) => a + b, 0) // total across all teams
+        teamByeDetails                                   // per team: size, needed, playerByes, playersOnBye
     };
 }
 
@@ -109,12 +111,26 @@ function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount
     // --- Determine bye structure --- //
     const isByeStructures = byeStructure(players, courtsCount, numberOfTeams, allTeams);
 
-    alert(
-        `Whole Team Byes: ${isByeStructures.wholeTeamByes ? "Yes" : "No"}\n` +
-        (isByeStructures.wholeTeamByes ? `\nNumber of team byes: ${result.teamByes}` : "") +
-        `Player Byes: ${isByeStructures.playerByes ? "Yes" : "No"}` +
-        (isByeStructures.playerByes ? `\nPlayers on bye: ${isByeStructures.playersOnBye}` : "")
-    );
+    if (!isByeStructures.valid) {
+        alert(`Invalid structure: ${isByeStructures.reason}`);
+    } else {
+        const { wholeTeamByes, teamByes, teamByeDetails } = isByeStructures;
+
+        const anyPlayerByes = teamByeDetails.some(t => t.playerByes);
+        const totalPlayersOnBye = teamByeDetails.reduce((sum, t) => sum + t.playersOnBye, 0);
+
+        const perTeamLines = teamByeDetails
+            .filter(t => t.playerByes)
+            .map(t => `  ${t.team}: ${t.playersOnBye} (${t.teamSize} players, ${t.playersNeeded} needed)`)
+            .join("\n");
+
+        alert(
+            `Whole Team Byes: ${wholeTeamByes ? "Yes" : "No"}` +
+            (wholeTeamByes ? `\nNumber of team byes: ${teamByes}` : "") +
+            `\nPlayer Byes: ${anyPlayerByes ? "Yes" : "No"}` +
+            (anyPlayerByes ? `\nTotal players on bye: ${totalPlayersOnBye}\n${perTeamLines}` : "")
+        );
+    }
 
     // --- NOTE MAY DO AT END --- //
 
