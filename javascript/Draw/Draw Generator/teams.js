@@ -263,7 +263,8 @@ function buildPlayerCombos(teamCombos, pairings, maxCombos = 100000) {
 }
 
 // *** BUILD MATCHUPS FOR EACH ROUND *** //
-// --- Pool approach, refilled in full at the start of each bye cycle --- //
+// --- Each bye cycle is solved as a whole: every partnership used once per cycle --- //
+// --- Full pool restored at the start of each cycle; combos used before carry the 1000000 penalty --- //
 function buildRounds(playerCombos, numberOfRounds, byeSchedule = []) {
     const score = c => c.comboAbsTotal + c.penalty;
     const pairKey = (a, b) => [a, b].sort().join("|");
@@ -274,6 +275,7 @@ function buildRounds(playerCombos, numberOfRounds, byeSchedule = []) {
             pairKey(m.pair1.player1PlayerID, m.pair1.player2PlayerID),
             pairKey(m.pair2.player1PlayerID, m.pair2.player2PlayerID)
         ]);
+        c.pairSig = [...c.pairKeys].sort().join(";");
         c.playerIDs = new Set(c.matches.flatMap(m => [
             m.pair1.player1PlayerID, m.pair1.player2PlayerID,
             m.pair2.player1PlayerID, m.pair2.player2PlayerID
@@ -282,7 +284,7 @@ function buildRounds(playerCombos, numberOfRounds, byeSchedule = []) {
         c.penalty = 0;
     });
 
-    // --- Cycle length: rounds before the bye pattern repeats (5 in your example) --- //
+    // --- Cycle length: rounds before the bye pattern repeats --- //
     let cycleLength = numberOfRounds;
     for (let j = 1; j < numberOfRounds; j++) {
         const a = byeSchedule[0], b = byeSchedule[j];
@@ -295,74 +297,100 @@ function buildRounds(playerCombos, numberOfRounds, byeSchedule = []) {
     }
     console.log(`Bye cycle length: ${cycleLength}`);
 
-    const sortPool = pool => pool.sort((a, b) => score(a) - score(b));
-
-    let available = sortPool([...playerCombos]);
-    let holding = [];
+    const NODE_LIMIT = 500000;
     const rounds = [];
 
-    for (let i = 0; i < numberOfRounds; i++) {
-        // New cycle: bring the whole pool back, penalties stay, resort
-        if (i > 0 && i % cycleLength === 0) {
-            available = sortPool([...playerCombos]);
-            holding = [];
-            console.log(`Round ${i + 1}: new cycle, full pool restored (${available.length} combos)`);
+    for (let start = 0; start < numberOfRounds; start += cycleLength) {
+        const end = Math.min(start + cycleLength, numberOfRounds);
+
+        // --- Full pool for each round of this cycle, grouped by partnership set, best score first --- //
+        const groupsByLevel = [];
+        for (let i = start; i < end; i++) {
+            const byes = byeSchedule[i] ?? { excludedTeams: [], playersOnBye: [] };
+            const byeKey = teamsKey(byes.excludedTeams);
+
+            const eligible = playerCombos.filter(c =>
+                (byeSchedule.length === 0 || c.excludedKey === byeKey) &&
+                !byes.playersOnBye.some(id => c.playerIDs.has(id))
+            );
+
+            const bySig = new Map();
+            eligible.forEach(c => {
+                if (!bySig.has(c.pairSig)) bySig.set(c.pairSig, []);
+                bySig.get(c.pairSig).push(c);
+            });
+            const groups = [...bySig.values()];
+            groups.forEach(g => g.sort((a, b) => score(a) - score(b)));
+            groups.sort((a, b) => score(a[0]) - score(b[0]));
+            groupsByLevel.push(groups);
         }
 
-        const byes = byeSchedule[i] ?? { excludedTeams: [], playersOnBye: [] };
-        const byeKey = teamsKey(byes.excludedTeams);
-        const isEligible = c =>
-            (byeSchedule.length === 0 || c.excludedKey === byeKey) &&
-            !byes.playersOnBye.some(id => c.playerIDs.has(id));
-
-        // 1. Best rated eligible combo
-        let selected = available.find(isEligible);
-
-        // Dead end mid-cycle: pull the holding pool back (a partnership will repeat)
-        if (!selected && holding.length > 0) {
-            console.log(`Round ${i + 1}: DEAD END mid-cycle, holding pool added back`);
-            available = sortPool(available.concat(holding));
-            holding = [];
-            selected = available.find(isEligible);
-        }
-
-        if (!selected) {
-            console.log(`Round ${i + 1}: no eligible combos`);
+        if (groupsByLevel.some(g => g.length === 0)) {
+            console.log(`Cycle starting round ${start + 1}: a round has no eligible combos`);
             break;
         }
 
-        const roundScore = score(selected);
+        // --- Backtracking search: no partnership used more than `cap` times in this cycle --- //
+        const search = cap => {
+            const counts = {};
+            const path = [];
+            let nodes = 0;
 
-        // 2. Add 1000000 to the selected combo
-        selected.penalty += 1000000;
+            const dfs = level => {
+                if (level === groupsByLevel.length) return true;
 
-        // 3. Move every combo sharing a partnership with it (including itself) to holding
-        const usedPairs = new Set(selected.pairKeys);
-        const stillAvailable = [];
-        available.forEach(c => {
-            if (c === selected || c.pairKeys.some(k => usedPairs.has(k))) holding.push(c);
-            else stillAvailable.push(c);
+                for (const group of groupsByLevel[level]) {
+                    if (++nodes > NODE_LIMIT) return false;
+                    const combo = group[0];
+                    if (combo.pairKeys.some(k => (counts[k] || 0) >= cap)) continue;
+
+                    combo.pairKeys.forEach(k => { counts[k] = (counts[k] || 0) + 1; });
+                    path.push(combo);
+
+                    if (dfs(level + 1)) return true;
+
+                    path.pop();
+                    combo.pairKeys.forEach(k => { counts[k]--; });
+                }
+                return false;
+            };
+
+            return dfs(0) ? [...path] : null;
+        };
+
+        let chosen = null, capUsed = null;
+        for (const cap of [1, 2, 3, Infinity]) {
+            chosen = search(cap);
+            if (chosen) { capUsed = cap; break; }
+        }
+        console.log(`Cycle rounds ${start + 1}-${end}: partnership cap ${capUsed}`);
+        if (!chosen) break;
+
+        // --- Record the rounds and penalise the combos used --- //
+        chosen.forEach((selected, idx) => {
+            const i = start + idx;
+            const byes = byeSchedule[i] ?? { excludedTeams: [], playersOnBye: [] };
+            const roundScore = score(selected);
+            selected.penalty += 1000000;
+
+            rounds.push({
+                round: i + 1,
+                combo: selected,
+                score: roundScore,
+                teamsOnBye: byes.excludedTeams,
+                playersOnBye: byes.playersOnBye
+            });
+
+            console.log(`===== Round ${i + 1} | Abs DUPR total: ${roundScore} | Teams on bye: ${byes.excludedTeams.join(", ") || "none"} | Players on bye: ${byes.playersOnBye.join(", ") || "none"} =====`);
+            console.table(selected.matches.map(m => ({
+                match: `Team ${m.team1} v Team ${m.team2}`,
+                pair1: `${m.pair1.player1PlayerID} / ${m.pair1.player2PlayerID}`,
+                pair1Avg: m.pair1.avgDUPR,
+                pair2: `${m.pair2.player1PlayerID} / ${m.pair2.player2PlayerID}`,
+                pair2Avg: m.pair2.avgDUPR,
+                absDiff: m.absDiff
+            })));
         });
-        available = stillAvailable;
-
-        rounds.push({
-            round: i + 1,
-            combo: selected,
-            score: roundScore,
-            teamsOnBye: byes.excludedTeams,
-            playersOnBye: byes.playersOnBye
-        });
-
-        console.log(`===== Round ${i + 1} | Abs DUPR total: ${roundScore} | Teams on bye: ${byes.excludedTeams.join(", ") || "none"} | Players on bye: ${byes.playersOnBye.join(", ") || "none"} =====`);
-        console.table(selected.matches.map(m => ({
-            match: `Team ${m.team1} v Team ${m.team2}`,
-            pair1: `${m.pair1.player1PlayerID} / ${m.pair1.player2PlayerID}`,
-            pair1Avg: m.pair1.avgDUPR,
-            pair2: `${m.pair2.player1PlayerID} / ${m.pair2.player2PlayerID}`,
-            pair2Avg: m.pair2.avgDUPR,
-            absDiff: m.absDiff
-        })));
-        console.log(`Available: ${available.length} | Holding: ${holding.length}`);
     }
 
     return rounds;
