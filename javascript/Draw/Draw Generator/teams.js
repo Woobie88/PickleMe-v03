@@ -139,8 +139,8 @@ function buildPairingMatrices(allTeams) {
     return result;
 }
 
-// *** Step 1: Team-level combos *** //
-// --- courtsCount = combo length (one match per court) --- //
+/// *** Step 1: Team-level combos *** //
+// --- courtsCount = combo length (one match per court, but no court is allocated) --- //
 // --- A team never plays itself --- //
 // --- If wholeTeamByes, the excluded team(s) rotate through each combo --- //
 function buildTeamCombos(players, courtsCount, numberOfTeams, allTeams) {
@@ -166,10 +166,11 @@ function buildTeamCombos(players, courtsCount, numberOfTeams, allTeams) {
             ? [[playing[0], playing[1]]]
             : playing.map((team, i) => [team, playing[(i + 1) % playing.length]]);
 
-        // One match per court; the ring repeats if there are more courts than ring matches
+        // One match per court slot; the ring repeats if there are more courts than ring matches
+        // (no court number is assigned)
         const matches = Array.from({ length: courtsCount }, (_, c) => {
             const [team1, team2] = ring[c % ring.length];
-            return { court: c + 1, team1, team2 };
+            return { team1, team2 };
         });
 
         combos.push({ comboId: r + 1, excludedTeams, matches });
@@ -181,8 +182,10 @@ function buildTeamCombos(players, courtsCount, numberOfTeams, allTeams) {
 // *** Step 2: Player-level combos *** //
 // --- Fills each match with a pairing from each team, no player used twice within a combo --- //
 // --- pairings = output of buildPairingMatrices(allTeams) --- //
+// --- No court is allocated; combo length = number of matches (courtsCount) --- //
 function buildPlayerCombos(teamCombos, pairings, maxCombos = 100000) {
     const results = [];
+    const round3 = n => Math.round(n * 1000) / 1000;
 
     teamCombos.forEach(combo => {
         const usedByTeam = {};                    // teamKey -> Set of PlayerIDs already used
@@ -192,10 +195,14 @@ function buildPlayerCombos(teamCombos, pairings, maxCombos = 100000) {
             const used = usedByTeam[team] ?? (usedByTeam[team] = new Set());
             return used.has(pair.player1PlayerID) || used.has(pair.player2PlayerID);
         };
+
         const mark = (team, pair, add) => {
-            const used = usedByTeam[team];
-            [pair.player1PlayerID, pair.player2PlayerID].forEach(id => add ? used.add(id) : used.delete(id));
+            const used = usedByTeam[team] ?? (usedByTeam[team] = new Set());
+            [pair.player1PlayerID, pair.player2PlayerID].forEach(id =>
+                add ? used.add(id) : used.delete(id)
+            );
         };
+
         const slim = p => ({
             player1PlayerID: p.player1PlayerID,
             player2PlayerID: p.player2PlayerID,
@@ -205,40 +212,46 @@ function buildPlayerCombos(teamCombos, pairings, maxCombos = 100000) {
         const recurse = m => {
             if (results.length >= maxCombos) return;
 
+            // Base case: every match in the combo has been filled
             if (m === combo.matches.length) {
                 const matches = chosen.map((c, i) => ({
-                    court: combo.matches[i].court,
                     team1: combo.matches[i].team1,
                     team2: combo.matches[i].team2,
                     pair1: slim(c.p1),
                     pair2: slim(c.p2),
-                    absDiff: Math.round(Math.abs(c.p1.avgDUPR - c.p2.avgDUPR) * 1000) / 1000
+                    absDiff: round3(Math.abs(c.p1.avgDUPR - c.p2.avgDUPR))
                 }));
-                const absAvgMatrix = matches.map(x => x.absDiff);   // |avg1 - avg2| per court
+
+                const absAvgMatrix = matches.map(x => x.absDiff);   // |avg1 - avg2| per match
 
                 results.push({
                     comboId: combo.comboId,
                     excludedTeams: combo.excludedTeams,
                     matches,
                     absAvgMatrix,
-                    comboAbsTotal: Math.round(absAvgMatrix.reduce((a, b) => a + b, 0) * 1000) / 1000,
+                    comboAbsTotal: round3(absAvgMatrix.reduce((a, b) => a + b, 0)),
                     penalty: 0
                 });
                 return;
             }
 
             const { team1, team2 } = combo.matches[m];
+
             for (const p1 of pairings[team1]) {
                 if (clashes(team1, p1)) continue;
                 mark(team1, p1, true);
+
                 for (const p2 of pairings[team2]) {
                     if (clashes(team2, p2)) continue;
                     mark(team2, p2, true);
+
                     chosen.push({ p1, p2 });
                     recurse(m + 1);
                     chosen.pop();
+
                     mark(team2, p2, false);
                 }
+
                 mark(team1, p1, false);
             }
         };
@@ -311,7 +324,7 @@ function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount
     // --- Build matrix of team pairings, with Avg. DUPR & Delta DUPR --- //
     const pairings = buildPairingMatrices(allTeams);
     console.log('The eligible team pairings', pairings);
-    
+
     const teamCombos = buildTeamCombos(players, courtsCount, numberOfTeams, allTeams);
 
     if (!teamCombos.valid) {
@@ -319,7 +332,10 @@ function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount
     } else {
         console.log(teamCombos.combos);   // e.g. 4 teams / 3 courts -> 4 combos
         const playerCombos = buildPlayerCombos(teamCombos.combos, pairings);
-        console.log(playerCombos.length, playerCombos[0]);
+        // Sort by absolute DUPR difference total, ascending (most balanced first)
+        playerCombos.sort((a, b) => (a.comboAbsTotal + a.penalty) - (b.comboAbsTotal + b.penalty));
+        console.log('The best match up', playerCombos[0].comboAbsTotal);   // lowest
+        console.log('The worst match up', playerCombos[playerCombos.length - 1].comboAbsTotal);   // highest
     }
    
 
