@@ -580,7 +580,9 @@ async function generateNRoundsAndPreview(numberOfRounds) {
     const numberOfTeams = parseInt(activeEvent.NumberOfTeams) || 2;
     let allMatches = [];
     newMatches = generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfTeams, scorers);
-    return;
+    console.log(`Generated Teams draw: ${newMatches.length} matches across ${numberOfRounds} round(s).`);
+
+ 
     
     // for (let i = 0; i < numberOfRounds; i++) {
     //   const roundNumber = startRound + i;
