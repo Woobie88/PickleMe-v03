@@ -47,9 +47,32 @@ function teamStructureType(players, courtsCount, numberOfTeams, allTeams) {
     return { type: 4, valid: false, reason: "Courts are not divisible by number of teams" };
 }
 
+// *** Bye Structure Determination *** // 
+// --- Depending on the number of teams, players & court count, will determine if wholeTeamByes & playerByes are needed --- //
+// --- wholeTeamByes = Yes if numberOfTeams > courtCounts --- //
+// --- playerByes = Yes if players.length / 4 > courtCounts --- //
+function byeStructure(players, courtsCount, numberOfTeams, allTeams) {
+    // players can be a count or an array of players
+    const playerCount = Array.isArray(players) ? players.length : players;
+
+    // Fall back to allTeams.length if numberOfTeams isn't supplied
+    const teamCount = numberOfTeams ?? (Array.isArray(allTeams) ? allTeams.length : 0);
+
+    const wholeTeamByes = teamCount > courtsCount;
+    const playerByes = playerCount / 4 > courtsCount;
+
+    const result = {
+        wholeTeamByes,
+        playerByes,
+        // Players left over once every court is filled (4 per court)
+        playersOnBye: playerByes ? playerCount - courtsCount * 4 : 0
+    };
+
+    return result;
+}
+
 // *** CORE FUNCTION CALLED TO GENERATE TEAM DRAW *** //
 function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfTeams, scorers) {
-    
     // --- Build the players into each team, sorting rank by DUPR rating --- //
     const allTeams = {};
     [...players]
@@ -68,6 +91,15 @@ function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount
         `Reason: ${isTeamStructure.reason}\n` +
         `Number of Courts: ${courtsCount}\n` +
         `Number of Teams: ${numberOfTeams}`
+    );
+
+    // --- Determine bye structure --- //
+    const isByeStructures = byeStructure(players, courtsCount, numberOfTeams, allTeams);
+
+    alert(
+        `Whole Team Byes: ${isByeStructures.wholeTeamByes ? "Yes" : "No"}\n` +
+        `Player Byes: ${isByeStructures.playerByes ? "Yes" : "No"}` +
+        (playerByes ? `\nPlayers on bye: ${isByeStructures.playersOnBye}` : "")
     );
 
     // --- NOTE MAY DO AT END --- //
