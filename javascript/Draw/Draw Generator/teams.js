@@ -471,6 +471,33 @@ function buildByeSchedule(allTeams, teamCombos, byeInfo, numberOfRounds) {
     return schedule;
 }
 
+// *** Convert buildRounds output into match records (same format as newMatches) *** //
+function buildMatchRecordsFromRounds(rounds, players, courtsCount, eventId, drawVersion, userEmail) {
+    const playerById = {};
+    players.forEach(p => { playerById[p.PlayerID] = p; });
+
+    const courtNumbers = Array.from({ length: courtsCount }, (_, i) => i + 1);
+    const allRecords = [];
+
+    rounds.forEach(r => {
+        // Match-ups in the shape assignCourts / buildMatchRecord expect
+        const matchups = r.combo.matches.map(m => ({
+            teamA: [playerById[m.pair1.player1PlayerID], playerById[m.pair1.player2PlayerID]],
+            teamB: [playerById[m.pair2.player1PlayerID], playerById[m.pair2.player2PlayerID]]
+        }));
+
+        // Allocate courts using the court history built from earlier rounds
+        const { courtCounts } = buildDrawHistory(allRecords);
+        const courted = assignCourts(matchups, courtNumbers, courtCounts);
+
+        courted.forEach((m, idx) => {
+            allRecords.push(buildMatchRecord(m, idx, r.round, eventId, drawVersion, userEmail));
+        });
+    });
+
+    return allRecords;
+}
+
 // *** CORE FUNCTION CALLED TO GENERATE TEAM DRAW *** //
 function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfTeams, scorers) {
     // --- Build the players into each team, sorting rank by DUPR rating --- //
@@ -561,5 +588,6 @@ function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount
     const rounds = buildRounds(playerCombos, numberOfRounds, byeSchedule);
     summarisePlayerHistory(rounds, players);
 
-    return rounds;
+    // Same format as newMatches
+    return buildMatchRecordsFromRounds(rounds, players, courtsCount, activeEventId, newDrawVersion, userEmail);
 }
