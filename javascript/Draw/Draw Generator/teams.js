@@ -61,7 +61,11 @@ function byeStructure(players, courtsCount, numberOfTeams, allTeams) {
         ? allTeams.map(team => team.length)
         : Array(teamCount).fill(Math.floor(playerCount / teamCount));
 
-    // One entry per team
+    // True if every team has the same number of players
+    const evenPlayersPerTeam = teamsArePlayerArrays
+        ? teamSizes.every(size => size === teamSizes[0])
+        : playerCount % teamCount === 0;
+
     const teamByeDetails = teamSizes.map((size, i) => {
         const playersOnBye = Math.max(0, size - playersNeededPerTeam);
         return {
@@ -79,8 +83,9 @@ function byeStructure(players, courtsCount, numberOfTeams, allTeams) {
         valid: true,
         wholeTeamByes,
         teamByes: wholeTeamByes ? teamCount - courtsCount : 0,
+        evenPlayersPerTeam,
         playersNeededPerTeam,
-        teamByeDetails                                   // per team: size, needed, playerByes, playersOnBye
+        teamByeDetails
     };
 }
 
@@ -114,7 +119,7 @@ function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount
     if (!isByeStructures.valid) {
         alert(`Invalid structure: ${isByeStructures.reason}`);
     } else {
-        const { wholeTeamByes, teamByes, teamByeDetails } = isByeStructures;
+        const { wholeTeamByes, teamByes, evenPlayersPerTeam, teamByeDetails } = isByeStructures;
 
         const anyPlayerByes = teamByeDetails.some(t => t.playerByes);
         const totalPlayersOnBye = teamByeDetails.reduce((sum, t) => sum + t.playersOnBye, 0);
@@ -125,6 +130,7 @@ function generateTeamsRoundTest(players, allMatches, numberOfRounds, courtsCount
             .join("\n");
 
         alert(
+            `Even Players Per Team: ${evenPlayersPerTeam ? "Yes" : "No"}\n` +
             `Whole Team Byes: ${wholeTeamByes ? "Yes" : "No"}` +
             (wholeTeamByes ? `\nNumber of team byes: ${teamByes}` : "") +
             `\nPlayer Byes: ${anyPlayerByes ? "Yes" : "No"}` +
