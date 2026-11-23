@@ -744,7 +744,7 @@ function renderPlayerMatchesView() {
       let metaLine;
       if (isComplete) {
         const expScoreTeam1 = Math.round(m.ExpectedTeam1Score / (m.ExpectedTeam1Score + m.ExpectedTeam2Score) * (m.Team1Score + m.Team2Score));
-        const expScoreTeam2 = m.Team1Score + m.Team1Score - expScoreTeam1;
+        const expScoreTeam2 = m.Team1Score + m.Team2Score - expScoreTeam1;
         metaLine = `Score ${m.Team1Score} - ${m.Team2Score} || Exp Res. ${expScoreTeam1} - ${expScoreTeam2}`;
       } else {
         const duprDelta = Math.abs((parseFloat(match.Team1AvgDUPR) || 0) - (parseFloat(match.Team2AvgDUPR) || 0)).toFixed(2);

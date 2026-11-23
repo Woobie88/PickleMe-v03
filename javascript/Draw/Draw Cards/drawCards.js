@@ -142,7 +142,7 @@ async function renderDrawCards(payload, { silent = false } = {}) {
     let metaLine;
     if (isComplete && hasRealScore) {
       const expScoreTeam1 = Math.round(m.ExpectedTeam1Score / (m.ExpectedTeam1Score + m.ExpectedTeam2Score) * (m.Team1Score + m.Team2Score));
-      const expScoreTeam2 = m.Team1Score + m.Team1Score - expScoreTeam1;
+      const expScoreTeam2 = m.Team1Score + m.Team2Score - expScoreTeam1;
       metaLine = `Score ${m.Team1Score} - ${m.Team2Score} || Exp Res. ${expScoreTeam1} - ${expScoreTeam2}`;
     } else if (isComplete) {
       // Wins-mode result — no score was ever entered, just show W/L
@@ -634,7 +634,7 @@ async function renderCurrentRoundView(payload, { silent = false } = {}) {
     let metaLine;
     if (isComplete && hasRealScore) {
       const expScoreTeam1 = Math.round(m.ExpectedTeam1Score / (m.ExpectedTeam1Score + m.ExpectedTeam2Score) * (m.Team1Score + m.Team2Score));
-      const expScoreTeam2 = m.Team1Score + m.Team1Score - expScoreTeam1;
+      const expScoreTeam2 = m.Team1Score + m.Team2Score - expScoreTeam1;
       metaLine = `Score ${m.Team1Score} - ${m.Team2Score} || Exp Res. ${expScoreTeam1} - ${expScoreTeam2}`;
     } else if (isComplete) {
       const team1Result = m.Team1WinLoss === 'Win' ? 'W' : 'L';
