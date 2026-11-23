@@ -22,8 +22,8 @@ window.fetchEventsFromFirestore = async function(userEmail) {
 
   // Role to look for depends on which app is running
   const roleByApp = {
-    PickleMe: "Host",
-    Lite: "User"
+    pickleMe: "Host",
+    lite: "User"
   };
   const requiredRole = roleByApp[window.currentAppName];
 
