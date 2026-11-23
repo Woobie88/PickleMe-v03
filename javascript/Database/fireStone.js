@@ -20,7 +20,23 @@ setPersistence(auth, browserLocalPersistence);
 window.fetchEventsFromFirestore = async function(userEmail) {
   const db = window.db;
 
-  const accessQuery = query(collection(db, "userAccess"), where("UserEmail", "==", userEmail));
+  // Role to look for depends on which app is running
+  const roleByApp = {
+    PickleMe: "Host",
+    Lite: "User"
+  };
+  const requiredRole = roleByApp[window.currentAppName];
+
+  if (!requiredRole) {
+    console.warn(`Unknown window.currentAppName: "${window.currentAppName}". No role filter could be applied.`);
+    return { events: [], activeEventId: null };
+  }
+
+  const accessQuery = query(
+    collection(db, "userAccess"),
+    where("UserEmail", "==", userEmail),
+    where("Role", "==", requiredRole)
+  );
   const accessSnapshot = await getDocs(accessQuery);
   const permittedEventIds = accessSnapshot.docs.map(doc => doc.data().EventID);
 
@@ -32,7 +48,11 @@ window.fetchEventsFromFirestore = async function(userEmail) {
   const eventsSnapshot = await getDocs(eventsQuery);
   const events = eventsSnapshot.docs.map(doc => doc.data());
 
-  const activeQuery = query(collection(db, "activeEvent"), where("UserEmail", "==", userEmail));
+  const activeQuery = query(
+    collection(db, "activeEvent"), 
+    where("UserEmail", "==", userEmail),
+    where("App", "==", window.currentAppName)
+  );
   const activeSnapshot = await getDocs(activeQuery);
   let activeEventId = null;
   if (!activeSnapshot.empty) {
@@ -44,13 +64,17 @@ window.fetchEventsFromFirestore = async function(userEmail) {
 
 window.setActiveEventInFirestore = async function(eventId, userEmail) {
   const db = window.db;
-  const q = query(collection(db, "activeEvent"), where("UserEmail", "==", userEmail));
+  const q = query(
+    collection(db, "activeEvent"), 
+    where("UserEmail", "==", userEmail),
+    where("App", "==", window.currentAppName)
+  );
   const snapshot = await getDocs(q);
 
   if (!snapshot.empty) {
     await updateDoc(snapshot.docs[0].ref, { EventID: eventId });
   } else {
-    await addDoc(collection(db, "activeEvent"), { UserEmail: userEmail, EventID: eventId });
+    await addDoc(collection(db, "activeEvent"), { UserEmail: userEmail, EventID: eventId, App: window.currentAppName });
   }
 };
 
