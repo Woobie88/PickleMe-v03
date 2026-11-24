@@ -1,277 +1,668 @@
-/**
- * ============================================================
- * TEAMS DRAW ENGINE
- * For games where Team === "Yes" and Division === "No" (e.g.
- * the "teams" game type). Handles the 5 verified scenarios:
- * full round-robin (every active team plays every other team
- * simultaneously), standard pairing (each team plays one
- * opponent, extra courts double up), whole-team byes, and
- * individual within-team byes — reusing your existing verified
- * bye-rotation logic at whichever level applies each round.
- * ============================================================
- */
-
-// ---------- ROUND STRUCTURE (verified against all 5 examples) ----------
-
-function determineTeamRoundStructure(totalTeams, courtsCount) {
-  for (let activeTeams = totalTeams; activeTeams >= 2; activeTeams--) {
-    const numPairingsFull = (activeTeams * (activeTeams - 1)) / 2;
-    if (numPairingsFull > 0 && courtsCount % numPairingsFull === 0) {
-      return { mode: 'full', activeTeams, courtsPerPairing: courtsCount / numPairingsFull };
-    }
-    if (activeTeams % 2 === 0) {
-      const numPairingsStandard = activeTeams / 2;
-      if (courtsCount % numPairingsStandard === 0) {
-        return { mode: 'standard', activeTeams, courtsPerPairing: courtsCount / numPairingsStandard };
-      }
-    }
-  }
-  return null;
-}
-
-// ---------- GENERIC BYE ROTATION (same mechanism as generateByeSchedule, parameterized) ----------
-// ---------- CHECK AS THIS FUNCTION IS NEVER CALLED ---------------
-
-function generateEntityByeSchedule(entityIds, numberOfRounds, neededPerRound) {
-  const byesByRound = {};
-
-  if (neededPerRound <= 0) {
-    for (let i = 0; i < numberOfRounds; i++) byesByRound[i] = [];
-    return byesByRound;
-  }
-
-  const baseOrder = shuffle([...entityIds]);
-  let pointer = 0;
-
-  for (let round = 0; round < numberOfRounds; round++) {
-    const byes = [];
-    for (let i = 0; i < neededPerRound; i++) {
-      byes.push(baseOrder[pointer % baseOrder.length]);
-      pointer++;
-    }
-    byesByRound[round] = byes;
-  }
-
-  return byesByRound;
-}
-
-/**
- * Same cycling mechanism as generateEntityByeSchedule, but takes an
- * ALREADY-ORDERED list instead of shuffling internally — needed
- * wherever manual bye order must take priority over randomization.
- */
-function generateEntityByeScheduleOrdered(orderedEntityIds, numberOfRounds, neededPerRound) {
-  const byesByRound = {};
-
-  if (neededPerRound <= 0) {
-    for (let i = 0; i < numberOfRounds; i++) byesByRound[i] = [];
-    return byesByRound;
-  }
-
-  let pointer = 0;
-  for (let round = 0; round < numberOfRounds; round++) {
-    const byes = [];
-    for (let i = 0; i < neededPerRound; i++) {
-      byes.push(orderedEntityIds[pointer % orderedEntityIds.length]);
-      pointer++;
-    }
-    byesByRound[round] = byes;
-  }
-
-  return byesByRound;
-}
-
-// ---------- TEAM-LEVEL HISTORY (opponent repeats between whole teams) ----------
-
-function buildTeamOpponentHistory(matches) {
-  const teamOpponentCounts = {};
-
-  matches.forEach(m => {
-    if (m.Team1 === undefined || m.Team2 === undefined) return;
-    if (!teamOpponentCounts[m.Team1]) teamOpponentCounts[m.Team1] = {};
-    if (!teamOpponentCounts[m.Team2]) teamOpponentCounts[m.Team2] = {};
-    teamOpponentCounts[m.Team1][m.Team2] = (teamOpponentCounts[m.Team1][m.Team2] || 0) + 1;
-    teamOpponentCounts[m.Team2][m.Team1] = (teamOpponentCounts[m.Team2][m.Team1] || 0) + 1;
-  });
-
-  return teamOpponentCounts;
-}
-
-// ---------- TEAM PAIRING FOR ONE ROUND ----------
-
-function pairActiveTeamsForRound(activeTeamKeys, mode, teamOpponentCounts) {
-  if (mode === 'full') {
-    // Every active team plays every other — no decision needed, complete graph.
-    const pairings = [];
-    for (let i = 0; i < activeTeamKeys.length; i++) {
-      for (let j = i + 1; j < activeTeamKeys.length; j++) {
-        pairings.push([activeTeamKeys[i], activeTeamKeys[j]]);
-      }
-    }
-    return pairings;
-  }
-
-  // Standard mode — greedily pair teams to minimize opponent repeats,
-  // same random-restart greedy pattern used elsewhere in the app.
-  let best = null, bestCost = Infinity;
-
-  for (let attempt = 0; attempt < 200; attempt++) {
-    const pool = shuffle([...activeTeamKeys]);
-    const pairings = [];
-    const used = new Set();
-    let cost = 0;
-
-    for (let i = 0; i < pool.length; i++) {
-      if (used.has(pool[i])) continue;
-      let bestPartner = null, bestPartnerCost = Infinity;
-
-      for (let j = 0; j < pool.length; j++) {
-        if (i === j || used.has(pool[j])) continue;
-        const repeatCount = (teamOpponentCounts[pool[i]]?.[pool[j]]) || 0;
-        if (repeatCount < bestPartnerCost) { bestPartnerCost = repeatCount; bestPartner = pool[j]; }
-      }
-
-      if (bestPartner) {
-        pairings.push([pool[i], bestPartner]);
-        used.add(pool[i]);
-        used.add(bestPartner);
-        cost += bestPartnerCost;
-      }
-    }
-
-    if (cost < bestCost) { bestCost = cost; best = pairings; }
-  }
-
-  return best;
-}
-
-// ---------- BIPARTITE PLAYER-PAIR ASSIGNMENT (team A's pairs vs team B's pairs) ----------
-
-function assignBipartitePairings(teamAPairs, teamBPairs, opponentCounts) {
-  let best = null, bestCost = Infinity;
-
-  for (let attempt = 0; attempt < 100; attempt++) {
-    const shuffledB = shuffle([...teamBPairs]);
-    let cost = 0;
-
-    teamAPairs.forEach((pairA, idx) => {
-      const pairB = shuffledB[idx];
-      pairA.forEach(p1 => pairB.forEach(p2 => {
-        cost += (opponentCounts[p1.PlayerID]?.[p2.PlayerID]) || 0;
-      }));
-    });
-
-    if (cost < bestCost) {
-      bestCost = cost;
-      best = teamAPairs.map((pairA, idx) => ({ teamA: pairA, teamB: shuffledB[idx] }));
-    }
-  }
-
-  return best;
-}
-
-// ---------- MAIN ENTRY POINT: ONE ROUND ----------
-function generateTeamsRoundDraw(players, matches, roundNumber, courtsCount, eventId, drawVersion, userEmail, totalTeamsInput, scorers) {
-  const structure = determineTeamRoundStructure(totalTeamsInput, courtsCount);
-  if (!structure) {
-    console.error(`No valid team round structure found for ${totalTeamsInput} teams / ${courtsCount} courts.`);
+// *** Helper: normalise allTeams (keyed object or array) into [teamKey, roster] pairs *** //
+function getTeamEntries(allTeams) {
+    if (Array.isArray(allTeams)) return allTeams.map((team, i) => [String(i + 1), team]);
+    if (allTeams && typeof allTeams === "object") return Object.entries(allTeams);
     return [];
-  }
+}
 
-  const allTeams = {};
-  players.forEach(p => { (allTeams[p.Team] = allTeams[p.Team] || []).push(p); });
-  const allTeamKeys = Object.keys(allTeams).sort((a, b) => parseInt(a) - parseInt(b));
+// *** Team Structure Validation *** //
+// --- Valid team structures --- //
+// --- 1. Number of teams = 2; ALWAYS valid, provided there are enough players --- //
+// --- 2. More than 2 teams & courts <= number of teams; ALWAYS valid provided there are enough players --- //
+// --- 3. More than 2 teams & courts  > number of teams; ONLY valid if courts are divisible by number teams & there are enough players --- //
+// --- 4. More than 2 teams & courts  > number of teams; NOT valid if courts are not divisible by number of teams--- //
+// --- isValidPlayer is number of players / 4 >= courtsCount //
+function teamStructureType(players, courtsCount, numberOfTeams, allTeams) {
+    const teamEntries = getTeamEntries(allTeams);
+    const playerCount = Array.isArray(players) ? players.length : players;
+    const teamCount = numberOfTeams ?? teamEntries.length;
 
-  const { partnerCounts, opponentCounts, courtCounts } = buildDrawHistory(matches);
-  const teamOpponentCounts = buildTeamOpponentHistory(matches);
+    // allTeams (if provided) must agree with numberOfTeams
+    if (teamEntries.length > 0 && teamEntries.length !== teamCount) {
+        return { type: 0, valid: false, reason: "allTeams length does not match numberOfTeams" };
+    }
 
-  // --- Determine whole-team byes for this round (manual byeOrder-aware) ---
-  const wholeTeamByesNeeded = allTeamKeys.length - structure.activeTeams;
+    if (teamCount < 2) {
+        return { type: 0, valid: false, reason: "At least 2 teams are required" };
+    }
 
-  const teamGroupsArray = allTeamKeys.map(k => allTeams[k]);
-  const orderedTeamGroups = buildStableTeamOrder(teamGroupsArray);
-  const orderedTeamKeys = orderedTeamGroups.map(team => team[0].Team);
+    const isValidPlayer = playerCount / 4 >= courtsCount;
+    if (!isValidPlayer) {
+        return { type: 0, valid: false, reason: "Not enough players for the number of courts" };
+    }
 
-  window.gdTeamByeCache = window.gdTeamByeCache || {};
-  const teamByeCacheKey = `${eventId}_teamByes`;
-  if (!window.gdTeamByeCache[teamByeCacheKey]) {
-    window.gdTeamByeCache[teamByeCacheKey] = generateEntityByeScheduleOrdered(
-      orderedTeamKeys, window.gdCurrentNumberOfRounds || 1, wholeTeamByesNeeded
-    );
-  }
-  const wholeTeamByesThisRound = window.gdTeamByeCache[teamByeCacheKey][roundNumber - 1] || [];
+    // 1. Exactly 2 teams: always valid
+    if (teamCount === 2) {
+        return { type: 1, valid: true, reason: "Two teams", teamsPerRound: 2, playersNeededPerTeam: courtsCount * 2 };
+    }
 
-  const activeTeamKeys = allTeamKeys.filter(t => !wholeTeamByesThisRound.map(String).includes(String(t)));
-  
+    // 2. More than 2 teams, courts <= teams: always valid
+    if (courtsCount <= teamCount) {
+        return { type: 2, valid: true, reason: "Courts do not exceed number of teams", teamsPerRound: 2, playersNeededPerTeam: 2 * 2 };
+    }
 
-  // --- Team pairings for this round ---
-  const teamPairings = pairActiveTeamsForRound(activeTeamKeys, structure.mode, teamOpponentCounts);
+    // 3. More than 2 teams, courts > teams: valid only if courts divisible by teams
+    if (courtsCount % teamCount === 0) {
+        return { type: 3, valid: true, reason: "Courts are divisible by number of teams", teamsPerRound: teamCount, playersNeededPerTeam: (courtsCount / teamCount) * 2 };
+    }
 
-  // --- How many pairings is each active team involved in this round? ---
-  const pairingCountPerTeam = {};
-  activeTeamKeys.forEach(t => pairingCountPerTeam[t] = 0);
-  teamPairings.forEach(([a, b]) => { pairingCountPerTeam[a]++; pairingCountPerTeam[b]++; });
+    // 4. More than 2 teams, courts > teams, not divisible: invalid
+    return { type: 4, valid: false, reason: "Courts are not divisible by number of teams" };
+}
 
-  // --- Individual within-team byes (manual byeOrder-aware, only when no whole-team bye applies) ---
-  let individualByesByTeam = {};
-  if (wholeTeamByesNeeded === 0) {
-    activeTeamKeys.forEach(teamKey => {
-      const teamPlayers = allTeams[teamKey];
-      const playersNeeded = 2 * structure.courtsPerPairing * pairingCountPerTeam[teamKey];
-      const byesNeeded = Math.max(0, teamPlayers.length - playersNeeded);
+// *** Bye Structure Determination *** //
+// --- wholeTeamByes = Yes if numberOfTeams > courtCounts --- //
+// --- playerByes = Yes if players in each team > playersNeededPerTeam --- //
+function byeStructure(players, courtsCount, numberOfTeams, allTeams) {
+    const teamEntries = getTeamEntries(allTeams);
+    const playerCount = Array.isArray(players) ? players.length : players;
+    const teamCount = numberOfTeams ?? teamEntries.length;
 
-      const orderedTeamPlayers = buildStablePoolOrder(teamPlayers); // manual byeOrder first, same as Pools
-      const orderedIds = orderedTeamPlayers.map(p => p.PlayerID);
+    const structure = teamStructureType(players, courtsCount, teamCount, allTeams);
+    if (!structure.valid) {
+        return { valid: false, reason: structure.reason };
+    }
+    const playersNeededPerTeam = structure.playersNeededPerTeam;
 
-      window.gdIndivByeCache = window.gdIndivByeCache || {};
-      const cacheKey = `${eventId}_${teamKey}_indivByes`;
-      if (!window.gdIndivByeCache[cacheKey]) {
-        window.gdIndivByeCache[cacheKey] = generateEntityByeScheduleOrdered(
-          orderedIds, window.gdCurrentNumberOfRounds || 1, byesNeeded
-        );
-      }
-      individualByesByTeam[teamKey] = window.gdIndivByeCache[cacheKey][roundNumber - 1] || [];
+    // Real team sizes if each team is an array of players, otherwise assume an even split
+    const teamsArePlayerArrays =
+        teamEntries.length > 0 && teamEntries.every(([, roster]) => Array.isArray(roster));
+    const teamSizes = teamsArePlayerArrays
+        ? teamEntries.map(([, roster]) => roster.length)
+        : Array(teamCount).fill(Math.floor(playerCount / teamCount));
+
+    const evenPlayersPerTeam = teamsArePlayerArrays
+        ? teamSizes.every(size => size === teamSizes[0])
+        : playerCount % teamCount === 0;
+
+    const teamByeDetails = teamSizes.map((size, i) => {
+        const playersOnBye = Math.max(0, size - playersNeededPerTeam);
+        const [teamKey, roster] = teamEntries[i] ?? [String(i + 1), null];
+        return {
+            team: teamsArePlayerArrays || roster === null ? `Team ${teamKey}` : roster,
+            teamKey,
+            teamSize: size,
+            playersNeeded: playersNeededPerTeam,
+            playerByes: playersOnBye > 0,
+            playersOnBye
+        };
     });
-  }
 
-  // --- Build each active team's FULL pair-pool ONCE per round ---
-  const teamPairPools = {};
-  activeTeamKeys.forEach(teamKey => {
-    const activePlayers = allTeams[teamKey].filter(p => !(individualByesByTeam[teamKey] || []).includes(p.PlayerID));
-    teamPairPools[teamKey] = generateBestPartnerships(activePlayers, partnerCounts, scorers);
-  });
+    const wholeTeamByes = teamCount > courtsCount;
 
-  const teamPoolCursor = {};
-  activeTeamKeys.forEach(t => teamPoolCursor[t] = 0);
+    return {
+        valid: true,
+        wholeTeamByes,
+        teamByes: wholeTeamByes ? teamCount - courtsCount : 0,
+        evenPlayersPerTeam,
+        playersNeededPerTeam,
+        teamByeDetails
+    };
+}
 
-  const allMatches = [];
-  let courtCursor = 1;
+// *** Pairing List Per Team *** //
+// --- For each team, every possible pairing of two players from that team, with the average DUPR --- //
+function buildPairingMatrices(allTeams) {
+    const result = {};
 
-  teamPairings.forEach(([teamAKey, teamBKey]) => {
-    const cpp = structure.courtsPerPairing;
+    Object.entries(allTeams).forEach(([teamKey, roster]) => {
+        const pairings = [];
 
-    const teamAChunk = teamPairPools[teamAKey].slice(teamPoolCursor[teamAKey], teamPoolCursor[teamAKey] + cpp);
-    const teamBChunk = teamPairPools[teamBKey].slice(teamPoolCursor[teamBKey], teamPoolCursor[teamBKey] + cpp);
-    teamPoolCursor[teamAKey] += cpp;
-    teamPoolCursor[teamBKey] += cpp;
+        for (let i = 0; i < roster.length; i++) {
+            for (let j = i + 1; j < roster.length; j++) {
+                const a = roster[i];
+                const b = roster[j];
 
-    if (teamAChunk.length === 0 || teamBChunk.length === 0) {
-      console.warn(`Skipping pairing ${teamAKey} vs ${teamBKey} — pair pool exhausted (likely a stale bye cache or structure mismatch).`);
-      return;
+                pairings.push({
+                    player1PlayerID: a.PlayerID,
+                    player1DUPR: Number(a.DUPR),
+                    player1ByeOrder: a.byeOrder,
+                    player1PlayerExclude: a.playerExclude,
+
+                    player2PlayerID: b.PlayerID,
+                    player2DUPR: Number(b.DUPR),
+                    player2ByeOrder: b.byeOrder,
+                    player2PlayerExclude: b.playerExclude,
+
+                    avgDUPR: Math.round(((Number(a.DUPR) + Number(b.DUPR)) / 2) * 1000) / 1000
+                });
+            }
+        }
+
+        result[teamKey] = pairings;
+    });
+
+    return result;
+}
+
+// *** Step 1: Team-level combos *** //
+// --- courtsCount = combo length (one match per court, but no court is allocated) --- //
+// --- A team never plays itself --- //
+// --- If wholeTeamByes, the excluded team(s) rotate through each combo --- //
+function buildTeamCombos(players, courtsCount, numberOfTeams, allTeams) {
+    const teamKeys = getTeamEntries(allTeams).map(([key]) => key);
+    const teamCount = numberOfTeams ?? teamKeys.length;
+
+    const structure = teamStructureType(players, courtsCount, teamCount, allTeams);
+    if (!structure.valid) return { valid: false, reason: structure.reason };
+
+    const teamByes = Math.max(0, teamCount - courtsCount);
+    const rotations = teamByes > 0 ? teamCount : 1;   // one combo per rotation of the byes
+    const combos = [];
+
+    for (let r = 0; r < rotations; r++) {
+        // Cycle which team(s) are excluded
+        const excludedTeams = [];
+        for (let b = 0; b < teamByes; b++) excludedTeams.push(teamKeys[(r + b) % teamCount]);
+
+        const playing = teamKeys.filter(k => !excludedTeams.includes(k));
+
+        // 2 teams: one matchup. 3+ teams: ring (1v2, 2v3, 3v1...) so each team plays 2 matches
+        const ring = playing.length === 2
+            ? [[playing[0], playing[1]]]
+            : playing.map((team, i) => [team, playing[(i + 1) % playing.length]]);
+
+        // One match per court slot; the ring repeats if there are more courts than ring matches
+        const matches = Array.from({ length: courtsCount }, (_, c) => {
+            const [team1, team2] = ring[c % ring.length];
+            return { team1, team2 };
+        });
+
+        combos.push({ comboId: r + 1, excludedTeams, matches });
     }
 
-    const matchups = assignBipartitePairings(teamAChunk, teamBChunk, opponentCounts);
+    return { valid: true, combos };
+}
 
-    const courtNumbers = [];
-    for (let i = 0; i < cpp; i++) {
-      courtNumbers.push(courtCursor);
-      courtCursor++;
+// *** Step 2: Player-level combos *** //
+// --- Fills each match with a pairing from each team, no player used twice within a combo --- //
+// --- pairings = output of buildPairingMatrices(allTeams) --- //
+function buildPlayerCombos(teamCombos, pairings, maxCombos = 100000) {
+    const results = [];
+    const round3 = n => Math.round(n * 1000) / 1000;
+
+    teamCombos.forEach(combo => {
+        const usedByTeam = {};                    // teamKey -> Set of PlayerIDs already used
+        const chosen = [];
+
+        const clashes = (team, pair) => {
+            const used = usedByTeam[team] ?? (usedByTeam[team] = new Set());
+            return used.has(pair.player1PlayerID) || used.has(pair.player2PlayerID);
+        };
+
+        const mark = (team, pair, add) => {
+            const used = usedByTeam[team] ?? (usedByTeam[team] = new Set());
+            [pair.player1PlayerID, pair.player2PlayerID].forEach(id =>
+                add ? used.add(id) : used.delete(id)
+            );
+        };
+
+        const slim = p => ({
+            player1PlayerID: p.player1PlayerID,
+            player2PlayerID: p.player2PlayerID,
+            avgDUPR: p.avgDUPR
+        });
+
+        const recurse = m => {
+            if (results.length >= maxCombos) return;
+
+            // Base case: every match in the combo has been filled
+            if (m === combo.matches.length) {
+                const matches = chosen.map((c, i) => ({
+                    team1: combo.matches[i].team1,
+                    team2: combo.matches[i].team2,
+                    pair1: slim(c.p1),
+                    pair2: slim(c.p2),
+                    absDiff: round3(Math.abs(c.p1.avgDUPR - c.p2.avgDUPR))
+                }));
+
+                const absAvgMatrix = matches.map(x => x.absDiff);   // |avg1 - avg2| per match
+
+                results.push({
+                    comboId: combo.comboId,
+                    excludedTeams: combo.excludedTeams,
+                    matches,
+                    absAvgMatrix,
+                    comboAbsTotal: round3(absAvgMatrix.reduce((a, b) => a + b, 0)),
+                    penalty: 0
+                });
+                return;
+            }
+
+            const { team1, team2 } = combo.matches[m];
+
+            for (const p1 of pairings[team1]) {
+                if (clashes(team1, p1)) continue;
+                mark(team1, p1, true);
+
+                for (const p2 of pairings[team2]) {
+                    if (clashes(team2, p2)) continue;
+                    mark(team2, p2, true);
+
+                    chosen.push({ p1, p2 });
+                    recurse(m + 1);
+                    chosen.pop();
+
+                    mark(team2, p2, false);
+                }
+
+                mark(team1, p1, false);
+            }
+        };
+
+        recurse(0);
+    });
+
+    return results;
+}
+
+// *** BUILD MATCHUPS FOR EACH ROUND *** //
+// --- Priority 1: unique partnerships (hard cap per cycle) --- //
+// --- Priority 2: lowest total absDUPR + penalty among the valid cycles --- //
+// --- Full pool restored at the start of each cycle; combos used before carry the 1000000 penalty --- //
+// --- Round numbers start at startRound --- //
+function buildRounds(playerCombos, numberOfRounds, startRound = 1, byeSchedule = []) {
+    const score = c => c.comboAbsTotal + c.penalty;
+    const pairKey = (a, b) => [a, b].sort().join("|");
+    const teamsKey = teams => [...teams].map(String).sort().join(",");
+    const NODE_LIMIT = 2000000;
+
+    // Precompute per combo
+    playerCombos.forEach(c => {
+        c.pairKeys = c.matches.flatMap(m => [
+            pairKey(m.pair1.player1PlayerID, m.pair1.player2PlayerID),
+            pairKey(m.pair2.player1PlayerID, m.pair2.player2PlayerID)
+        ]);
+        c.pairSig = [...c.pairKeys].sort().join(";");   // same partnerships = same signature
+        c.playerIDs = new Set(c.matches.flatMap(m => [
+            m.pair1.player1PlayerID, m.pair1.player2PlayerID,
+            m.pair2.player1PlayerID, m.pair2.player2PlayerID
+        ]));
+        c.excludedKey = teamsKey(c.excludedTeams);
+        c.penalty = 0;
+    });
+
+    // --- Cycle length: rounds before the bye pattern repeats --- //
+    let cycleLength = numberOfRounds;
+    for (let j = 1; j < numberOfRounds; j++) {
+        const a = byeSchedule[0], b = byeSchedule[j];
+        if (a && b &&
+            teamsKey(a.excludedTeams) === teamsKey(b.excludedTeams) &&
+            [...a.playersOnBye].sort().join() === [...b.playersOnBye].sort().join()) {
+            cycleLength = j;
+            break;
+        }
     }
 
-    const courted = assignCourts(matchups, courtNumbers, courtCounts);
-    const records = courted.map((m, idx) => buildMatchRecord(m, idx, roundNumber, eventId, drawVersion, userEmail));
-    allMatches.push(...records);
-  });
+    // Fallback: no bye pattern found, so size the cycle by how long it takes to use every partnership once
+    if (cycleLength === 1) {
+        const distinctPairs = new Set(playerCombos.flatMap(c => c.pairKeys)).size;
+        const pairsPerRound = playerCombos[0]?.pairKeys.length || 1;
+        cycleLength = Math.max(1, Math.floor(distinctPairs / pairsPerRound));
+    }
+    console.log(`Cycle length: ${cycleLength}`);
 
-  return allMatches;
+    const rounds = [];
+
+    // start / end / i are positions within this run (0-based); round numbers add startRound
+    for (let start = 0; start < numberOfRounds; start += cycleLength) {
+        const end = Math.min(start + cycleLength, numberOfRounds);
+        const cycleLabel = `${startRound + start}-${startRound + end - 1}`;
+
+        // --- Full pool for each round of this cycle, grouped by partnership set, best score first --- //
+        const groupsByLevel = [];
+        for (let i = start; i < end; i++) {
+            const byes = byeSchedule[i] ?? { excludedTeams: [], playersOnBye: [] };
+            const byeKey = teamsKey(byes.excludedTeams);
+
+            // Eligible = right excluded team(s) and none of this round's bye players
+            const eligible = playerCombos.filter(c =>
+                (byeSchedule.length === 0 || c.excludedKey === byeKey) &&
+                !byes.playersOnBye.some(id => c.playerIDs.has(id))
+            );
+
+            const bySig = new Map();
+            eligible.forEach(c => {
+                if (!bySig.has(c.pairSig)) bySig.set(c.pairSig, []);
+                bySig.get(c.pairSig).push(c);
+            });
+
+            const groups = [...bySig.values()];
+            groups.forEach(g => g.sort((a, b) => score(a) - score(b)));
+            groups.sort((a, b) => score(a[0]) - score(b[0]));
+            groupsByLevel.push(groups);
+        }
+
+        if (groupsByLevel.some(g => g.length === 0)) {
+            console.log(`Cycle rounds ${cycleLabel}: a round has no eligible combos`);
+            break;
+        }
+
+        // --- Branch and bound --- //
+        const levels = groupsByLevel.length;
+
+        // Cheapest possible score for the remaining rounds, used to prune hopeless paths early
+        const minFrom = Array(levels + 1).fill(0);
+        for (let l = levels - 1; l >= 0; l--) {
+            minFrom[l] = minFrom[l + 1] + score(groupsByLevel[l][0][0]);
+        }
+
+        const search = cap => {
+            const counts = {};
+            const path = [];
+            let best = null;
+            let bestCost = Infinity;
+            let nodes = 0;
+            let hitLimit = false;
+
+            const dfs = (level, cost) => {
+                if (hitLimit) return;
+
+                if (level === levels) {
+                    if (cost < bestCost) { bestCost = cost; best = [...path]; }
+                    return;
+                }
+
+                for (const group of groupsByLevel[level]) {
+                    if (++nodes > NODE_LIMIT) { hitLimit = true; return; }
+
+                    const combo = group[0];                                     // best-scoring combo for this partnership set
+                    const newCost = cost + score(combo);
+                    if (newCost + minFrom[level + 1] >= bestCost) continue;    // cannot beat the best found
+                    if (combo.pairKeys.some(k => (counts[k] || 0) >= cap)) continue;
+
+                    combo.pairKeys.forEach(k => { counts[k] = (counts[k] || 0) + 1; });
+                    path.push(combo);
+
+                    dfs(level + 1, newCost);
+
+                    path.pop();
+                    combo.pairKeys.forEach(k => { counts[k]--; });
+                }
+            };
+
+            dfs(0, 0);
+            return { best, bestCost, hitLimit };
+        };
+
+        // Strictest uniqueness first; only relax the cap if no valid cycle exists
+        let chosen = null;
+        for (const cap of [1, 2, 3, Infinity]) {
+            const result = search(cap);
+            if (result.best) {
+                chosen = result.best;
+                console.log(`Cycle rounds ${cycleLabel}: cap ${cap} | total score ${result.bestCost}${result.hitLimit ? " (node limit hit, best found so far)" : " (optimal)"}`);
+                break;
+            }
+        }
+        if (!chosen) {
+            console.log(`Cycle rounds ${cycleLabel}: no valid cycle found`);
+            break;
+        }
+
+        // --- Record the rounds and penalise the combos used --- //
+        chosen.forEach((selected, idx) => {
+            const i = start + idx;
+            const roundNumber = startRound + i;
+            const byes = byeSchedule[i] ?? { excludedTeams: [], playersOnBye: [] };
+            const roundScore = score(selected);   // score before the penalty is applied
+            selected.penalty += 1000000;
+
+            rounds.push({
+                round: roundNumber,
+                combo: selected,
+                score: roundScore,
+                teamsOnBye: byes.excludedTeams,
+                playersOnBye: byes.playersOnBye
+            });
+
+            console.log(`===== Round ${roundNumber} | Abs DUPR total: ${roundScore} | Teams on bye: ${byes.excludedTeams.join(", ") || "none"} | Players on bye: ${byes.playersOnBye.join(", ") || "none"} =====`);
+            console.table(selected.matches.map(m => ({
+                match: `Team ${m.team1} v Team ${m.team2}`,
+                pair1: `${m.pair1.player1PlayerID} / ${m.pair1.player2PlayerID}`,
+                pair1Avg: m.pair1.avgDUPR,
+                pair2: `${m.pair2.player1PlayerID} / ${m.pair2.player2PlayerID}`,
+                pair2Avg: m.pair2.avgDUPR,
+                absDiff: m.absDiff
+            })));
+        });
+    }
+
+    return rounds;
+}
+
+// *** Partner & Opponent Summary By PlayerID *** //
+// --- rounds = output of buildRounds; players (optional) adds names and teams to the summary --- //
+function summarisePlayerHistory(rounds, players = []) {
+    const info = {};
+    players.forEach(p => { info[p.PlayerID] = { Name: p.Name, Team: p.Team }; });
+
+    const stats = {};
+    const get = id => (stats[id] ??= {
+        PlayerID: id,
+        Name: info[id]?.Name ?? "",
+        Team: info[id]?.Team ?? "",
+        roundsPlayed: 0,
+        partners: new Map(),    // PlayerID -> times partnered
+        opponents: new Map()    // PlayerID -> times opposed
+    });
+
+    const bump = (map, id) => map.set(id, (map.get(id) ?? 0) + 1);
+
+    // Highest count in a map, plus who it was with (ties are all listed)
+    const maxOf = map => {
+        let max = 0;
+        map.forEach(v => { if (v > max) max = v; });
+        const ids = [...map.entries()].filter(([, v]) => v === max).map(([id]) => id);
+        return { max, ids };
+    };
+    const sumOf = map => [...map.values()].reduce((a, b) => a + b, 0);
+
+    rounds.forEach(r => {
+        r.combo.matches.forEach(m => {
+            const pairA = [m.pair1.player1PlayerID, m.pair1.player2PlayerID];
+            const pairB = [m.pair2.player1PlayerID, m.pair2.player2PlayerID];
+
+            [[pairA, pairB], [pairB, pairA]].forEach(([own, other]) => {
+                own.forEach(id => {
+                    const s = get(id);
+                    s.roundsPlayed++;
+
+                    bump(s.partners, own.find(x => x !== id));
+                    other.forEach(o => bump(s.opponents, o));
+                });
+            });
+        });
+    });
+
+    // Flat summary, one row per player
+    const summary = Object.values(stats)
+        .map(s => {
+            const mp = maxOf(s.partners);
+            const mo = maxOf(s.opponents);
+            return {
+                PlayerID: s.PlayerID,
+                Name: s.Name,
+                Team: s.Team,
+                roundsPlayed: s.roundsPlayed,
+                uniquePartners: s.partners.size,
+                uniqueOpponents: s.opponents.size,
+                maxSamePartner: mp.max,
+                maxSameOpponent: mo.max,
+                totalPartnerings: sumOf(s.partners),
+                totalOpponentings: sumOf(s.opponents),
+                maxPartnerIDs: mp.ids.join(", "),
+                maxOpponentIDs: mo.ids.join(", "),
+                partnerIDs: [...s.partners.keys()].join(", "),
+                opponentIDs: [...s.opponents.keys()].join(", ")
+            };
+        })
+        .sort((a, b) => String(a.Team).localeCompare(String(b.Team)) || a.PlayerID.localeCompare(b.PlayerID));
+
+    console.log("===== Partner & Opponent Summary By Player =====");
+    console.table(summary.map(({ partnerIDs, opponentIDs, maxPartnerIDs, maxOpponentIDs, ...rest }) => rest));
+
+    // Overall maximums across all players
+    const overallMaxPartner = Math.max(0, ...summary.map(s => s.maxSamePartner));
+    const overallMaxOpponent = Math.max(0, ...summary.map(s => s.maxSameOpponent));
+    console.log(`Overall max same partner: ${overallMaxPartner} | Overall max same opponent: ${overallMaxOpponent}`);
+
+    return summary;   // full version, including the ID lists
+}
+
+// *** Build byes by round *** //
+// --- A. Whole team byes: shuffle the rotation order once, then repeat the sequence --- //
+// --- B. Player byes: shuffle seeds in one team, every team uses the same seed(s), repeat the cycle --- //
+// --- Even teams only. Round numbers start at startRound --- //
+function buildByeSchedule(allTeams, teamCombos, byeInfo, numberOfRounds, startRound = 1) {
+    // A1-A3. Each team combo already has its own excluded team(s), so every team gets a bye per cycle
+    const teamOrder = shuffle(teamCombos.map(c => c.excludedTeams));
+
+    // B. Teams that need player byes (team size > players needed per round)
+    const byTeams = byeInfo.teamByeDetails.filter(d => d.playersOnBye > 0);
+
+    // B1-B2. Random seed order taken from one randomly chosen team
+    let seedOrder = [];
+    if (byTeams.length > 0) {
+        const refKey = byTeams[Math.floor(Math.random() * byTeams.length)].teamKey;
+        seedOrder = shuffle([...Array(allTeams[refKey].length).keys()]);
+    }
+
+    const schedule = [];
+    for (let r = 0; r < numberOfRounds; r++) {
+        const excludedTeams = (teamOrder[r % teamOrder.length] ?? []).map(String);
+        const playersOnBye = [];
+
+        // B3-B4. Same seeds in every team that plays this round, cycling once all have had a bye
+        byTeams.forEach(d => {
+            if (excludedTeams.includes(String(d.teamKey))) return;   // whole team is out anyway
+            const roster = allTeams[d.teamKey];                      // already sorted by DUPR, so index = seed
+            for (let b = 0; b < d.playersOnBye; b++) {
+                const seed = seedOrder[(r * d.playersOnBye + b) % seedOrder.length] % roster.length;
+                playersOnBye.push(roster[seed].PlayerID);
+            }
+        });
+
+        schedule.push({ round: startRound + r, excludedTeams, playersOnBye });
+    }
+
+    console.log("===== Bye schedule =====");
+    console.table(schedule.map(s => ({
+        round: s.round,
+        teamsOnBye: s.excludedTeams.join(", ") || "none",
+        playersOnBye: s.playersOnBye.join(", ") || "none"
+    })));
+
+    return schedule;
+}
+
+// *** Convert buildRounds output into match records (same format as newMatches) *** //
+function buildMatchRecordsFromRounds(rounds, players, courtsCount, eventId, drawVersion, userEmail, existingMatches = []) {
+    const playerById = {};
+    players.forEach(p => { playerById[p.PlayerID] = p; });
+
+    const courtNumbers = Array.from({ length: courtsCount }, (_, i) => i + 1);
+    const allRecords = [];
+
+    rounds.forEach(r => {
+        // Match-ups in the shape assignCourts / buildMatchRecord expect
+        const matchups = r.combo.matches.map(m => ({
+            teamA: [playerById[m.pair1.player1PlayerID], playerById[m.pair1.player2PlayerID]],
+            teamB: [playerById[m.pair2.player1PlayerID], playerById[m.pair2.player2PlayerID]]
+        }));
+
+        // Court history includes matches that already existed before this run
+        const { courtCounts } = buildDrawHistory([...existingMatches, ...allRecords]);
+        const courted = assignCourts(matchups, courtNumbers, courtCounts);
+
+        courted.forEach((m, idx) => {
+            allRecords.push(buildMatchRecord(m, idx, r.round, eventId, drawVersion, userEmail));
+        });
+    });
+
+    return allRecords;
+}
+
+// *** CORE FUNCTION CALLED TO GENERATE TEAM DRAW *** //
+function generateTeamsRoundTest(players, allMatches, numberOfRounds, startRound, courtsCount, activeEventId, newDrawVersion, userEmail, numberOfTeams, scorers) {
+    // --- Build the players into each team, sorting rank by DUPR rating --- //
+    const allTeams = {};
+    [...players]
+        .sort((a, b) => (parseFloat(b.DUPR) || 0) - (parseFloat(a.DUPR) || 0))
+        .forEach(p => { (allTeams[p.Team] = allTeams[p.Team] || []).push(p); });
+
+    const allTeamKeys = Object.keys(allTeams).sort((a, b) => parseInt(a) - parseInt(b));
+    console.log(`All teams key is ${allTeamKeys}, with the teams being`, allTeams);
+
+    // --- Determine the structure of the match ups based on the number of teams & number of courts --- //
+    const isTeamStructure = teamStructureType(players, courtsCount, numberOfTeams, allTeams);
+    if (!isTeamStructure.valid) {
+        alert(`Draw stopped: ${isTeamStructure.reason}`);
+        return [];
+    }
+
+    // --- Determine bye structure --- //
+    const isByeStructures = byeStructure(players, courtsCount, numberOfTeams, allTeams);
+    if (!isByeStructures.valid) {
+        alert(`Draw stopped: ${isByeStructures.reason}`);
+        return [];
+    }
+
+    // --- HARD RULE: every team must have the same number of players --- //
+    if (!isByeStructures.evenPlayersPerTeam) {
+        const sizes = Object.entries(allTeams)
+            .map(([teamKey, roster]) => `Team ${teamKey}: ${roster.length} players`)
+            .join("\n");
+        alert(
+            `Draw stopped: every team must have the same number of players.\n\n${sizes}\n\n` +
+            `Please add or remove players so the teams are even, then generate the draw again.`
+        );
+        return [];
+    }
+
+    // --- TESTING ALERT (remove when happy) --- //
+    const { wholeTeamByes, teamByes, teamByeDetails } = isByeStructures;
+    const anyPlayerByes = teamByeDetails.some(t => t.playerByes);
+    const totalPlayersOnBye = teamByeDetails.reduce((sum, t) => sum + t.playersOnBye, 0);
+    alert(
+        `Type: ${isTeamStructure.type} | Courts: ${courtsCount} | Teams: ${numberOfTeams}\n` +
+        `Rounds: ${startRound} to ${startRound + numberOfRounds - 1}\n` +
+        `Teams playing per round: ${isTeamStructure.teamsPerRound}\n` +
+        `Players needed per team: ${isTeamStructure.playersNeededPerTeam}\n` +
+        `Whole Team Byes: ${wholeTeamByes ? "Yes" : "No"}` +
+        (wholeTeamByes ? ` (${teamByes} per round)` : "") +
+        `\nPlayer Byes: ${anyPlayerByes ? "Yes" : "No"}` +
+        (anyPlayerByes ? ` (${totalPlayersOnBye} per round in total)` : "")
+    );
+
+    // --- Build all eligible partnerships within each team --- //
+    const pairings = buildPairingMatrices(allTeams);
+
+    // --- Build team level combos --- //
+    const teamCombos = buildTeamCombos(players, courtsCount, numberOfTeams, allTeams);
+    if (!teamCombos.valid) {
+        alert(`Draw stopped: ${teamCombos.reason}`);
+        return [];
+    }
+
+    // --- Build byes by round --- //
+    const byeSchedule = buildByeSchedule(allTeams, teamCombos.combos, isByeStructures, numberOfRounds, startRound);
+
+    // --- Build player level combos --- //
+    const playerCombos = buildPlayerCombos(teamCombos.combos, pairings);
+    if (playerCombos.length === 0) {
+        alert("Draw stopped: no valid match combinations could be built. Check that each team has enough players for the number of courts.");
+        return [];
+    }
+    console.log(`Player combos built: ${playerCombos.length}`);
+
+    // *** BUILD MATCHUPS FOR EACH ROUND *** //
+    const rounds = buildRounds(playerCombos, numberOfRounds, startRound, byeSchedule);
+    if (rounds.length < numberOfRounds) {
+        console.warn(`Only ${rounds.length} of ${numberOfRounds} rounds could be built (rounds ${startRound}-${startRound + numberOfRounds - 1} requested).`);
+    }
+    summarisePlayerHistory(rounds, players);
+
+    // Same format as newMatches
+    return buildMatchRecordsFromRounds(rounds, players, courtsCount, activeEventId, newDrawVersion, userEmail, allMatches);
 }
