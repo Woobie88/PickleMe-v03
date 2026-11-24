@@ -617,6 +617,18 @@ async function renderCurrentRoundView(payload, { silent = false } = {}) {
   const isMatchComplete = m => Boolean(m.Team1WinLoss && m.Team2WinLoss);
   const allRoundComplete = roundMatches.length > 0 && roundMatches.every(isMatchComplete);
 
+  console.log('Heading check', {
+    round: window.currentRoundNumber,
+    count: roundMatches.length,
+    allRoundComplete,
+    perMatch: roundMatches.map(m => ({
+      id: m.MatchID,
+      t1: m.Team1WinLoss,
+      t2: m.Team2WinLoss,
+      complete: isMatchComplete(m)
+    }))
+  });
+
   const roundMatchTypeSample = roundMatches[0]?.MatchType;
   const isPlayoffRound = roundMatchTypeSample && roundMatchTypeSample !== "Round Robin";
   const baseHeading = isPlayoffRound
