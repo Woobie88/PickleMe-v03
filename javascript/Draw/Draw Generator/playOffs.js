@@ -85,7 +85,7 @@ async function handlePlayoffsNext() {
   }
 
   else {
-    generatePlayoffGroupsFinalRound(payload, roundNumber, eventId, drawVersion, userEmail);
+    generatePlayoffGroupsFinalRound(payload, playoffStartRound, activeEventId, drawVersion, userEmail);
   }
 
   try {
