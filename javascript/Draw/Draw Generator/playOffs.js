@@ -84,6 +84,10 @@ async function handlePlayoffsNext() {
     }
   }
 
+  else {
+    generatePlayoffGroupsFinalRound(payload, roundNumber, eventId, drawVersion, userEmail);
+  }
+
   try {
     await window.saveGeneratedDrawToFirestore(newMatches);
     window.cachedUserUniverse.draw = [...existingMatches, ...newMatches];
