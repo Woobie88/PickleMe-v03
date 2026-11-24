@@ -614,11 +614,18 @@ async function renderCurrentRoundView(payload, { silent = false } = {}) {
     .sort((a, b) => (parseInt(a.Court) || 0) - (parseInt(b.Court) || 0));
 
   // CHANGED — was: document.getElementById('current-round-heading').innerText = `Round ${window.currentRoundNumber}`;
+  const isMatchComplete = m => Boolean(m.Team1WinLoss && m.Team2WinLoss);
+  const allRoundComplete = roundMatches.length > 0 && roundMatches.every(isMatchComplete);
+
   const roundMatchTypeSample = roundMatches[0]?.MatchType;
   const isPlayoffRound = roundMatchTypeSample && roundMatchTypeSample !== "Round Robin";
-  document.getElementById('current-round-heading').innerText = isPlayoffRound
+  const baseHeading = isPlayoffRound
     ? `Round ${window.currentRoundNumber} (${roundMatchTypeSample})`
     : `Round ${window.currentRoundNumber}`;
+
+  document.getElementById('current-round-heading').innerText = allRoundComplete
+    ? `${baseHeading} (Complete)`
+    : baseHeading;
 
   const container = document.getElementById('current-round-list');
   const placeholder = document.getElementById('placeholder-view-current-round');
