@@ -367,10 +367,10 @@ function generateRoundDraw(players, matches, byePlayerIds, roundNumber, courtsCo
 // ---------- CLUSTERED ROUND GENERATION (Divisions, Ladder Scramble, Pools, Pool Fusion) ----------
 
 function generateClusteredRoundDraw(players, matches, byesByTeamForThisRound, roundNumber, courtsCount, eventId, drawVersion, numberOfTeams, userEmail, gameProfile, scorers) {
-  // if (courtsCount % numberOfTeams !== 0) {
-  //   console.error(`Cannot generate draw: courtsCount (${courtsCount}) is not evenly divisible by NumberOfTeams (${numberOfTeams}).`);
-  //   return [];
-  // }
+  if (courtsCount % numberOfTeams !== 0) {
+    console.error(`Cannot generate draw: courtsCount (${courtsCount}) is not evenly divisible by NumberOfTeams (${numberOfTeams}).`);
+    return [];
+  }
 
   const courtsPerTeam = courtsCount / numberOfTeams;
   const { opponentCounts, courtCounts } = buildDrawHistory(matches);
