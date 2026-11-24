@@ -117,11 +117,21 @@ async function renderDrawCards(payload, { silent = false } = {}) {
   let html = '';
   let currentRound = null;
 
+  // Rounds where every match has both W/L values filled in
+  const isMatchComplete = m => Boolean(m.Team1WinLoss && m.Team2WinLoss);
+
+  const roundComplete = {};
+  matches.forEach(m => {
+    const key = String(m.Round);
+    roundComplete[key] = (roundComplete[key] ?? true) && isMatchComplete(m);
+  });
+
   matches.forEach(m => {
     if (m.Round !== currentRound) {
       currentRound = m.Round;
       const isPlayoff = m.MatchType && m.MatchType !== "Round Robin";
-      const roundLabel = isPlayoff ? `Round ${currentRound} (${m.MatchType})` : `Round ${currentRound}`;
+      const baseLabel = isPlayoff ? `Round ${currentRound} (${m.MatchType})` : `Round ${currentRound}`;
+      const roundLabel = roundComplete[String(currentRound)] ? `${baseLabel} (Complete)` : baseLabel;
       html += `<div class="event-section-title">${roundLabel}</div>`;
     }
 
