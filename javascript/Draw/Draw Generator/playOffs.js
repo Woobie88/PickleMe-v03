@@ -55,28 +55,33 @@ async function handlePlayoffsNext() {
   const lastRegularRound = existingMatches.reduce((max, m) => Math.max(max, parseInt(m.Round) || 0), 0);
   const playoffStartRound = lastRegularRound + 1;
 
+  const gameProfile = gamesProfile.find(g => g.GameID === activeEvent.GameID);
+  const isPairs = gameProfile?.Grouping === "Pairs";  
+
   let newMatches;
 
-  if (roundsValue === 1) {
-    newMatches = generatePlayoffFinalRound(payload, playoffStartRound, activeEventId, drawVersion, userEmail);
+  if (!isPairs) {
+    if (roundsValue === 1) {
+      newMatches = generatePlayoffFinalRound(payload, playoffStartRound, activeEventId, drawVersion, userEmail);
 
-  } else if (roundsValue === 2) {
-    newMatches = generatePlayoffEliminationRound(payload, playoffStartRound, activeEventId, drawVersion, userEmail);
-    activeEvent.PlayoffEFRound = playoffStartRound;
-    activeEvent.PlayoffFinalRound = playoffStartRound + 1;
-    await window.updateEventFieldInFirestore(activeEventId, 'PlayoffEFRound', playoffStartRound);
-    await window.updateEventFieldInFirestore(activeEventId, 'PlayoffFinalRound', playoffStartRound + 1);
+    } else if (roundsValue === 2) {
+      newMatches = generatePlayoffEliminationRound(payload, playoffStartRound, activeEventId, drawVersion, userEmail);
+      activeEvent.PlayoffEFRound = playoffStartRound;
+      activeEvent.PlayoffFinalRound = playoffStartRound + 1;
+      await window.updateEventFieldInFirestore(activeEventId, 'PlayoffEFRound', playoffStartRound);
+      await window.updateEventFieldInFirestore(activeEventId, 'PlayoffFinalRound', playoffStartRound + 1);
 
-  } else if (roundsValue === 3 || roundsValue === 4) { // CHANGED — combined branch, was only === 4
-    newMatches = generatePlayoffProgressiveRound1(payload, roundsValue, playoffStartRound, activeEventId, drawVersion, userEmail);
-    activeEvent.PlayoffStartRound = playoffStartRound;
-    activeEvent.PlayoffType = window.playoffProgressionType;
-    await window.updateEventFieldInFirestore(activeEventId, 'PlayoffStartRound', playoffStartRound);
-    await window.updateEventFieldInFirestore(activeEventId, 'PlayoffType', window.playoffProgressionType);
+    } else if (roundsValue === 3 || roundsValue === 4) { // CHANGED — combined branch, was only === 4
+      newMatches = generatePlayoffProgressiveRound1(payload, roundsValue, playoffStartRound, activeEventId, drawVersion, userEmail);
+      activeEvent.PlayoffStartRound = playoffStartRound;
+      activeEvent.PlayoffType = window.playoffProgressionType;
+      await window.updateEventFieldInFirestore(activeEventId, 'PlayoffStartRound', playoffStartRound);
+      await window.updateEventFieldInFirestore(activeEventId, 'PlayoffType', window.playoffProgressionType);
 
-  } else {
-    alert(`${roundsValue}-round Playoffs isn't built yet.`);
-    return;
+    } else {
+      alert(`${roundsValue}-round Playoffs isn't built yet.`);
+      return;
+    }
   }
 
   try {
