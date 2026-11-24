@@ -313,7 +313,7 @@ const gamesProfile = [
       AddMatch: "Yes",
       PlayerSub: "Yes",
       PlayerAvailable: "No",
-      ReDraw: "Yes",
+      ReDraw: "No",
       PlayOffs: "No",
       ResultRefresh: "No",
       PairingMethod: "No"
