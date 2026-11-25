@@ -522,7 +522,9 @@ function toggleFabMenu() {
 }
 
 async function handleFabAction(action) {
-  toggleFabMenu();
+  if (window.currentAppName === 'pickleMe') {
+    toggleFabMenu();
+  }
 
   switch (action) {
     case 'redivision':
