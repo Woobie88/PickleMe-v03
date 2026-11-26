@@ -22,7 +22,22 @@ window.exportDuprCsv = async function() {
   });
 
   // Only matches where both teams have a recorded result
-  const completedMatches = matches.filter(m => m.Team1WinLoss && m.Team2WinLoss);
+  const completedMatches = matches
+    .filter(m => m.Team1WinLoss && m.Team2WinLoss)
+    .map(m => {
+      let score1 = parseInt(m.Team1Score) || 0;
+      let score2 = parseInt(m.Team2Score) || 0;
+
+      // Double both scores until at least one is 6 or more
+      // (the > 0 check stops an endless loop when both are 0)
+      while (Math.max(score1, score2) < 6 && (score1 > 0 || score2 > 0)) {
+        score1 *= 2;
+        score2 *= 2;
+      }
+
+      // Copy the match so the original data is untouched
+      return { ...m, adjTeam1Score: score1, adjTeam2Score: score2 };
+    });
 
   if (completedMatches.length === 0) {
     alert("No completed matches to export.");
@@ -67,8 +82,8 @@ window.exportDuprCsv = async function() {
       escapeCsvValue(b2.name || ''),
       b2.duprId || '',
       '',
-      String(m.Team1Score ?? 0),
-      String(m.Team2Score ?? 0),
+      String(m.adjTeam1Score ?? 0),
+      String(m.adjTeam2Score ?? 0),
       '', '', '', '', '', '', '', '', // Game 2-5 left blank
       escapeCsvValue(activeEvent.EventLocation || ''),
       'SIDEOUT'
