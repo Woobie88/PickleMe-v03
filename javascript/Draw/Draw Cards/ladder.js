@@ -110,6 +110,17 @@ function calculateLadderPoints(stats, ladderScoringMode) {
   return 0;
 }
 
+// *** Get the draw (matches) for the active event: cached copy first, otherwise Firestore *** //
+async function getDrawMatches(activeEventId, currentDrawVersion) {
+  const cached = window.cachedUserUniverse.draw;
+  const matches = cached && cached.length > 0
+    ? cached
+    : await window.fetchDrawFromFirestore(activeEventId, currentDrawVersion);
+
+  window.cachedUserUniverse.draw = matches;
+  return matches;
+}
+
 async function renderStandingsView(payload) {
   const activeEventId = payload.activeEventId;
   const activeEvent = payload.events.find(e => String(e.EventID) === String(activeEventId));
@@ -118,10 +129,12 @@ async function renderStandingsView(payload) {
   renderLadderScoringToggle(activeEvent);
 
   const currentDrawVersion = activeEvent.CurrentDrawVersion;
-  const matches = window.cachedUserUniverse.draw && window.cachedUserUniverse.draw.length > 0
-    ? window.cachedUserUniverse.draw
-    : await window.fetchDrawFromFirestore(activeEventId, currentDrawVersion);
-  window.cachedUserUniverse.draw = matches;
+  // const matches = window.cachedUserUniverse.draw && window.cachedUserUniverse.draw.length > 0
+  //   ? window.cachedUserUniverse.draw
+  //   : await window.fetchDrawFromFirestore(activeEventId, currentDrawVersion);
+  // window.cachedUserUniverse.draw = matches;
+
+  const matches = await getDrawMatches(activeEventId, activeEvent.CurrentDrawVersion);
 
   const players = window.cachedUserUniverse.players && window.cachedUserUniverse.players.length > 0
     ? window.cachedUserUniverse.players
