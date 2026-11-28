@@ -134,7 +134,7 @@ async function renderStandingsView(payload) {
   //   : await window.fetchDrawFromFirestore(activeEventId, currentDrawVersion);
   // window.cachedUserUniverse.draw = matches;
 
-  const matches = await getDrawMatches(activeEventId, activeEvent.CurrentDrawVersion);
+  const matches = await getDrawMatches(activeEventId, currentDrawVersion);
 
   const players = window.cachedUserUniverse.players && window.cachedUserUniverse.players.length > 0
     ? window.cachedUserUniverse.players
